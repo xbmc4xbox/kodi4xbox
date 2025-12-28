@@ -734,8 +734,8 @@ target_link_libraries(xbmc PRIVATE crossguid)
 message(STATUS "Downloading pbgl")
 FetchContent_Declare(
   pbgl
-  GIT_REPOSITORY https://github.com/xbmc4xbox/pbgl.git
-  GIT_TAG        8c9ae8ab7a4955aff9ebfc2eeef9bf90e3249cbc
+  GIT_REPOSITORY https://github.com/fgsfdsfgs/pbgl.git
+  GIT_TAG        9fbfdd63ec9040e52762bf76daccdb4158abc21f
   GIT_PROGRESS TRUE
 )
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
