@@ -25,7 +25,7 @@
         "text": "set disassembly-flavor intel"
       },
       {
-        "text": "add-symbol-file ${workspaceFolder}/build/updater.exe 0x11000"
+        "text": "add-symbol-file ${workspaceFolder}/build/xbmc.exe 0x11000"
       }
     ]
   }
