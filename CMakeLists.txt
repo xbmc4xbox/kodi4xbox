@@ -309,6 +309,8 @@ add_executable(xbmc
   xbmc/guilib/IWindowManagerCallback.cpp
   xbmc/guilib/JpegIO.cpp
   xbmc/guilib/LocalizeStrings.cpp
+  xbmc/guilib/MatrixGLES.cpp
+  xbmc/guilib/Resolution.cpp
   xbmc/guilib/Texture.cpp
   xbmc/guilib/TextureGL.cpp
   xbmc/guilib/TextureManager.cpp
@@ -463,6 +465,8 @@ add_executable(xbmc
   xbmc/profiles/windows/GUIWindowSettingsProfile.cpp
   xbmc/programs/GUIViewStatePrograms.cpp
   xbmc/programs/GUIWindowPrograms.cpp
+  xbmc/rendering/RenderSystem.cpp
+  xbmc/rendering/gl/RenderSystemGL.cpp
   xbmc/settings/AdvancedSettings.cpp
   xbmc/settings/DisplaySettings.cpp
   xbmc/settings/LibExportSettings.cpp

@@ -19,8 +19,6 @@
 #include <utility>
 #include <vector>
 
-typedef int DisplayMode;
-
 class TiXmlNode;
 struct IntegerSettingOption;
 struct StringSettingOption;

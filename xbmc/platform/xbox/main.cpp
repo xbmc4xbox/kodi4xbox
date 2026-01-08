@@ -14,9 +14,13 @@
 #include <nxdk/mount.h>
 #include <nxdk/path.h>
 
+#include <pbgl.h>
+#include <GL/gl.h>
+
 int main()
 {
   XVideoSetMode(640, 480, 32, REFRESH_DEFAULT);
+  pbgl_init(GL_TRUE);
 
   nxUnmountDrive('D');
   nxMountDrive('D', "\\Device\\CdRom0");
