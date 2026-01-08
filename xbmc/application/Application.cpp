@@ -80,6 +80,8 @@
 
 #include "addons/AddonSystemSettings.h"
 
+#include "windowing/WindowingFactory.h"
+
 #include <mutex>
 
 using namespace ADDON;
@@ -210,6 +212,15 @@ bool CApplication::CreateGUI()
   const auto appPower = GetComponent<CApplicationPowerHandling>();
   appPower->SetRenderGUI(true);
 
+  // Initialize core peripheral port support. Note: If these parameters
+  // are 0 and NULL, respectively, then the default number and types of
+  // controllers will be initialized.
+  if (!g_Windowing.InitWindowSystem())
+  {
+    CLog::Log(LOGFATAL, "CApplication::Create: Unable to init windowing system");
+    return false;
+  }
+
   // Retrieve the matching resolution based on GUI settings
   bool sav_res = false;
   CDisplaySettings::GetInstance().SetCurrentResolution(CDisplaySettings::GetInstance().GetDisplayResolution());
@@ -224,55 +235,28 @@ bool CApplication::CreateGUI()
     sav_res = true;
   }
 
-#if 0
-  // Transfer the new resolution information to our graphics context
-  g_graphicsContext.SetD3DParameters(&m_d3dpp);
-  g_graphicsContext.SetVideoResolution(CDisplaySettings::Get().GetCurrentResolution(), TRUE);
+  // update the window resolution
+  const std::shared_ptr<CSettings> settings = CServiceBroker::GetSettingsComponent()->GetSettings();
+  g_Windowing.SetWindowResolution(settings->GetInt(CSettings::SETTING_WINDOW_WIDTH), settings->GetInt(CSettings::SETTING_WINDOW_HEIGHT));
 
-  if ( FAILED( hr = m_pD3D->CreateDevice(0, D3DDEVTYPE_HAL, NULL,
-                                         D3DCREATE_MULTITHREADED | D3DCREATE_HARDWARE_VERTEXPROCESSING,
-                                         &m_d3dpp, &m_pd3dDevice ) ) )
+  if (CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_startFullScreen && CDisplaySettings::GetInstance().GetCurrentResolution() == RES_WINDOW)
   {
-    // try software vertex processing
-    if ( FAILED( hr = m_pD3D->CreateDevice(0, D3DDEVTYPE_HAL, NULL,
-                                          D3DCREATE_MULTITHREADED | D3DCREATE_SOFTWARE_VERTEXPROCESSING,
-                                          &m_d3dpp, &m_pd3dDevice ) ) )
-    {
-      // and slow as arse reference processing
-      if ( FAILED( hr = m_pD3D->CreateDevice(0, D3DDEVTYPE_REF, NULL,
-                                            D3DCREATE_MULTITHREADED | D3DCREATE_SOFTWARE_VERTEXPROCESSING,
-                                            &m_d3dpp, &m_pd3dDevice ) ) )
-      {
-
-        CLog::Log(LOGFATAL, "XBAppEx: Could not create D3D device!" );
-        CLog::Log(LOGFATAL, " width/height:({}x{})" , m_d3dpp.BackBufferWidth, m_d3dpp.BackBufferHeight);
-        CLog::Log(LOGFATAL, " refreshrate:{}" , m_d3dpp.FullScreen_RefreshRateInHz);
-        if (m_d3dpp.Flags & D3DPRESENTFLAG_WIDESCREEN)
-          CLog::Log(LOGFATAL, " 16:9 widescreen");
-        else
-          CLog::Log(LOGFATAL, " 4:3");
-
-        if (m_d3dpp.Flags & D3DPRESENTFLAG_INTERLACED)
-          CLog::Log(LOGFATAL, " interlaced");
-        if (m_d3dpp.Flags & D3DPRESENTFLAG_PROGRESSIVE)
-          CLog::Log(LOGFATAL, " progressive");
-        return hr;
-      }
-    }
+    // defer saving resolution after window was created
+    CDisplaySettings::GetInstance().SetCurrentResolution(RES_DESKTOP);
+    sav_res = true;
   }
 
-  g_graphicsContext.SetD3DDevice(m_pd3dDevice);
-  g_graphicsContext.CaptureStateBlock();
-  // set filters
-  g_graphicsContext.Get3DDevice()->SetTextureStageState(0, D3DTSS_MINFILTER, D3DTEXF_LINEAR /*g_settings.m_minFilter*/ );
-  g_graphicsContext.Get3DDevice()->SetTextureStageState(0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR /*g_settings.m_maxFilter*/ );
-  CUtil::InitGamma();
-
-  // set GUI res and force the clear of the screen
-  g_graphicsContext.SetVideoResolution(CDisplaySettings::Get().GetCurrentResolution(), TRUE, true);
-#endif
-
-  const std::shared_ptr<CSettings> settings = CServiceBroker::GetSettingsComponent()->GetSettings();
+  if (!g_graphicsContext.IsValidResolution(CDisplaySettings::GetInstance().GetCurrentResolution()))
+  {
+    // Oh uh - doesn't look good for starting in their wanted screenmode
+    CLog::Log(LOGERROR, "The screen resolution requested is not valid, resetting to a valid mode");
+    CDisplaySettings::GetInstance().SetCurrentResolution(RES_DESKTOP);
+    sav_res = true;
+  }
+  if (!InitWindow())
+  {
+    return false;
+  }
 
   // Set default screen saver mode
   auto screensaverModeSetting = std::static_pointer_cast<CSettingString>(settings->GetSetting(CSettings::SETTING_SCREENSAVER_MODE));
@@ -298,6 +282,29 @@ bool CApplication::CreateGUI()
   RESOLUTION_INFO info = g_graphicsContext.GetResInfo();
   CLog::Log(LOGINFO, "GUI format {}x{}, Display {}", info.iWidth, info.iHeight, info.strMode);
 
+  return true;
+}
+
+bool CApplication::InitWindow(RESOLUTION res)
+{
+  if (res == RES_INVALID)
+    res = CDisplaySettings::GetInstance().GetCurrentResolution();
+
+  bool bFullScreen = res != RES_WINDOW;
+  if (!g_Windowing.CreateNewWindow(CSysInfo::GetAppName(),
+                                                      bFullScreen, CDisplaySettings::GetInstance().GetResolutionInfo(res)))
+  {
+    CLog::Log(LOGFATAL, "CApplication::Create: Unable to create window");
+    return false;
+  }
+
+  if (!g_Windowing.InitRenderSystem())
+  {
+    CLog::Log(LOGFATAL, "CApplication::Create: Unable to init rendering system");
+    return false;
+  }
+  // set GUI res and force the clear of the screen
+  g_graphicsContext.SetVideoResolution(res, false);
   return true;
 }
 
@@ -523,24 +530,9 @@ void CApplication::Render()
     appPower->ResetScreenSaver();
   }
 
-#ifdef NXDK
-#if 0
-  if(!m_pd3dDevice)
+  if (!g_Windowing.BeginRender())
     return;
 
-  g_graphicsContext.Lock();
-
-  m_pd3dDevice->BeginScene();
-
-  //SWATHWIDTH of 4 improves fillrates (performance investigator)
-#ifdef HAS_XBOX_D3D
-  m_pd3dDevice->SetRenderState(D3DRS_SWATHWIDTH, 4);
-#endif
-#endif
-#else
-  if (!CServiceBroker::GetRenderSystem()->BeginRender())
-    return;
-#endif
   // render gui layer
   if (appPower->GetRenderGUI() && !m_skipGuiRender)
   {
@@ -556,20 +548,7 @@ void CApplication::Render()
   // render video layer
   CServiceBroker::GetGUI()->GetWindowManager().RenderEx();
 
-#ifdef NXDK
-#if 0
-  // reset image scaling and effect states
-  g_graphicsContext.SetRenderingResolution(g_graphicsContext.GetResInfo(), false);
-
-  m_pd3dDevice->EndScene();
-#ifdef HAS_XBOX_D3D
-  m_pd3dDevice->Present( NULL, NULL, NULL, NULL );
-#endif
-  g_graphicsContext.Unlock();
-#endif
-#else
-  CServiceBroker::GetRenderSystem()->EndRender();
-#endif
+  g_Windowing.EndRender();
 
   // reset our info cache - we do this at the end of Render so that it is
   // fresh for the next process(), or after a windowclose animation (where process()
@@ -583,12 +562,8 @@ void CApplication::Render()
     infoMgr.GetInfoProviders().GetSystemInfoProvider().UpdateFPS();
   }
 
-#if 0
-  // Should we call m_pd3dDevice->Present( NULL, NULL, NULL, NULL ) here or above?
-  // Is the Flip() function in the graphics context just for presenting the rendered scene?
-  CServiceBroker::GetWinSystem()->GetGfxContext().Flip(hasRendered,
-                                                       appPlayer->IsRenderingVideoLayer());
-#endif
+  g_graphicsContext.Flip(hasRendered,
+                         appPlayer->IsRenderingVideoLayer());
 
   CTimeUtils::UpdateFrameTime(hasRendered);
 }
