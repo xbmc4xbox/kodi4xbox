@@ -770,9 +770,7 @@ void CGUIFontTTFBase::RenderCharacter(float posX, float posY, const Character *c
               , b = GET_B(color)
               , a = GET_A(color);
 
-#ifndef _XBOX
   if(g_Windowing.UseLimitedColor())
-#endif
   {
     r = (235 - 16) * r / 255;
     g = (235 - 16) * g / 255;

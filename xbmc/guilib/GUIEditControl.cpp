@@ -29,6 +29,7 @@
 #include "LocalizeStrings.h"
 #include "ServiceBroker.h"
 #include "XBDateTime.h"
+#include "windowing/WindowingFactory.h"
 #include "utils/md5.h"
 #include "utils/Variant.h"
 #include "GUIUserMessages.h"
@@ -262,9 +263,7 @@ bool CGUIEditControl::OnAction(const CAction &action)
         }
       default:
         {
-#ifndef _XBOX
           if (!g_Windowing.IsTextInputEnabled())
-#endif
           {
             ClearMD5();
             m_edit.clear();
@@ -638,7 +637,7 @@ bool CGUIEditControl::ClearMD5()
 {
   if (!(m_inputType == INPUT_TYPE_PASSWORD_MD5 || m_inputType == INPUT_TYPE_PASSWORD_NUMBER_VERIFY_NEW) || !m_isMD5)
     return false;
-  
+
   m_text2.clear();
   m_cursorPos = 0;
   if (m_inputType != INPUT_TYPE_PASSWORD_NUMBER_VERIFY_NEW)
@@ -689,7 +688,6 @@ void CGUIEditControl::OnSMSCharacter(unsigned int key)
 
 void CGUIEditControl::OnPasteClipboard()
 {
-#ifndef _XBOX
   std::wstring unicode_text;
   std::string utf8_text;
 
@@ -709,14 +707,13 @@ void CGUIEditControl::OnPasteClipboard()
     m_cursorPos += unicode_text.length();
     UpdateText();
   }
-#endif
 }
 
 void CGUIEditControl::SetInputValidation(StringValidation::Validator inputValidator, void *data /* = NULL */)
 {
   if (m_inputValidator == inputValidator)
     return;
-  
+
   m_inputValidator = inputValidator;
   m_inputValidatorData = data;
   // the input validator has changed, so re-validate the current data
@@ -752,9 +749,7 @@ void CGUIEditControl::ValidateInput()
 void CGUIEditControl::SetFocus(bool focus)
 {
   m_smsTimer.Stop();
-#ifndef _XBOX
   g_Windowing.EnableTextInput(focus);
-#endif
   CGUIControl::SetFocus(focus);
   SetInvalid();
 }
@@ -765,6 +760,6 @@ std::string CGUIEditControl::GetDescriptionByIndex(int index) const
     return GetDescription();
   else if(index == 1)
     return GetLabel2();
-  
+
   return "";
 }

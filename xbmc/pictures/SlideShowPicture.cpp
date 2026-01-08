@@ -13,6 +13,7 @@
 #include "settings/AdvancedSettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
+#include "windowing/WindowingFactory.h"
 #include "guilib/GraphicContext.h"
 
 #include <mutex>
@@ -861,9 +862,7 @@ void CSlideShowPic::Render(float* x, float* y, CTexture* pTexture, UTILS::COLOR:
     glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_PRIMARY_COLOR);
     glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
 
-#ifndef _XBOX
     if(g_Windowing.UseLimitedColor())
-#endif
     {
       // compress range
       pTexture->BindToUnit(unit++); // dummy bind

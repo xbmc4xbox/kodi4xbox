@@ -65,13 +65,11 @@ void CTexture::Allocate(unsigned int width, unsigned int height, unsigned int fo
   m_textureWidth = m_imageWidth;
   m_textureHeight = m_imageHeight;
 
-#ifndef _XBOX
   if (m_format & XB_FMT_DXT_MASK)
     while (GetPitch() < g_Windowing.GetMinDXTPitch())
       m_textureWidth += GetBlockSize();
 
   if (!g_Windowing.SupportsNPOT((m_format & XB_FMT_DXT_MASK) != 0))
-#endif
   {
     m_textureWidth = PadPow2(m_textureWidth);
     m_textureHeight = PadPow2(m_textureHeight);
