@@ -38,6 +38,11 @@
 #include "linux/XTimeUtils.h"
 #endif
 
+#ifdef NXDK
+#define GL_MAX_TEXTURE_IMAGE_UNITS_ARB GL_MAX_TEXTURE_IMAGE_UNITS
+#define glActiveTextureARB glActiveTexture
+#endif
+
 CRenderSystemGL::CRenderSystemGL() : CRenderSystemBase()
 {
   m_enumRenderingSystem = RENDERING_SYSTEM_OPENGL;
@@ -436,6 +441,7 @@ void CRenderSystemGL::RestoreHardwareTransform()
 
 void CRenderSystemGL::CalculateMaxTexturesize()
 {
+#if 0
   GLint width = 256;
 
   // reset any previous GL errors
@@ -462,6 +468,9 @@ void CRenderSystemGL::CalculateMaxTexturesize()
       break;
     }
   }
+#else
+  m_maxTextureSize = 2048;
+#endif
 
 #ifdef TARGET_DARWIN_OSX
   // Max Texture size reported on some apple machines seems incorrect
@@ -577,6 +586,7 @@ static const GLubyte stipple_3d[] = {
 
 void CRenderSystemGL::SetStereoMode(RENDER_STEREO_MODE mode, RENDER_STEREO_VIEW view)
 {
+#ifndef _XBOX
   CRenderSystemBase::SetStereoMode(mode, view);
 
   glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -621,6 +631,7 @@ void CRenderSystemGL::SetStereoMode(RENDER_STEREO_MODE mode, RENDER_STEREO_VIEW 
     else if(m_stereoView == RENDER_STEREO_VIEW_RIGHT)
       glDrawBuffer(GL_BACK_RIGHT);
   }
+#endif
 
 }
 

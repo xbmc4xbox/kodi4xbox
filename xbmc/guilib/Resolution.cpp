@@ -19,11 +19,16 @@
  */
 
 #include "Resolution.h"
+
 #include "GraphicContext.h"
-#include "utils/log.h"
-#include "utils/MathUtils.h"
+#include "ServiceBroker.h"
 #include "settings/AdvancedSettings.h"
 #include "settings/DisplaySettings.h"
+#include "settings/Settings.h"
+#include "settings/SettingsComponent.h"
+#include "utils/MathUtils.h"
+#include "utils/log.h"
+
 #include <cstdlib>
 
 RESOLUTION_INFO::RESOLUTION_INFO(int width, int height, float aspect, const std::string &mode) :
@@ -69,7 +74,7 @@ RESOLUTION CResolutionUtils::ChooseBestResolution(float fps, int width, bool is3
       FindResolutionFromFpsMatch(fps, width, is3D, res, weight);//if that fails use automatic refreshrate selection
   }
   CLog::Log(LOGNOTICE, "Display resolution ADJUST : %s (%d) (weight: %.3f)",
-            g_graphicsContext.GetResInfo(res).strMode.c_str(), res, weight);
+            g_graphicsContext.GetResInfo(res).strMode.c_str(), static_cast<int>(res), weight);
   return res;
 }
 
@@ -78,9 +83,9 @@ bool CResolutionUtils::FindResolutionFromOverride(float fps, int width, bool is3
   RESOLUTION_INFO curr = g_graphicsContext.GetResInfo(resolution);
 
   //try to find a refreshrate from the override
-  for (int i = 0; i < (int)g_advancedSettings.m_videoAdjustRefreshOverrides.size(); i++)
+  for (int i = 0; i < (int)CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_videoAdjustRefreshOverrides.size(); i++)
   {
-    RefreshOverride& override = g_advancedSettings.m_videoAdjustRefreshOverrides[i];
+    RefreshOverride& override = CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_videoAdjustRefreshOverrides[i];
 
     if (override.fallback != fallback)
       continue;
@@ -106,13 +111,13 @@ bool CResolutionUtils::FindResolutionFromOverride(float fps, int width, bool is3
           if (fallback)
           {
             CLog::Log(LOGDEBUG, "Found Resolution %s (%d) from fallback (refreshmin:%.3f refreshmax:%.3f)",
-                      info.strMode.c_str(), resolution,
+                      info.strMode.c_str(), static_cast<int>(resolution),
                       override.refreshmin, override.refreshmax);
           }
           else
           {
             CLog::Log(LOGDEBUG, "Found Resolution %s (%d) from override of fps %.3f (fpsmin:%.3f fpsmax:%.3f refreshmin:%.3f refreshmax:%.3f)",
-                      info.strMode.c_str(), resolution, fps,
+                      info.strMode.c_str(), static_cast<int>(resolution), fps,
                       override.fpsmin, override.fpsmax, override.refreshmin, override.refreshmax);
           }
 
@@ -138,7 +143,7 @@ void CResolutionUtils::FindResolutionFromFpsMatch(float fps, int width, bool is3
   if (weight >= maxWeight) //not a very good match, try a 2:3 cadence instead
   {
     CLog::Log(LOGDEBUG, "Resolution %s (%d) not a very good match for fps %.3f (weight: %.3f), trying 2:3 cadence",
-        curr.strMode.c_str(), resolution, fps, weight);
+        curr.strMode.c_str(), static_cast<int>(resolution), fps, weight);
 
     resolution = FindClosestResolution(fps, width, is3D, 2.5, resolution, weight);
     curr = g_graphicsContext.GetResInfo(resolution);
@@ -146,7 +151,7 @@ void CResolutionUtils::FindResolutionFromFpsMatch(float fps, int width, bool is3
     if (weight >= maxWeight) //2:3 cadence not a good match
     {
       CLog::Log(LOGDEBUG, "Resolution %s (%d) not a very good match for fps %.3f with 2:3 cadence (weight: %.3f), choosing 60 hertz",
-          curr.strMode.c_str(), resolution, fps, weight);
+          curr.strMode.c_str(), static_cast<int>(resolution), fps, weight);
 
       //get the resolution with the refreshrate closest to 60 hertz
       for (size_t i = (int)RES_DESKTOP; i < CDisplaySettings::GetInstance().ResolutionInfoSize(); i++)

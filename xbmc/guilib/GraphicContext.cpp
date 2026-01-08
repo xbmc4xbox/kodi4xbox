@@ -20,13 +20,15 @@
 
 #include "system.h"
 #include "GraphicContext.h"
-#include "Application.h"
+#include "application/Application.h"
 #include "cores/DataCacheCore.h"
+#include "guilib/GUIComponent.h"
 #include "messaging/ApplicationMessenger.h"
 #include "settings/AdvancedSettings.h"
 #include "settings/DisplaySettings.h"
-#include "settings/lib/Setting.h"
 #include "settings/Settings.h"
+#include "settings/SettingsComponent.h"
+#include "settings/lib/Setting.h"
 #include "windowing/WindowingFactory.h"
 #include "TextureManager.h"
 #include "input/InputManager.h"
@@ -37,7 +39,7 @@ using namespace KODI::MESSAGING;
 extern bool g_fullScreen;
 
 /* quick access to a skin setting, fine unless we starts clearing video settings */
-static CSettingInt* g_guiSkinzoom = NULL;
+static int g_guiSkinzoom = 0;
 
 CGraphicContext::CGraphicContext(void) :
   m_iScreenHeight(576),
@@ -62,7 +64,7 @@ CGraphicContext::~CGraphicContext(void)
 {
 }
 
-void CGraphicContext::OnSettingChanged(const CSetting *setting)
+void CGraphicContext::OnSettingChanged(const std::shared_ptr<const CSetting>& setting)
 {
   if (setting == NULL)
     return;
@@ -296,7 +298,7 @@ void CGraphicContext::SetFullScreenVideo(bool bOnOff)
 
   if(m_bFullScreenRoot)
   {
-    bool allowDesktopRes = CSettings::GetInstance().GetInt(CSettings::SETTING_VIDEOPLAYER_ADJUSTREFRESHRATE) == ADJUST_REFRESHRATE_ALWAYS;
+    bool allowDesktopRes = CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_VIDEOPLAYER_ADJUSTREFRESHRATE) == ADJUST_REFRESHRATE_ALWAYS;
     if (m_bFullScreenVideo || (!allowDesktopRes && g_application.m_pPlayer->IsPlayingVideo()))
       g_application.m_pPlayer->TriggerUpdateResolution();
     else if (CDisplaySettings::GetInstance().GetCurrentResolution() > RES_DESKTOP)
@@ -344,7 +346,7 @@ void CGraphicContext::SetVideoResolution(RESOLUTION res, bool forceUpdate)
   }
   else
   {
-    CApplicationMessenger::GetInstance().SendMsg(TMSG_SETVIDEORESOLUTION, res, forceUpdate ? 1 : 0);
+    CServiceBroker::GetAppMessenger()->SendMsg(TMSG_SETVIDEORESOLUTION, res, forceUpdate ? 1 : 0);
   }
 }
 
@@ -359,19 +361,19 @@ void CGraphicContext::SetVideoResolutionInternal(RESOLUTION res, bool forceUpdat
   }
 
   // If we are switching to the same resolution and same window/full-screen, no need to do anything
-  if (!forceUpdate && res == lastRes && m_bFullScreenRoot == g_advancedSettings.m_fullScreen)
+  if (!forceUpdate && res == lastRes && m_bFullScreenRoot == CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_fullScreen)
   {
     return;
   }
 
   if (res >= RES_DESKTOP)
   {
-    g_advancedSettings.m_fullScreen = true;
+    CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_fullScreen = true;
     m_bFullScreenRoot = true;
   }
   else
   {
-    g_advancedSettings.m_fullScreen = false;
+    CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_fullScreen = false;
     m_bFullScreenRoot = false;
   }
 
@@ -387,7 +389,7 @@ void CGraphicContext::SetVideoResolutionInternal(RESOLUTION res, bool forceUpdat
   m_scissors.SetRect(0, 0, (float)m_iScreenWidth, (float)m_iScreenHeight);
   m_Resolution    = res;
 
-  if (g_advancedSettings.m_fullScreen)
+  if (CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_fullScreen)
   {
 #if defined (TARGET_DARWIN) || defined (TARGET_WINDOWS)
     bool blankOtherDisplays = CSettings::GetInstance().GetBool(CSettings::SETTING_VIDEOSCREEN_BLANKDISPLAYS);
@@ -402,8 +404,8 @@ void CGraphicContext::SetVideoResolutionInternal(RESOLUTION res, bool forceUpdat
     g_Windowing.ResizeWindow(info_org.iWidth, info_org.iHeight, -1, -1);
 
   // update anyone that relies on sizing information
-  CInputManager::GetInstance().SetMouseResolution(info_org.iWidth, info_org.iHeight, 1, 1);
-  g_windowManager.SendMessage(GUI_MSG_NOTIFY_ALL, 0, 0, GUI_MSG_WINDOW_RESIZE);
+  // CServiceBroker::GetInputManager().SetMouseResolution(info_org.iWidth, info_org.iHeight, 1, 1);
+  CServiceBroker::GetGUI()->GetWindowManager().SendMessage(GUI_MSG_NOTIFY_ALL, 0, 0, GUI_MSG_WINDOW_RESIZE);
 
   Unlock();
 }
@@ -663,12 +665,7 @@ void CGraphicContext::GetGUIScaling(const RESOLUTION_INFO &res, float &scaleX, f
     float fToWidth    = (float)info.Overscan.right  - fToPosX;
     float fToHeight   = (float)info.Overscan.bottom - fToPosY;
 
-    if(!g_guiSkinzoom) // lookup gui setting if we didn't have it already
-      g_guiSkinzoom = (CSettingInt*)CSettings::GetInstance().GetSetting(CSettings::SETTING_LOOKANDFEEL_SKINZOOM);
-
-    float fZoom = 1.0f;
-    if(g_guiSkinzoom)
-      fZoom *= (100 + g_guiSkinzoom->GetValue()) * 0.01f;
+    float fZoom = (100 + CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_LOOKANDFEEL_SKINZOOM)) * 0.01f;
 
     fZoom -= 1.0f;
     fToPosX -= fToWidth * fZoom * 0.5f;
@@ -857,7 +854,7 @@ void CGraphicContext::ToggleFullScreen()
 
 void CGraphicContext::SetMediaDir(const std::string &strMediaDir)
 {
-  g_TextureManager.SetTexturePath(strMediaDir);
+  CServiceBroker::GetGUI()->GetTextureManager().SetTexturePath(strMediaDir);
   m_strMediaDir = strMediaDir;
 }
 

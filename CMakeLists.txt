@@ -616,6 +616,8 @@ add_executable(xbmc
   xbmc/weather/GUIWindowWeather.cpp
   xbmc/weather/WeatherJob.cpp
   xbmc/weather/WeatherManager.cpp
+  xbmc/windowing/WinSystem.cpp
+  xbmc/windowing/xbox/WinSystemXboxGL.cpp
   xbmc/windows/GUIMediaWindow.cpp
   xbmc/windows/GUIWindowFileManager.cpp
   xbmc/windows/GUIWindowHome.cpp

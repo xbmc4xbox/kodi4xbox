@@ -431,7 +431,7 @@ void CDisplaySettings::SettingOptionsResolutionsFiller(const SettingConstPtr& se
   RESOLUTION res = RES_INVALID;
 
   std::vector<RESOLUTION> resolutions;
-  g_graphicsContext.GetAllowedResolutions(resolutions, false);
+  g_graphicsContext.GetAllowedResolutions(resolutions);
   for (auto resolution : resolutions)
   {
     RESOLUTION_INFO res1 = CDisplaySettings::GetInstance().GetCurrentResolutionInfo();
@@ -439,11 +439,10 @@ void CDisplaySettings::SettingOptionsResolutionsFiller(const SettingConstPtr& se
 
     list.emplace_back(res2.strMode, resolution);
 
-    // FIXME: currently 480i and 480p will be same :(
     if (
         res1.iWidth  == res2.iWidth &&
-        res1.iHeight == res2.iHeight/* &&
-        (res1.dwFlags & D3DPRESENTFLAG_INTERLACED) == (res2.dwFlags & D3DPRESENTFLAG_INTERLACED)*/)
+        res1.iHeight == res2.iHeight &&
+        (res1.dwFlags & D3DPRESENTFLAG_INTERLACED) == (res2.dwFlags & D3DPRESENTFLAG_INTERLACED))
       res = resolution;
   }
 

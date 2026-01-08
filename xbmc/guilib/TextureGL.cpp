@@ -22,7 +22,7 @@
 
 #include "system.h"
 #include "ServiceBroker.h"
-#include "guilib/GraphicContext.h"
+#include "windowing/WindowingFactory.h"
 #include "utils/log.h"
 #include "utils/GLUtils.h"
 #include "guilib/TextureManager.h"
@@ -101,7 +101,7 @@ void CGLTexture::LoadToGPU()
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-  unsigned int maxSize = g_graphicsContext.GetMaxTextureSize();
+  unsigned int maxSize = g_Windowing.GetMaxTextureSize();
   if (m_textureHeight > maxSize)
   {
     CLog::Log(LOGERROR, "GL: Image height {} too big to fit into single texture unit, truncating to {}", m_textureHeight, maxSize);

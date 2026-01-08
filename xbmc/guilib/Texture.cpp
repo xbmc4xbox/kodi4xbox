@@ -19,7 +19,7 @@
  */
 
 #include "Texture.h"
-#include "guilib/GraphicContext.h"
+#include "windowing/WindowingFactory.h"
 #include "utils/log.h"
 #include "utils/URIUtils.h"
 #include "filesystem/File.h"
@@ -98,8 +98,8 @@ void CTexture::Allocate(unsigned int width, unsigned int height, unsigned int fo
 
   // check for max texture size
   #define CLAMP(x, y) { if (x > y) x = y; }
-  CLAMP(m_textureWidth, g_graphicsContext.GetMaxTextureSize());
-  CLAMP(m_textureHeight, g_graphicsContext.GetMaxTextureSize());
+  CLAMP(m_textureWidth, g_Windowing.GetMaxTextureSize());
+  CLAMP(m_textureHeight, g_Windowing.GetMaxTextureSize());
   CLAMP(m_imageWidth, m_textureWidth);
   CLAMP(m_imageHeight, m_textureHeight);
 
@@ -235,8 +235,8 @@ bool CTexture::LoadFromFileInternal(const std::string& texturePath, unsigned int
     return false;
   }
 
-  unsigned int width = maxWidth ? std::min(maxWidth, g_graphicsContext.GetMaxTextureSize()) : g_graphicsContext.GetMaxTextureSize();
-  unsigned int height = maxHeight ? std::min(maxHeight, g_graphicsContext.GetMaxTextureSize()) : g_graphicsContext.GetMaxTextureSize();
+  unsigned int width = maxWidth ? std::min(maxWidth, g_Windowing.GetMaxTextureSize()) : g_Windowing.GetMaxTextureSize();
+  unsigned int height = maxHeight ? std::min(maxHeight, g_Windowing.GetMaxTextureSize()) : g_Windowing.GetMaxTextureSize();
 
   // Read image into memory to use our vfs
   XFILE::CFile file;
@@ -284,8 +284,8 @@ bool CTexture::LoadFromFileInMem(unsigned char* buffer, size_t size, const std::
   if (!buffer || !size)
     return false;
 
-  unsigned int width = maxWidth ? std::min(maxWidth, g_graphicsContext.GetMaxTextureSize()) : g_graphicsContext.GetMaxTextureSize();
-  unsigned int height = maxHeight ? std::min(maxHeight, g_graphicsContext.GetMaxTextureSize()) : g_graphicsContext.GetMaxTextureSize();
+  unsigned int width = maxWidth ? std::min(maxWidth, g_Windowing.GetMaxTextureSize()) : g_Windowing.GetMaxTextureSize();
+  unsigned int height = maxHeight ? std::min(maxHeight, g_Windowing.GetMaxTextureSize()) : g_Windowing.GetMaxTextureSize();
 
   IImage* pImage = ImageFactory::CreateLoaderFromMimeType(mimeType);
   if(!LoadIImage(pImage, buffer, size, width, height))
