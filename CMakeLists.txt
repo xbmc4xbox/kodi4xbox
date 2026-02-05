@@ -119,6 +119,7 @@ add_executable(xbmc
   xbmc/addons/settings/AddonSettings.cpp
   xbmc/addons/settings/SettingUrlEncodedString.cpp
   xbmc/application/AppParams.cpp
+  xbmc/application/AppEnvironment.cpp
   xbmc/application/Application.cpp
   xbmc/application/ApplicationActionListeners.cpp
   xbmc/application/ApplicationPlayer.cpp
@@ -127,6 +128,7 @@ add_executable(xbmc
   xbmc/application/ApplicationSettingsHandling.cpp
   xbmc/application/ApplicationSkinHandling.cpp
   xbmc/application/ApplicationStackHelper.cpp
+  xbmc/application/AppParamParser.cpp
   xbmc/commons/Exception.cpp
   xbmc/commons/ilog.cpp
   xbmc/cores/DataCacheCore.cpp
