@@ -23,5 +23,8 @@ namespace XFILE
     virtual bool Exists(const CURL& url) override;
     virtual bool Remove(const CURL& url) override;
     virtual bool RemoveRecursive(const CURL& url) override;
+
+  private:
+    bool Create(std::string path) const;
   };
 }
