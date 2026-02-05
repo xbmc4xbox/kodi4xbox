@@ -11,10 +11,22 @@
 #include "platform/xbmc.h"
 
 #include <hal/video.h>
+#include <nxdk/mount.h>
+#include <nxdk/path.h>
 
 int main()
 {
   XVideoSetMode(640, 480, 32, REFRESH_DEFAULT);
+
+  nxUnmountDrive('D');
+  nxMountDrive('D', "\\Device\\CdRom0");
+  nxMountDrive('C', "\\Device\\Harddisk0\\Partition2\\");
+  nxMountDrive('E', "\\Device\\Harddisk0\\Partition1\\");
+  nxMountDrive('X', "\\Device\\Harddisk0\\Partition3\\");
+  nxMountDrive('Y', "\\Device\\Harddisk0\\Partition4\\");
+  nxMountDrive('Z', "\\Device\\Harddisk0\\Partition5\\");
+  nxMountDrive('F', "\\Device\\Harddisk0\\Partition6\\");
+  nxMountDrive('Q', "\\Device\\Harddisk0\\Partition1\\UDATA\\FFXXFFXX\\");
 
   char* argv[] = {"", "--fullscreen", "--standalone"};
   CAppParamParser appParamParser;
