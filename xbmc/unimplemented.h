@@ -4,9 +4,6 @@
 #ifndef UNIMPLEMENTED_H
 #define UNIMPLEMENTED_H
 #include <windows.h>
-
-extern "C" void* __RTtypeid(void * inptr);
-
 #include <string>
 #include <wchar.h>
 #include <locale>
@@ -26,7 +23,5 @@ int MultiByteToWideChar(unsigned int codePage, unsigned long flags,
                         wchar_t* wideStr, int wideLen);
 
 BOOL LocalFileTimeToFileTime(const FILETIME *lpLocalFileTime, LPFILETIME lpFileTime);
-
-double atof (const char* str);
 
 #endif // UNIMPLEMENTED_H

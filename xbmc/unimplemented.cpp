@@ -1,10 +1,5 @@
 #include "unimplemented.h"
 
-void* __RTtypeid(void * inptr)
-{
-  return nullptr;
-}
-
 int WideCharToMultiByte(unsigned int codePage, unsigned long flags,
                         const wchar_t* wideStr, int wideLen,
                         char* multiByteStr, int multiByteLen,
@@ -69,9 +64,4 @@ BOOL LocalFileTimeToFileTime(const FILETIME *lpLocalFileTime, LPFILETIME lpFileT
   lpFileTime->dwLowDateTime = (uint32_t)fileTimeValue;
   lpFileTime->dwHighDateTime = (uint32_t)(fileTimeValue >> 32);
   return 1;
-}
-
-double atof (const char* str)
-{
-  return strtod(str, nullptr);
 }
