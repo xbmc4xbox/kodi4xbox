@@ -243,6 +243,8 @@ void CLangInfo::CRegion::SetGlobalLocale()
   // on FreeBSD, darwin and uClibc-based systems libstdc++ is compiled with
   // "generic" locale support
   std::locale current_locale = std::locale::classic(); // C-Locale
+#ifndef NXDK
+  // DISABLED: This crashes Xbox because of incomplete WIP C++ exceptions
   try
   {
     std::locale lcl = std::locale(strLocale.c_str());
@@ -258,6 +260,9 @@ void CLangInfo::CRegion::SetGlobalLocale()
     current_locale = std::locale::classic();
     strLocale = "C";
   }
+#else
+  strLocale = "C";
+#endif
 
   g_langInfo.m_systemLocale = current_locale; //! @todo move to CLangInfo class
   g_langInfo.m_collationtype = 0;
