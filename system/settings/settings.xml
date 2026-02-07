@@ -3455,7 +3455,7 @@
       <group id="1" label="14260">
         <setting id="debug.showloginfo" type="boolean" label="20191" help="36392">
           <level>1</level>
-          <default>false</default>
+          <default>true</default>
           <control type="toggle" />
         </setting>
         <setting id="debug.extralogging" type="boolean" label="666" help="36394">
