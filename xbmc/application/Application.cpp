@@ -21,6 +21,7 @@
 #include "Application.h"
 
 #include "GUIInfoManager.h"
+#include "LangInfo.h"
 #include "PlayListPlayer.h"
 #include "ServiceManager.h"
 #include "URL.h"
@@ -227,7 +228,7 @@ bool CApplication::CreateGUI()
   // Transfer the new resolution information to our graphics context
   g_graphicsContext.SetD3DParameters(&m_d3dpp);
   g_graphicsContext.SetVideoResolution(CDisplaySettings::Get().GetCurrentResolution(), TRUE);
-  
+
   if ( FAILED( hr = m_pD3D->CreateDevice(0, D3DDEVTYPE_HAL, NULL,
                                          D3DCREATE_MULTITHREADED | D3DCREATE_HARDWARE_VERTEXPROCESSING,
                                          &m_d3dpp, &m_pd3dDevice ) ) )
@@ -266,7 +267,7 @@ bool CApplication::CreateGUI()
   g_graphicsContext.Get3DDevice()->SetTextureStageState(0, D3DTSS_MINFILTER, D3DTEXF_LINEAR /*g_settings.m_minFilter*/ );
   g_graphicsContext.Get3DDevice()->SetTextureStageState(0, D3DTSS_MAGFILTER, D3DTEXF_LINEAR /*g_settings.m_maxFilter*/ );
   CUtil::InitGamma();
-  
+
   // set GUI res and force the clear of the screen
   g_graphicsContext.SetVideoResolution(CDisplaySettings::Get().GetCurrentResolution(), TRUE, true);
 #endif
@@ -945,12 +946,25 @@ void CApplication::UpdateLibraries()
 
 bool CApplication::SetLanguage(const std::string &strLanguage)
 {
-  return false;
+  // nothing to be done if the language hasn't changed
+  if (strLanguage == CServiceBroker::GetSettingsComponent()->GetSettings()->GetString(CSettings::SETTING_LOCALE_LANGUAGE))
+    return true;
+
+  return CServiceBroker::GetSettingsComponent()->GetSettings()->SetString(CSettings::SETTING_LOCALE_LANGUAGE, strLanguage);
 }
 
 bool CApplication::LoadLanguage(bool reload)
 {
-  return false;
+  // load the configured language
+  if (!g_langInfo.SetLanguage("", reload))
+    return false;
+
+  // set the proper audio and subtitle languages
+  const std::shared_ptr<CSettings> settings = CServiceBroker::GetSettingsComponent()->GetSettings();
+  g_langInfo.SetAudioLanguage(settings->GetString(CSettings::SETTING_LOCALE_AUDIOLANGUAGE));
+  g_langInfo.SetSubtitleLanguage(settings->GetString(CSettings::SETTING_LOCALE_SUBTITLELANGUAGE));
+
+  return true;
 }
 
 void CApplication::SetLoggingIn(bool switchingProfiles)
