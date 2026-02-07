@@ -229,9 +229,9 @@ bool CApplication::CreateGUI()
   if (!g_graphicsContext.IsValidResolution(CDisplaySettings::GetInstance().GetCurrentResolution()))
   {
     // TODO: get best resolution for Xbox and set that one
-    CLog::Log(LOGINFO, "Setting safe mode {}", RES_NTSC_4x3);
+    CLog::Log(LOGINFO, "Setting safe mode {}", RES_DESKTOP);
     // defer saving resolution after window was created
-    CDisplaySettings::GetInstance().SetCurrentResolution(RES_NTSC_4x3);
+    CDisplaySettings::GetInstance().SetCurrentResolution(RES_DESKTOP);
     sav_res = true;
   }
 
@@ -266,7 +266,7 @@ bool CApplication::CreateGUI()
   }
 
   if (sav_res)
-    CDisplaySettings::GetInstance().SetCurrentResolution(RES_NTSC_4x3, true);
+    CDisplaySettings::GetInstance().SetCurrentResolution(RES_DESKTOP, true);
 
   m_pGUI.reset(new CGUIComponent());
   m_pGUI->Init();

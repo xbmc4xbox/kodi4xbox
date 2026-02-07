@@ -355,7 +355,7 @@ void CGraphicContext::SetVideoResolutionInternal(RESOLUTION res, bool forceUpdat
   RESOLUTION lastRes = m_Resolution;
 
   // If the user asked us to guess, go with desktop
-  if (res == RES_AUTORES || !IsValidResolution(res))
+  if (!IsValidResolution(res))
   {
     res = RES_DESKTOP;
   }

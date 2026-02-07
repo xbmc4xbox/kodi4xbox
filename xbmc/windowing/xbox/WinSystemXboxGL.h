@@ -39,12 +39,16 @@ public:
   bool CreateNewWindow(const std::string& name, bool fullScreen, RESOLUTION_INFO& res) override;
   bool ResizeWindow(int newWidth, int newHeight, int newLeft, int newTop) override;
   bool SetFullScreen(bool fullScreen, RESOLUTION_INFO& res, bool blankOtherDisplays) override;
+  void UpdateResolutions() override;
 
   bool IsExtSupported(const char* extension) override;
 
 protected:
   void PresentRenderImpl(bool rendered) override;
   void SetVSyncImpl(bool enable) override;
+
+private:
+  RESOLUTION_INFO GetResolutionInfo(RESOLUTION res);
 };
 
 XBMC_GLOBAL_REF(CWinSystemXboxGL,g_Windowing);

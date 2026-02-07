@@ -92,7 +92,7 @@ struct RESOLUTION_INFO
   std::string strOutput;
   std::string strId;
 public:
-  RESOLUTION_INFO(int width = 640, int height = 480, float aspect = 0, const std::string &mode = "");
+  RESOLUTION_INFO(int width = 720, int height = 480, float aspect = 0, const std::string &mode = "");
   float DisplayRatio() const;
   RESOLUTION_INFO(const RESOLUTION_INFO& res);
 };
