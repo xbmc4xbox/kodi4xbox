@@ -26,7 +26,7 @@
 #include "filesystem/SpecialProtocol.h"
 #include "utils/MathUtils.h"
 #include "utils/log.h"
-#include "guilib/GraphicContext.h"
+#include "windowing/WindowingFactory.h"
 #include "URL.h"
 #include "filesystem/File.h"
 
@@ -318,8 +318,8 @@ bool CGUIFontTTFBase::Load(const std::string& strFilename, float height, float a
 
   m_textureWidth = CTexture::PadPow2(m_textureWidth);
 
-  if (m_textureWidth > g_graphicsContext.GetMaxTextureSize())
-    m_textureWidth = g_graphicsContext.GetMaxTextureSize();
+  if (m_textureWidth > g_Windowing.GetMaxTextureSize())
+    m_textureWidth = g_Windowing.GetMaxTextureSize();
   m_textureScaleX = 1.0f / m_textureWidth;
 
   // set the posX and posY so that our texture will be created on first character write.
@@ -627,9 +627,9 @@ bool CGUIFontTTFBase::CacheCharacter(wchar_t letter, uint32_t style, Character *
         // create the new larger texture
         unsigned int newHeight = m_posY + GetTextureLineHeight();
         // check for max height
-        if (newHeight > g_graphicsContext.GetMaxTextureSize())
+        if (newHeight > g_Windowing.GetMaxTextureSize())
         {
-          CLog::Log(LOGDEBUG, "{}: New cache texture is too large ({} > {} pixels long)", __FUNCTION__, newHeight, g_graphicsContext.GetMaxTextureSize());
+          CLog::Log(LOGDEBUG, "{}: New cache texture is too large ({} > {} pixels long)", __FUNCTION__, newHeight, g_Windowing.GetMaxTextureSize());
           FT_Done_Glyph(glyph);
           return false;
         }
@@ -770,9 +770,7 @@ void CGUIFontTTFBase::RenderCharacter(float posX, float posY, const Character *c
               , b = GET_B(color)
               , a = GET_A(color);
 
-#ifndef _XBOX
   if(g_Windowing.UseLimitedColor())
-#endif
   {
     r = (235 - 16) * r / 255;
     g = (235 - 16) * g / 255;

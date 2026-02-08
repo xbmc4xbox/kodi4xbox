@@ -28,6 +28,7 @@
 #include "GraphicContext.h"
 #include "utils/log.h"
 #include "utils/GLUtils.h"
+#include "windowing/WindowingFactory.h"
 
 // stuff for freetype
 #include <ft2build.h>
@@ -97,7 +98,9 @@ void CGUIFontTTFGL::Begin()
     }
 
     // Turn Blending On
-    // glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
+#ifndef _XBOX
+    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
+#endif
     glEnable(GL_BLEND);
 #ifdef HAS_GL
     glEnable(GL_TEXTURE_2D);
@@ -117,9 +120,7 @@ void CGUIFontTTFGL::Begin()
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     VerifyGLState();
 
-#ifndef _XBOX
     if(g_Windowing.UseLimitedColor())
-#endif
     {
       glActiveTexture(GL_TEXTURE1);
       glBindTexture(GL_TEXTURE_2D, m_nTexture); // dummy bind
@@ -157,16 +158,22 @@ void CGUIFontTTFGL::End()
     return;
 
 #ifdef HAS_GL
-  // glPushClientAttrib(GL_CLIENT_VERTEX_ARRAY_BIT);
+#ifndef _XBOX
+  glPushClientAttrib(GL_CLIENT_VERTEX_ARRAY_BIT);
+#endif
 
   glColorPointer   (4, GL_UNSIGNED_BYTE, sizeof(SVertex), (char*)m_vertex + offsetof(SVertex, r));
   glVertexPointer  (3, GL_FLOAT        , sizeof(SVertex), (char*)m_vertex + offsetof(SVertex, x));
   glTexCoordPointer(2, GL_FLOAT        , sizeof(SVertex), (char*)m_vertex + offsetof(SVertex, u));
+#ifndef _XBOX
   glEnableClientState(GL_COLOR_ARRAY);
   glEnableClientState(GL_VERTEX_ARRAY);
   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+#endif
   glDrawArrays(GL_QUADS, 0, m_vertex_count);
-  // glPopClientAttrib();
+#ifndef _XBOX
+  glPopClientAttrib();
+#endif
 
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_2D, 0);

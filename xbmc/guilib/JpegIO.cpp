@@ -21,7 +21,7 @@
 */
 
 #include "ServiceBroker.h"
-#include "guilib/GraphicContext.h"
+#include "windowing/WindowingFactory.h"
 #include "settings/AdvancedSettings.h"
 #include "settings/SettingsComponent.h"
 #include "filesystem/File.h"
@@ -319,7 +319,7 @@ bool CJpegIO::Read(unsigned char* buffer, unsigned int bufSize, unsigned int min
 
     m_cinfo.scale_denom = 8;
     m_cinfo.out_color_space = JCS_RGB;
-    unsigned int maxtexsize = g_graphicsContext.GetMaxTextureSize();
+    unsigned int maxtexsize = g_Windowing.GetMaxTextureSize();
     for (unsigned int scale = 1; scale <= 8; scale++)
     {
       m_cinfo.scale_num = scale;

@@ -19,8 +19,6 @@
 #include <utility>
 #include <vector>
 
-typedef int DisplayMode;
-
 class TiXmlNode;
 struct IntegerSettingOption;
 struct StringSettingOption;
@@ -77,6 +75,7 @@ public:
   void ApplyCalibrations();
   void UpdateCalibrations();
   void ClearCalibrations();
+  void ClearCustomResolutions();
 
   float GetZoomAmount() const { return m_zoomAmount; }
   void SetZoomAmount(float zoomAmount) { m_zoomAmount = zoomAmount; }

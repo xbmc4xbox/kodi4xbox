@@ -27,6 +27,7 @@
 #include "settings/AdvancedSettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
+#include "windowing/WindowingFactory.h"
 
 using namespace XFILE;
 
@@ -55,17 +56,13 @@ void CSplash::Show(const std::string& message /* = "" */)
   }
 
   g_graphicsContext.Lock();
-#if 0
-  g_graphicsContext.Get3DDevice()->Clear(0, NULL, D3DCLEAR_TARGET, 0, 0, 0);
-#endif
+  g_graphicsContext.Clear();
 
   RESOLUTION_INFO res = g_graphicsContext.GetResInfo();
   g_graphicsContext.SetRenderingResolution(res, true);
 
   //render splash image
-#if 0
-  g_graphicsContext.Get3DDevice()->BeginScene();
-#endif
+  g_Windowing.BeginRender();
 
   m_image->AllocResources();
   m_image->Render();
@@ -94,9 +91,7 @@ void CSplash::Show(const std::string& message /* = "" */)
   }
 
   //show it on screen
-#if 0
-  g_graphicsContext.Get3DDevice()->BlockUntilVerticalBlank();
-  g_graphicsContext.Get3DDevice()->Present( NULL, NULL, NULL, NULL );
-#endif
+  g_Windowing.EndRender();
+  g_graphicsContext.Flip(true, false);
   g_graphicsContext.Unlock();
 }

@@ -591,7 +591,7 @@ const CTextureArray& CGUITextureManager::Load(const std::string& strTextureName,
   end = CurrentHostCounter();
   freq = CurrentHostFrequency();
   char temp[200];
-  sprintf(temp, "Load %s: %.1fms%s\n", strPath.c_str(), 1000.f * (end - start) / freq, (bundle >= 0) ? " (bundled)" : "");
+  sprintf(temp, "Load {}: %.1fms{}\n", strPath.c_str(), 1000.f * (end - start) / freq, (bundle >= 0) ? " (bundled)" : "");
   OutputDebugString(temp);
 #endif
 

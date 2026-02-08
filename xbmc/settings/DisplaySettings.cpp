@@ -48,7 +48,7 @@ static RESOLUTION_INFO EmptyModifiableResolution;
 
 CDisplaySettings::CDisplaySettings()
 {
-  m_resolutions.resize(RES_AUTORES);
+  m_resolutions.resize(RES_CUSTOM);
 
   m_zoomAmount = 1.0f;
   m_pixelRatio = 1.0f;
@@ -167,7 +167,7 @@ void CDisplaySettings::Clear()
   std::unique_lock<CCriticalSection> lock(m_critical);
   m_calibrations.clear();
   m_resolutions.clear();
-  m_resolutions.resize(RES_AUTORES);
+  m_resolutions.resize(RES_CUSTOM);
 
   m_zoomAmount = 1.0f;
   m_pixelRatio = 1.0f;
@@ -343,7 +343,7 @@ void CDisplaySettings::ApplyCalibrations()
   for (ResolutionInfos::const_iterator itCal = m_calibrations.begin(); itCal != m_calibrations.end(); ++itCal)
   {
     // find resolutions
-    for (size_t res = RES_AUTORES; res < m_resolutions.size(); ++res)
+    for (size_t res = RES_DESKTOP; res < m_resolutions.size(); ++res)
     {
       if (StringUtils::EqualsNoCase(itCal->strMode, m_resolutions[res].strMode))
       {
@@ -431,7 +431,7 @@ void CDisplaySettings::SettingOptionsResolutionsFiller(const SettingConstPtr& se
   RESOLUTION res = RES_INVALID;
 
   std::vector<RESOLUTION> resolutions;
-  g_graphicsContext.GetAllowedResolutions(resolutions, false);
+  g_graphicsContext.GetAllowedResolutions(resolutions);
   for (auto resolution : resolutions)
   {
     RESOLUTION_INFO res1 = CDisplaySettings::GetInstance().GetCurrentResolutionInfo();
@@ -439,14 +439,22 @@ void CDisplaySettings::SettingOptionsResolutionsFiller(const SettingConstPtr& se
 
     list.emplace_back(res2.strMode, resolution);
 
-    // FIXME: currently 480i and 480p will be same :(
     if (
         res1.iWidth  == res2.iWidth &&
-        res1.iHeight == res2.iHeight/* &&
-        (res1.dwFlags & D3DPRESENTFLAG_INTERLACED) == (res2.dwFlags & D3DPRESENTFLAG_INTERLACED)*/)
+        res1.iHeight == res2.iHeight &&
+        (res1.dwFlags & D3DPRESENTFLAG_INTERLACED) == (res2.dwFlags & D3DPRESENTFLAG_INTERLACED))
       res = resolution;
   }
 
   if (res != RES_INVALID)
     current = res;
+}
+
+void CDisplaySettings::ClearCustomResolutions()
+{
+  if (m_resolutions.size() > RES_CUSTOM)
+  {
+    std::vector<RESOLUTION_INFO>::iterator firstCustom = m_resolutions.begin()+RES_CUSTOM;
+    m_resolutions.erase(firstCustom, m_resolutions.end());
+  }
 }

@@ -29,6 +29,7 @@
 #include "messaging/IMessageTarget.h"
 #include "playlists/PlayListTypes.h"
 #include "utils/GlobalsHandling.h"
+#include "guilib/Resolution.h"
 
 #include <atomic>
 #include <chrono>
@@ -85,6 +86,7 @@ public:
   void Render() override;
 
   bool CreateGUI();
+  bool InitWindow(RESOLUTION res = RES_INVALID);
 
   bool Stop(int exitCode);
   bool IsCurrentThread() const;

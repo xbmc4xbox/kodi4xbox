@@ -10,14 +10,11 @@
 #include "application/AppParamParser.h"
 #include "platform/xbmc.h"
 
-#include <hal/video.h>
 #include <nxdk/mount.h>
 #include <nxdk/path.h>
 
 int main()
 {
-  XVideoSetMode(640, 480, 32, REFRESH_DEFAULT);
-
   nxUnmountDrive('D');
   nxMountDrive('D', "\\Device\\CdRom0");
   nxMountDrive('C', "\\Device\\Harddisk0\\Partition2\\");
