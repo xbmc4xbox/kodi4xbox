@@ -238,7 +238,7 @@ void CGUIDialogSelect::Sort(bool bSortOrder /*=true*/)
 void CGUIDialogSelect::SetSelected(int iSelected)
 {
   if (iSelected < 0 || iSelected >= (int)m_vecList->Size() ||
-      m_vecList->Get(iSelected).get() == NULL) 
+      m_vecList->Get(iSelected).get() == NULL)
     return;
 
   // only set m_iSelected if there is no multi-select
@@ -318,9 +318,9 @@ void CGUIDialogSelect::OnInitWindow()
   }
   m_viewControl.SetCurrentView(m_useDetails ? CONTROL_DETAILED_LIST : CONTROL_SIMPLE_LIST);
 
-  SET_CONTROL_LABEL(CONTROL_NUMBER_OF_ITEMS, StringUtils::Format("%i %s",
+  SET_CONTROL_LABEL(CONTROL_NUMBER_OF_ITEMS, StringUtils::Format("{} {}",
       m_vecList->Size(), g_localizeStrings.Get(127).c_str()));
-  
+
   if (m_multiSelection)
     EnableButton(true, 186);
 

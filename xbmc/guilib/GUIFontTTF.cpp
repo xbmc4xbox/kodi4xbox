@@ -547,12 +547,12 @@ CGUIFontTTFBase::Character* CGUIFontTTFBase::GetCharacter(character_t chr)
   if (nestedBeginCount) End();
   if (!CacheCharacter(letter, style, m_char + low))
   { // unable to cache character - try clearing them all out and starting over
-    CLog::Log(LOGDEBUG, "%s: Unable to cache character.  Clearing character cache of %i characters", __FUNCTION__, m_numChars);
+    CLog::Log(LOGDEBUG, "{}: Unable to cache character.  Clearing character cache of {} characters", __FUNCTION__, m_numChars);
     ClearCharacterCache();
     low = 0;
     if (!CacheCharacter(letter, style, m_char + low))
     {
-      CLog::Log(LOGERROR, "%s: Unable to cache character (out of memory?)", __FUNCTION__);
+      CLog::Log(LOGERROR, "{}: Unable to cache character (out of memory?)", __FUNCTION__);
       if (nestedBeginCount) Begin();
       m_nestedBeginCount = nestedBeginCount;
       return NULL;
@@ -629,7 +629,7 @@ bool CGUIFontTTFBase::CacheCharacter(wchar_t letter, uint32_t style, Character *
         // check for max height
         if (newHeight > g_graphicsContext.GetMaxTextureSize())
         {
-          CLog::Log(LOGDEBUG, "%s: New cache texture is too large (%u > %u pixels long)", __FUNCTION__, newHeight, g_graphicsContext.GetMaxTextureSize());
+          CLog::Log(LOGDEBUG, "{}: New cache texture is too large ({} > {} pixels long)", __FUNCTION__, newHeight, g_graphicsContext.GetMaxTextureSize());
           FT_Done_Glyph(glyph);
           return false;
         }
@@ -638,7 +638,7 @@ bool CGUIFontTTFBase::CacheCharacter(wchar_t letter, uint32_t style, Character *
         if(!newTexture)
         {
           FT_Done_Glyph(glyph);
-          CLog::Log(LOGDEBUG, "%s: Failed to allocate new texture of height %u", __FUNCTION__, newHeight);
+          CLog::Log(LOGDEBUG, "{}: Failed to allocate new texture of height {}", __FUNCTION__, newHeight);
           return false;
         }
         m_texture = std::move(newTexture);
@@ -648,7 +648,7 @@ bool CGUIFontTTFBase::CacheCharacter(wchar_t letter, uint32_t style, Character *
     if(!m_texture)
     {
       FT_Done_Glyph(glyph);
-      CLog::Log(LOGDEBUG, "%s: no texture to cache character to", __FUNCTION__);
+      CLog::Log(LOGDEBUG, "{}: no texture to cache character to", __FUNCTION__);
       return false;
     }
   }

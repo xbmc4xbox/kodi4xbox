@@ -118,7 +118,7 @@ bool CGUIIncludes::LoadIncludes(const std::string &includeFile)
   CXBMCTinyXML doc;
   if (!doc.LoadFile(includeFile))
   {
-    CLog::Log(LOGINFO, "Error loading includes.xml file (%s): %s (row=%i, col=%i)", includeFile.c_str(), doc.ErrorDesc(), doc.ErrorRow(), doc.ErrorCol());
+    CLog::Log(LOGINFO, "Error loading includes.xml file ({}): {} (row={}, col={})", includeFile.c_str(), doc.ErrorDesc(), doc.ErrorRow(), doc.ErrorCol());
     return false;
   }
   // success, load the tags
@@ -151,12 +151,12 @@ bool CGUIIncludes::LoadIncludesFromXML(const TiXmlElement *root)
       Params defaultParams;
       bool haveParamTags = GetParameters(node, "default", defaultParams);
       if (haveParamTags && !definitionTag)
-        CLog::Log(LOGWARNING, "Skin has invalid include definition: %s", tagName.c_str());
+        CLog::Log(LOGWARNING, "Skin has invalid include definition: {}", tagName.c_str());
       else
         m_includes.insert({ tagName, { *includeBody, std::move(defaultParams) } });
     }
     else if (node->Attribute("file"))
-    { 
+    {
       const char *condition = node->Attribute("condition");
       if (condition)
       { // check this condition
@@ -352,7 +352,7 @@ void CGUIIncludes::ResolveIncludesForNode(TiXmlElement *node, std::map<INFO::Inf
     }
     else
     { // invalid include
-      CLog::Log(LOGWARNING, "Skin has invalid include: %s", tagName.c_str());
+      CLog::Log(LOGWARNING, "Skin has invalid include: {}", tagName.c_str());
       include = include->NextSiblingElement("include");
     }
   }

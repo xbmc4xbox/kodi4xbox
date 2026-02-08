@@ -537,8 +537,8 @@ bool CJpegIO::CreateThumbnailFromSurface(unsigned char* buffer, unsigned int wid
 // override libjpeg's error function to avoid an exit() call
 void CJpegIO::jpeg_error_exit(j_common_ptr cinfo)
 {
-  std::string msg = StringUtils::Format("Error %i: %s",cinfo->err->msg_code, cinfo->err->jpeg_message_table[cinfo->err->msg_code]);
-  CLog::Log(LOGWARNING, "JpegIO: %s", msg.c_str());
+  std::string msg = StringUtils::Format("Error {}: {}",cinfo->err->msg_code, cinfo->err->jpeg_message_table[cinfo->err->msg_code]);
+  CLog::Log(LOGWARNING, "JpegIO: {}", msg.c_str());
 
   my_error_mgr *myerr = (my_error_mgr*)cinfo->err;
   longjmp(myerr->setjmp_buffer, 1);

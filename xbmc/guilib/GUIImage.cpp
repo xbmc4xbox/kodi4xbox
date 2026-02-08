@@ -37,7 +37,7 @@ CGUIImage::CGUIImage(int parentID, int controlID, float posX, float posY, float 
 }
 
 CGUIImage::CGUIImage(const CGUIImage &left)
-  : CGUIControl(left), 
+  : CGUIControl(left),
   m_image(left.m_image),
   m_info(left.m_info),
   m_texture(left.m_texture),
@@ -358,10 +358,10 @@ void CGUIImage::DumpTextureUse()
   if (m_texture.IsAllocated())
   {
     if (GetID())
-      CLog::Log(LOGDEBUG, "Image control %u using texture %s",
+      CLog::Log(LOGDEBUG, "Image control {} using texture {}",
                 GetID(), m_texture.GetFileName().c_str());
     else
-      CLog::Log(LOGDEBUG, "Using texture %s", m_texture.GetFileName().c_str());
+      CLog::Log(LOGDEBUG, "Using texture {}", m_texture.GetFileName().c_str());
   }
 }
 #endif

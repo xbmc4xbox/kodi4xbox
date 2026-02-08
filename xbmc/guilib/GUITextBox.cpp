@@ -311,7 +311,7 @@ void CGUITextBox::SetMinHeight(float minHeight)
 {
   if (m_minHeight != minHeight)
     SetInvalid();
-  
+
   m_minHeight = minHeight;
 }
 
@@ -412,10 +412,10 @@ std::string CGUITextBox::GetLabel(int info) const
   switch (info)
   {
   case CONTAINER_NUM_PAGES:
-    label = StringUtils::Format("%u", GetNumPages());
+    label = StringUtils::Format("{}", GetNumPages());
     break;
   case CONTAINER_CURRENT_PAGE:
-    label = StringUtils::Format("%u", GetCurrentPage());
+    label = StringUtils::Format("{}", GetCurrentPage());
     break;
   default:
     break;

@@ -104,12 +104,12 @@ void CGLTexture::LoadToGPU()
   unsigned int maxSize = g_graphicsContext.GetMaxTextureSize();
   if (m_textureHeight > maxSize)
   {
-    CLog::Log(LOGERROR, "GL: Image height %d too big to fit into single texture unit, truncating to %u", m_textureHeight, maxSize);
+    CLog::Log(LOGERROR, "GL: Image height {} too big to fit into single texture unit, truncating to {}", m_textureHeight, maxSize);
     m_textureHeight = maxSize;
   }
   if (m_textureWidth > maxSize)
   {
-    CLog::Log(LOGERROR, "GL: Image width %d too big to fit into single texture unit, truncating to %u", m_textureWidth, maxSize);
+    CLog::Log(LOGERROR, "GL: Image width {} too big to fit into single texture unit, truncating to {}", m_textureWidth, maxSize);
 #ifndef HAS_GLES
     glPixelStorei(GL_UNPACK_ROW_LENGTH, m_textureWidth);
     m_textureWidth = maxSize;

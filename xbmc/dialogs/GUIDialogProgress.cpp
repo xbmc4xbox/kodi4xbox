@@ -62,13 +62,13 @@ void CGUIDialogProgress::SetCanCancel(bool bCanCancel)
 
 void CGUIDialogProgress::Open(const std::string &param /* = "" */)
 {
-  CLog::Log(LOGDEBUG, "DialogProgress::Open called %s", m_active ? "(already running)!" : "");
+  CLog::Log(LOGDEBUG, "DialogProgress::Open called {}", m_active ? "(already running)!" : "");
 
   {
     std::unique_lock<CCriticalSection> lock(g_graphicsContext);
     ShowProgressBar(true);
   }
-  
+
   CGUIDialog::Open_Internal(false, param);
 
   while (m_active && IsAnimating(ANIM_TYPE_WINDOW_OPEN))

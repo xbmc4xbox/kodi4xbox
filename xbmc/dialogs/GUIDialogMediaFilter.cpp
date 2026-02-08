@@ -838,7 +838,7 @@ void CGUIDialogMediaFilter::GetRange(const Filter &filter, int &min, int &interv
 
     if (m_mediaType == "episodes")
     {
-      std::string field = StringUtils::Format("CAST(strftime(\"%%s\", c{:02}) AS INTEGER)",
+      std::string field = StringUtils::Format("CAST(strftime(\"%{}\", c{:02}) AS INTEGER)",
                                               VIDEODB_ID_EPISODE_AIRED);
 
       GetMinMax("episode_view", field, min, max);

@@ -327,11 +327,11 @@ EVENT_RESULT GUIScrollBarControl::OnMouseEvent(const CPoint &point, const CMouse
   {
     Move(1);
     return EVENT_RESULT_HANDLED;
-  }  
+  }
   else if (event.m_id == ACTION_GESTURE_NOTIFY)
   {
     return (m_orientation == HORIZONTAL) ? EVENT_RESULT_PAN_HORIZONTAL_WITHOUT_INERTIA : EVENT_RESULT_PAN_VERTICAL_WITHOUT_INERTIA;
-  }  
+  }
   else if (event.m_id == ACTION_GESTURE_BEGIN)
   { // grab exclusive access
     CGUIMessage msg(GUI_MSG_EXCLUSIVE_MOUSE, GetID(), GetParentID());
@@ -339,7 +339,7 @@ EVENT_RESULT GUIScrollBarControl::OnMouseEvent(const CPoint &point, const CMouse
     return EVENT_RESULT_HANDLED;
   }
   else if (event.m_id == ACTION_GESTURE_PAN)
-  { // do the drag 
+  { // do the drag
     SetFromPosition(point);
     return EVENT_RESULT_HANDLED;
   }
@@ -349,13 +349,13 @@ EVENT_RESULT GUIScrollBarControl::OnMouseEvent(const CPoint &point, const CMouse
     SendWindowMessage(msg);
     return EVENT_RESULT_HANDLED;
   }
-  
+
   return EVENT_RESULT_UNHANDLED;
 }
 
 std::string GUIScrollBarControl::GetDescription() const
 {
-  return StringUtils::Format("%i/%i", m_offset, m_numItems);
+  return StringUtils::Format("{}/{}", m_offset, m_numItems);
 }
 
 bool GUIScrollBarControl::UpdateColors()

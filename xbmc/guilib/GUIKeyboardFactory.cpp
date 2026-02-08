@@ -197,7 +197,7 @@ int CGUIKeyboardFactory::ShowAndVerifyPassword(std::string& strPassword, const s
   if (1 > iRetries && strHeading.size())
     strHeadingTemp = strHeading;
   else
-    strHeadingTemp = StringUtils::Format("%s - %i %s",
+    strHeadingTemp = StringUtils::Format("{} - {} {}",
                                          g_localizeStrings.Get(12326).c_str(),
                                          CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_MASTERLOCK_MAXRETRIES) - iRetries,
                                          g_localizeStrings.Get(12343).c_str());

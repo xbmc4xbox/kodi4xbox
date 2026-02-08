@@ -80,7 +80,7 @@ void CLog::LogString(int logLevel, std::string&& logString)
     }
     else if (g_logState.m_repeatCount)
     {
-      std::string strData2 = StringUtils::Format("Previous line repeats %d times.",
+      std::string strData2 = StringUtils::Format("Previous line repeats {} times.",
                                                 g_logState.m_repeatCount);
       PrintDebugString(strData2);
       WriteLogString(g_logState.m_repeatLogLevel, strData2);
@@ -143,7 +143,7 @@ void CLog::MemDump(char *pData, int length)
         strLine += '.';
       alpha++;
     }
-    Log(LOGDEBUG, "%s", strLine.c_str());
+    Log(LOGDEBUG, "{}", strLine.c_str());
   }
 }
 
@@ -153,10 +153,10 @@ void CLog::SetLogLevel(int level)
   if (level >= LOG_LEVEL_NONE && level <= LOG_LEVEL_MAX)
   {
     g_logState.m_logLevel = level;
-    CLog::Log(LOGNOTICE, "Log level changed to \"%s\"", logLevelNames[g_logState.m_logLevel + 1]);
+    CLog::Log(LOGNOTICE, "Log level changed to \"{}\"", logLevelNames[g_logState.m_logLevel + 1]);
   }
   else
-    CLog::Log(LOGERROR, "%s: Invalid log level requested: %d", __FUNCTION__, level);
+    CLog::Log(LOGERROR, "{}: Invalid log level requested: {}", __FUNCTION__, level);
 }
 
 int CLog::GetLogLevel()

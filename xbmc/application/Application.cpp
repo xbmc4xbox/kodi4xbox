@@ -245,8 +245,8 @@ bool CApplication::CreateGUI()
       {
 
         CLog::Log(LOGFATAL, "XBAppEx: Could not create D3D device!" );
-        CLog::Log(LOGFATAL, " width/height:(%ix%i)" , m_d3dpp.BackBufferWidth, m_d3dpp.BackBufferHeight);
-        CLog::Log(LOGFATAL, " refreshrate:%i" , m_d3dpp.FullScreen_RefreshRateInHz);
+        CLog::Log(LOGFATAL, " width/height:({}x{})" , m_d3dpp.BackBufferWidth, m_d3dpp.BackBufferHeight);
+        CLog::Log(LOGFATAL, " refreshrate:{}" , m_d3dpp.FullScreen_RefreshRateInHz);
         if (m_d3dpp.Flags & D3DPRESENTFLAG_WIDESCREEN)
           CLog::Log(LOGFATAL, " 16:9 widescreen");
         else

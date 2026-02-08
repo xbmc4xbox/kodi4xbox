@@ -347,7 +347,7 @@ bool CGUIControl::OnMessage(CGUIMessage& message)
       // if control is disabled then move 2 the next control
       if ( !CanFocus() )
       {
-        CLog::Log(LOGERROR, "Control %u in window %u has been asked to focus, "
+        CLog::Log(LOGERROR, "Control {} in window {} has been asked to focus, "
                             "but it can't",
                   GetID(), GetParentID());
         return false;
@@ -551,7 +551,7 @@ void CGUIControl::SetVisible(bool bVisible, bool setVisState)
   { // reset any visible animations that are in process
     if (IsAnimating(ANIM_TYPE_VISIBLE))
     {
-//        CLog::Log(LOGDEBUG, "Resetting visible animation on control %i (we are %s)", m_controlID, m_visible ? "visible" : "hidden");
+//        CLog::Log(LOGDEBUG, "Resetting visible animation on control {} (we are {})", m_controlID, m_visible ? "visible" : "hidden");
       CAnimation *visibleAnim = GetAnimation(ANIM_TYPE_VISIBLE);
       if (visibleAnim) visibleAnim->ResetAnimation();
     }
@@ -601,12 +601,12 @@ void CGUIControl::UpdateVisibility(const CGUIListItem *item)
     m_visibleFromSkinCondition = m_visibleCondition->Get(INFO::DEFAULT_CONTEXT, item);
     if (!bWasVisible && m_visibleFromSkinCondition)
     { // automatic change of visibility - queue the in effect
-  //    CLog::Log(LOGDEBUG, "Visibility changed to visible for control id %i", m_controlID);
+  //    CLog::Log(LOGDEBUG, "Visibility changed to visible for control id {}", m_controlID);
       QueueAnimation(ANIM_TYPE_VISIBLE);
     }
     else if (bWasVisible && !m_visibleFromSkinCondition)
     { // automatic change of visibility - do the out effect
-  //    CLog::Log(LOGDEBUG, "Visibility changed to hidden for control id %i", m_controlID);
+  //    CLog::Log(LOGDEBUG, "Visibility changed to hidden for control id {}", m_controlID);
       QueueAnimation(ANIM_TYPE_HIDDEN);
     }
   }
@@ -645,7 +645,7 @@ void CGUIControl::SetInitialVisibility()
   {
     m_visibleFromSkinCondition = m_visibleCondition->Get(INFO::DEFAULT_CONTEXT);
     m_visible = m_visibleFromSkinCondition ? VISIBLE : HIDDEN;
-  //  CLog::Log(LOGDEBUG, "Set initial visibility for control %i: %s", m_controlID, m_visible == VISIBLE ? "visible" : "hidden");
+  //  CLog::Log(LOGDEBUG, "Set initial visibility for control {}: {}", m_controlID, m_visible == VISIBLE ? "visible" : "hidden");
   }
   else if (m_visible == DELAYED)
     m_visible = VISIBLE;
@@ -860,12 +860,12 @@ bool CGUIControl::Animate(unsigned int currentTime)
       if (anim.effect == EFFECT_TYPE_ZOOM)
       {
         if (IsVisible())
-          CLog::Log(LOGDEBUG, "Animating control %d with a %s zoom effect %s. Amount is %2.1f, visible=%s", m_controlID, anim.type == ANIM_TYPE_CONDITIONAL ? (anim.lastCondition ? "conditional_on" : "conditional_off") : (anim.type == ANIM_TYPE_VISIBLE ? "visible" : "hidden"), anim.currentProcess == ANIM_PROCESS_NORMAL ? "normal" : "reverse", anim.amount, IsVisible() ? "true" : "false");
+          CLog::Log(LOGDEBUG, "Animating control {} with a {} zoom effect {}. Amount is %2.1f, visible={}", m_controlID, anim.type == ANIM_TYPE_CONDITIONAL ? (anim.lastCondition ? "conditional_on" : "conditional_off") : (anim.type == ANIM_TYPE_VISIBLE ? "visible" : "hidden"), anim.currentProcess == ANIM_PROCESS_NORMAL ? "normal" : "reverse", anim.amount, IsVisible() ? "true" : "false");
       }
       else if (anim.effect == EFFECT_TYPE_FADE)
       {
         if (IsVisible())
-          CLog::Log(LOGDEBUG, "Animating control %d with a %s fade effect %s. Amount is %2.1f. Visible=%s", m_controlID, anim.type == ANIM_TYPE_CONDITIONAL ? (anim.lastCondition ? "conditional_on" : "conditional_off") : (anim.type == ANIM_TYPE_VISIBLE ? "visible" : "hidden"), anim.currentProcess == ANIM_PROCESS_NORMAL ? "normal" : "reverse", anim.amount, IsVisible() ? "true" : "false");
+          CLog::Log(LOGDEBUG, "Animating control {} with a {} fade effect {}. Amount is %2.1f. Visible={}", m_controlID, anim.type == ANIM_TYPE_CONDITIONAL ? (anim.lastCondition ? "conditional_on" : "conditional_off") : (anim.type == ANIM_TYPE_VISIBLE ? "visible" : "hidden"), anim.currentProcess == ANIM_PROCESS_NORMAL ? "normal" : "reverse", anim.amount, IsVisible() ? "true" : "false");
       }
     }*/
   }

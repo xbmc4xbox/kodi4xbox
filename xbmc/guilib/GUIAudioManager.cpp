@@ -266,7 +266,7 @@ std::string GetSoundSkinPath()
   ADDON::AddonPtr addon;
   if (!CServiceBroker::GetAddonMgr().GetAddon(value, addon, ADDON::ADDON_RESOURCE_UISOUNDS))
   {
-    CLog::Log(LOGNOTICE, "Unknown sounds addon '%s'. Setting default sounds.", value.c_str());
+    CLog::Log(LOGNOTICE, "Unknown sounds addon '{}'. Setting default sounds.", value.c_str());
     setting->Reset();
   }
 #endif
@@ -290,12 +290,12 @@ bool CGUIAudioManager::Load()
   //  Load our xml file
   CXBMCTinyXML xmlDoc;
 
-  CLog::Log(LOGINFO, "Loading %s", strSoundsXml.c_str());
+  CLog::Log(LOGINFO, "Loading {}", strSoundsXml.c_str());
 
   //  Load the config file
   if (!xmlDoc.LoadFile(strSoundsXml))
   {
-    CLog::Log(LOGNOTICE, "%s, Line %d\n%s", strSoundsXml.c_str(), xmlDoc.ErrorRow(), xmlDoc.ErrorDesc());
+    CLog::Log(LOGNOTICE, "{}, Line {}\n{}", strSoundsXml.c_str(), xmlDoc.ErrorRow(), xmlDoc.ErrorDesc());
     return false;
   }
 
@@ -303,7 +303,7 @@ bool CGUIAudioManager::Load()
   std::string strValue = pRoot->Value();
   if ( strValue != "sounds")
   {
-    CLog::Log(LOGNOTICE, "%s Doesn't contain <sounds>", strSoundsXml.c_str());
+    CLog::Log(LOGNOTICE, "{} Doesn't contain <sounds>", strSoundsXml.c_str());
     return false;
   }
 

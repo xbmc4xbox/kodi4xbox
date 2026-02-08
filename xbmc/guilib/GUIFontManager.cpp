@@ -127,7 +127,7 @@ CGUIFont* GUIFontManager::LoadTTF(const std::string& strFontName, const std::str
     CheckFont(strPath,"special://xbmc/media/Fonts",file);
 
   // check if we already have this font file loaded (font object could differ only by color or style)
-  std::string TTFfontName = StringUtils::Format("%s_%f_%f%s", strFilename.c_str(), newSize, aspect, border ? "_border" : "");
+  std::string TTFfontName = StringUtils::Format("{}_{}_{}{}", strFilename.c_str(), newSize, aspect, border ? "_border" : "");
 
   CGUIFontTTFBase* pFontFile = GetFontFile(TTFfontName);
   if (!pFontFile)
@@ -142,10 +142,10 @@ CGUIFont* GUIFontManager::LoadTTF(const std::string& strFontName, const std::str
       // font could not be loaded - try Arial.ttf, which we distribute
       if (strFilename != "arial.ttf")
       {
-        CLog::Log(LOGERROR, "Couldn't load font name: %s(%s), trying to substitute arial.ttf", strFontName.c_str(), strFilename.c_str());
+        CLog::Log(LOGERROR, "Couldn't load font name: {}({}), trying to substitute arial.ttf", strFontName.c_str(), strFilename.c_str());
         return LoadTTF(strFontName, "arial.ttf", textColor, shadowColor, iSize, iStyle, border, lineSpacing, originalAspect);
       }
-      CLog::Log(LOGERROR, "Couldn't load font name:%s file:%s", strFontName.c_str(), strPath.c_str());
+      CLog::Log(LOGERROR, "Couldn't load font name:{} file:{}", strFontName.c_str(), strPath.c_str());
 
       return NULL;
     }
@@ -220,7 +220,7 @@ void GUIFontManager::ReloadTTFFonts(void)
 
     RescaleFontSizeAndAspect(&newSize, &aspect, fontInfo.sourceRes, fontInfo.preserveAspect);
 
-    std::string TTFfontName = StringUtils::Format("%s_%f_%f%s", strFilename.c_str(), newSize, aspect, fontInfo.border ? "_border" : "");
+    std::string TTFfontName = StringUtils::Format("{}_{}_{}{}", strFilename.c_str(), newSize, aspect, fontInfo.border ? "_border" : "");
     CGUIFontTTFBase* pFontFile = GetFontFile(TTFfontName);
     if (!pFontFile)
     {
@@ -229,7 +229,7 @@ void GUIFontManager::ReloadTTFFonts(void)
       {
         delete pFontFile;
         // font could not be loaded
-        CLog::Log(LOGERROR, "Couldn't re-load font file:%s", strPath.c_str());
+        CLog::Log(LOGERROR, "Couldn't re-load font file:{}", strPath.c_str());
         return;
       }
 
@@ -342,19 +342,19 @@ void GUIFontManager::LoadFonts(const std::string& fontSet)
 {
   // Get the file to load fonts from:
   const std::string strPath = g_SkinInfo->GetSkinPath("Font.xml", &m_skinResolution);
-  CLog::Log(LOGINFO, "Loading fonts from %s", strPath.c_str());
+  CLog::Log(LOGINFO, "Loading fonts from {}", strPath.c_str());
 
   CXBMCTinyXML xmlDoc;
   if (!xmlDoc.LoadFile(strPath))
   {
-    CLog::Log(LOGERROR, "Couldn't load %s", strPath.c_str());
+    CLog::Log(LOGERROR, "Couldn't load {}", strPath.c_str());
     return;
   }
 
   TiXmlElement* pRootElement = xmlDoc.RootElement();
   if (!pRootElement || pRootElement->ValueStr() != "fonts")
   {
-    CLog::Log(LOGERROR, "file %s doesnt start with <fonts>", strPath.c_str());
+    CLog::Log(LOGERROR, "file {} doesnt start with <fonts>", strPath.c_str());
     return;
   }
 
@@ -382,11 +382,11 @@ void GUIFontManager::LoadFonts(const std::string& fontSet)
   // no fontset was loaded, try the first
   if (!firstFont.empty())
   {
-    CLog::Log(LOGWARNING, "file doesnt have <fontset> with name '%s', defaulting to first fontset", fontSet.c_str());
+    CLog::Log(LOGWARNING, "file doesnt have <fontset> with name '{}', defaulting to first fontset", fontSet.c_str());
     LoadFonts(firstFont);
   }
   else
-    CLog::Log(LOGERROR, "file '%s' doesnt have a valid <fontset>", strPath.c_str());
+    CLog::Log(LOGERROR, "file '{}' doesnt have a valid <fontset>", strPath.c_str());
 }
 
 void GUIFontManager::LoadFonts(const TiXmlNode* fontNode)

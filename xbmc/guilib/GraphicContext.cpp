@@ -501,7 +501,7 @@ void CGraphicContext::SetVideoResolutionInternal(RESOLUTION res, BOOL NeedZ, boo
   {
     if (NeedReset)
     {
-      CLog::Log(LOGDEBUG, "Setting resolution %i", res);
+      CLog::Log(LOGDEBUG, "Setting resolution {}", res);
       m_pd3dDevice->Reset(m_pd3dParams);
     }
 
@@ -528,7 +528,7 @@ void CGraphicContext::SetVideoResolutionInternal(RESOLUTION res, BOOL NeedZ, boo
   m_Resolution = res;
   if (NeedReset)
   {
-    CLog::Log(LOGDEBUG, "We set resolution %i", m_Resolution);
+    CLog::Log(LOGDEBUG, "We set resolution {}", m_Resolution);
     if (m_Resolution != RES_INVALID)
       CServiceBroker::GetGUI()->GetWindowManager().SendMessage(GUI_MSG_NOTIFY_ALL, 0, 0, GUI_MSG_WINDOW_RESIZE);
   }

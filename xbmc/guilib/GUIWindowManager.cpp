@@ -325,7 +325,7 @@ bool CGUIWindowManager::SendMessage(int message, int senderID, int destID, int p
 bool CGUIWindowManager::SendMessage(CGUIMessage& message)
 {
   bool handled = false;
-//  CLog::Log(LOGDEBUG,"SendMessage: mess=%d send=%d control=%d param1=%d", message.GetMessage(), message.GetSenderId(), message.GetControlId(), message.GetParam1());
+//  CLog::Log(LOGDEBUG,"SendMessage: mess={} send={} control={} param1={}", message.GetMessage(), message.GetSenderId(), message.GetControlId(), message.GetParam1());
   // Send the message to all none window targets
   for (int i = 0; i < (int) m_vecMsgTargets.size(); i++)
   {
@@ -452,7 +452,7 @@ void CGUIWindowManager::Add(CGUIWindow* pWindow)
     WindowMap::iterator it = m_mapWindows.find(*idIt);
     if (it != m_mapWindows.end())
     {
-      CLog::Log(LOGERROR, "Error, trying to add a second window with id %u "
+      CLog::Log(LOGERROR, "Error, trying to add a second window with id {} "
                           "to the window manager", *idIt);
       return;
     }
@@ -498,7 +498,7 @@ void CGUIWindowManager::Remove(int id)
   }
   else
   {
-    CLog::Log(LOGWARNING, "Attempted to remove window %u "
+    CLog::Log(LOGWARNING, "Attempted to remove window {} "
                           "from the window manager when it didn't exist",
               id);
   }
@@ -634,11 +634,11 @@ void CGUIWindowManager::ActivateWindow_Internal(int iWindowID, const std::vector
   }
 
   // debug
-  CLog::Log(LOGDEBUG, "Activating window ID: %i", iWindowID);
+  CLog::Log(LOGDEBUG, "Activating window ID: {}", iWindowID);
 
   if (!g_passwordManager.CheckMenuLock(iWindowID))
   {
-    CLog::Log(LOGERROR, "MasterCode is Wrong: Window with id %d will not be loaded! Enter a correct MasterCode!", iWindowID);
+    CLog::Log(LOGERROR, "MasterCode is Wrong: Window with id {} will not be loaded! Enter a correct MasterCode!", iWindowID);
     if (GetActiveWindow() == WINDOW_INVALID && iWindowID != WINDOW_HOME)
       ActivateWindow(WINDOW_HOME);
     return;
@@ -648,7 +648,7 @@ void CGUIWindowManager::ActivateWindow_Internal(int iWindowID, const std::vector
   CGUIWindow *pNewWindow = GetWindow(iWindowID);
   if (!pNewWindow)
   { // nothing to see here - move along
-    CLog::Log(LOGERROR, "Unable to locate window with id %d.  Check skin files", iWindowID - WINDOW_HOME);
+    CLog::Log(LOGERROR, "Unable to locate window with id {}.  Check skin files", iWindowID - WINDOW_HOME);
     if (GetActiveWindowID() == WINDOW_STARTUP_ANIM)
       ActivateWindow(WINDOW_HOME);
     return ;
@@ -672,7 +672,7 @@ void CGUIWindowManager::ActivateWindow_Internal(int iWindowID, const std::vector
   // don't activate a window if there are active modal dialogs of type NORMAL
   if (!force && HasModalDialog({ DialogModalityType::MODAL }))
   {
-    CLog::Log(LOGINFO, "Activate of window '%i' refused because there are active modal dialogs", iWindowID);
+    CLog::Log(LOGINFO, "Activate of window '{}' refused because there are active modal dialogs", iWindowID);
     CServiceBroker::GetGUI()->GetAudioManager().PlayActionSound(CAction(ACTION_ERROR));
     return;
   }
@@ -798,7 +798,7 @@ void CGUIWindowManager::OnApplicationMessage(ThreadMessage* pMsg)
         if (pWindow)
           pWindow->OnAction(*action);
         else
-          CLog::Log(LOGWARNING, "Failed to get window with ID %i to send an action to", pMsg->param1);
+          CLog::Log(LOGWARNING, "Failed to get window with ID {} to send an action to", pMsg->param1);
       }
       delete action;
     }

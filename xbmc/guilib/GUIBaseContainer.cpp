@@ -561,7 +561,7 @@ void CGUIBaseContainer::OnJumpLetter(char letter, bool skip /*=false*/)
   if (m_matchTimer.GetElapsedMilliseconds() < letter_match_timeout)
     m_match.push_back(letter);
   else
-    m_match = StringUtils::Format("%c", letter);
+    m_match = StringUtils::Format("{}", letter);
 
   m_matchTimer.StartZero();
 
@@ -659,7 +659,7 @@ CGUIListItemPtr CGUIBaseContainer::GetListItem(int offset, unsigned int flag) co
   int item = GetSelectedItem() + offset;
   if (flag & INFOFLAG_LISTITEM_POSITION) // use offset from the first item displayed, taking into account scrolling
     item = CorrectOffset((int)(m_scroller.GetValue() / m_layout->Size(m_orientation)), offset);
-  
+
   if (flag & INFOFLAG_LISTITEM_ABSOLUTE) // use offset from the first item
     item = CorrectOffset(0, offset);
 
@@ -807,7 +807,7 @@ std::string CGUIBaseContainer::GetDescription() const
   {
     CGUIListItemPtr pItem = m_items[item];
     if (pItem->m_bIsFolder)
-      strLabel = StringUtils::Format("[%s]", pItem->GetLabel().c_str());
+      strLabel = StringUtils::Format("[{}]", pItem->GetLabel().c_str());
     else
       strLabel = pItem->GetLabel();
   }
@@ -1202,7 +1202,7 @@ bool CGUIBaseContainer::InsideLayout(const CGUIListItemLayout *layout, const CPo
 #ifdef _DEBUG
 void CGUIBaseContainer::DumpTextureUse()
 {
-  CLog::Log(LOGDEBUG, "%s for container %u", __FUNCTION__, GetID());
+  CLog::Log(LOGDEBUG, "{} for container {}", __FUNCTION__, GetID());
   for (unsigned int i = 0; i < m_items.size(); ++i)
   {
     CGUIListItemPtr item = m_items[i];
@@ -1285,29 +1285,29 @@ std::string CGUIBaseContainer::GetLabel(int info) const
   switch (info)
   {
   case CONTAINER_NUM_PAGES:
-    label = StringUtils::Format("%u", (GetRows() + m_itemsPerPage - 1) / m_itemsPerPage);
+    label = StringUtils::Format("{}", (GetRows() + m_itemsPerPage - 1) / m_itemsPerPage);
     break;
   case CONTAINER_CURRENT_PAGE:
-    label = StringUtils::Format("%u", GetCurrentPage());
+    label = StringUtils::Format("{}", GetCurrentPage());
     break;
   case CONTAINER_POSITION:
-    label = StringUtils::Format("%i", GetCursor());
+    label = StringUtils::Format("{}", GetCursor());
     break;
   case CONTAINER_CURRENT_ITEM:
     {
       if (m_items.size() && m_items[0]->IsFileItem() && (std::static_pointer_cast<CFileItem>(m_items[0]))->IsParentFolder())
-        label = StringUtils::Format("%i", GetSelectedItem());
+        label = StringUtils::Format("{}", GetSelectedItem());
       else
-        label = StringUtils::Format("%i", GetSelectedItem() + 1);
+        label = StringUtils::Format("{}", GetSelectedItem() + 1);
     }
     break;
   case CONTAINER_NUM_ITEMS:
     {
       unsigned int numItems = GetNumItems();
       if (numItems && m_items[0]->IsFileItem() && (std::static_pointer_cast<CFileItem>(m_items[0]))->IsParentFolder())
-        label = StringUtils::Format("%u", numItems-1);
+        label = StringUtils::Format("{}", numItems-1);
       else
-        label = StringUtils::Format("%u", numItems);
+        label = StringUtils::Format("{}", numItems);
     }
     break;
   default:

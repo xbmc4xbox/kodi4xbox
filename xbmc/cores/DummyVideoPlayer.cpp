@@ -53,7 +53,7 @@ bool CDummyVideoPlayer::OpenFile(const CFileItem& file, const CPlayerOptions &op
   }
   catch(...)
   {
-    CLog::Log(LOGERROR,"%s - Exception thrown on open", __FUNCTION__);
+    CLog::Log(LOGERROR,"{} - Exception thrown on open", __FUNCTION__);
     return false;
   }
 }

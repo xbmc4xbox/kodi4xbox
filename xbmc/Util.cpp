@@ -564,7 +564,7 @@ void CUtil::SplitParams(const std::string &paramString, std::vector<std::string>
     parameter += ch;
   }
   if (inFunction || inQuotes)
-    CLog::Log(LOGWARNING, "%s(%s) - end of string while searching for ) or \"", __FUNCTION__, paramString.c_str());
+    CLog::Log(LOGWARNING, "{}({}) - end of string while searching for ) or \"", __FUNCTION__, paramString.c_str());
   if (whiteSpacePos)
     parameter.erase(whiteSpacePos);
   // trim off start and end quotes
@@ -875,7 +875,7 @@ bool CUtil::MakeShortenPath(std::string StrInput, std::string& StrOutput, size_t
     iStrInputSize = StrInput.size();
   }
   // replace any additional /../../ with just /../ if necessary
-  std::string replaceDots = StringUtils::Format("..%c..", cDelim);
+  std::string replaceDots = StringUtils::Format("..{}..", cDelim);
   while (StrInput.size() > (unsigned int)iTextMaxLength)
     if (!StringUtils::Replace(StrInput, replaceDots, ".."))
       break;
@@ -941,7 +941,7 @@ void CUtil::GetSkinThemes(std::vector<std::string>& vecTheme)
       std::string strExtension = URIUtils::GetExtension(pItem->GetPath());
       std::string strLabel = pItem->GetLabel();
 #ifdef _XBOX
-      if ((strExtension == ".xpr" && !StringUtils::EqualsNoCase(strLabel, TexturesXbt)))  
+      if ((strExtension == ".xpr" && !StringUtils::EqualsNoCase(strLabel, TexturesXbt)))
 #else
       if ((strExtension == ".xbt" && !StringUtils::EqualsNoCase(strLabel, TexturesXbt)))
 #endif

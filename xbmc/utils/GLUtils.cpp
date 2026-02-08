@@ -41,17 +41,17 @@ void _VerifyGLState(const char* szfile, const char* szfunction, int lineno){
   GLenum err = glGetError();
   if (err==GL_NO_ERROR)
     return;
-  CLog::Log(LOGERROR, "GL ERROR: %s\n", gluErrorString(err));
+  CLog::Log(LOGERROR, "GL ERROR: {}\n", gluErrorString(err));
   if (szfile && szfunction)
-      CLog::Log(LOGERROR, "In file:%s function:%s line:%d", szfile, szfunction, lineno);
+      CLog::Log(LOGERROR, "In file:{} function:{} line:{}", szfile, szfunction, lineno);
   GLboolean bools[16];
   GLfloat matrix[16];
   glGetFloatv(GL_SCISSOR_BOX, matrix);
-  CLog::Log(LOGDEBUG, "Scissor box: %f, %f, %f, %f", matrix[0], matrix[1], matrix[2], matrix[3]);
+  CLog::Log(LOGDEBUG, "Scissor box: {}, {}, {}, {}", matrix[0], matrix[1], matrix[2], matrix[3]);
   glGetBooleanv(GL_SCISSOR_TEST, bools);
-  CLog::Log(LOGDEBUG, "Scissor test enabled: %d", (int)bools[0]);
+  CLog::Log(LOGDEBUG, "Scissor test enabled: {}", (int)bools[0]);
   glGetFloatv(GL_VIEWPORT, matrix);
-  CLog::Log(LOGDEBUG, "Viewport: %f, %f, %f, %f", matrix[0], matrix[1], matrix[2], matrix[3]);
+  CLog::Log(LOGDEBUG, "Viewport: {}, {}, {}, {}", matrix[0], matrix[1], matrix[2], matrix[3]);
   glGetFloatv(GL_PROJECTION_MATRIX, matrix);
   CLog::Log(LOGDEBUG, "Projection Matrix:");
   printMatrix(matrix);
@@ -71,25 +71,25 @@ void LogGraphicsInfo()
 
   s = glGetString(GL_VENDOR);
   if (s)
-    CLog::Log(LOGNOTICE, "GL_VENDOR = %s", s);
+    CLog::Log(LOGNOTICE, "GL_VENDOR = {}", s);
   else
     CLog::Log(LOGNOTICE, "GL_VENDOR = NULL");
 
   s = glGetString(GL_RENDERER);
   if (s)
-    CLog::Log(LOGNOTICE, "GL_RENDERER = %s", s);
+    CLog::Log(LOGNOTICE, "GL_RENDERER = {}", s);
   else
     CLog::Log(LOGNOTICE, "GL_RENDERER = NULL");
 
   s = glGetString(GL_VERSION);
   if (s)
-    CLog::Log(LOGNOTICE, "GL_VERSION = %s", s);
+    CLog::Log(LOGNOTICE, "GL_VERSION = {}", s);
   else
     CLog::Log(LOGNOTICE, "GL_VERSION = NULL");
 
   s = glGetString(GL_SHADING_LANGUAGE_VERSION);
   if (s)
-    CLog::Log(LOGNOTICE, "GL_SHADING_LANGUAGE_VERSION = %s", s);
+    CLog::Log(LOGNOTICE, "GL_SHADING_LANGUAGE_VERSION = {}", s);
   else
     CLog::Log(LOGNOTICE, "GL_SHADING_LANGUAGE_VERSION = NULL");
 
@@ -105,16 +105,16 @@ void LogGraphicsInfo()
     GLint mem = 0;
 
     glGetIntegerv(GL_GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX, &mem);
-    CLog::Log(LOGNOTICE, "GL_GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX = %i", mem);
+    CLog::Log(LOGNOTICE, "GL_GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX = {}", mem);
 
     //this seems to be the amount of ram on the videocard
     glGetIntegerv(GL_GPU_MEMORY_INFO_DEDICATED_VIDMEM_NVX, &mem);
-    CLog::Log(LOGNOTICE, "GL_GPU_MEMORY_INFO_DEDICATED_VIDMEM_NVX = %i", mem);
+    CLog::Log(LOGNOTICE, "GL_GPU_MEMORY_INFO_DEDICATED_VIDMEM_NVX = {}", mem);
   }
 
   s = glGetString(GL_EXTENSIONS);
   if (s)
-    CLog::Log(LOGNOTICE, "GL_EXTENSIONS = %s", s);
+    CLog::Log(LOGNOTICE, "GL_EXTENSIONS = {}", s);
   else
     CLog::Log(LOGNOTICE, "GL_EXTENSIONS = NULL");
 
@@ -145,7 +145,7 @@ int glFormatElementByteCount(GLenum format)
   case GL_ALPHA:
     return 1;
   default:
-    CLog::Log(LOGERROR, "glFormatElementByteCount - Unknown format %u", format);
+    CLog::Log(LOGERROR, "glFormatElementByteCount - Unknown format {}", format);
     return 1;
   }
 }
