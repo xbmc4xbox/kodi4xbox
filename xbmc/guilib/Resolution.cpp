@@ -73,7 +73,7 @@ RESOLUTION CResolutionUtils::ChooseBestResolution(float fps, int width, bool is3
     if (!FindResolutionFromOverride(fps, width, is3D, res, weight, true))//if that fails find it from a fallback
       FindResolutionFromFpsMatch(fps, width, is3D, res, weight);//if that fails use automatic refreshrate selection
   }
-  CLog::Log(LOGNOTICE, "Display resolution ADJUST : %s (%d) (weight: %.3f)",
+  CLog::Log(LOGNOTICE, "Display resolution ADJUST : {} ({}) (weight: {:.3f})",
             g_graphicsContext.GetResInfo(res).strMode.c_str(), static_cast<int>(res), weight);
   return res;
 }
@@ -110,13 +110,13 @@ bool CResolutionUtils::FindResolutionFromOverride(float fps, int width, bool is3
 
           if (fallback)
           {
-            CLog::Log(LOGDEBUG, "Found Resolution %s (%d) from fallback (refreshmin:%.3f refreshmax:%.3f)",
+            CLog::Log(LOGDEBUG, "Found Resolution {} ({}) from fallback (refreshmin:{:.3f} refreshmax:{:.3f})",
                       info.strMode.c_str(), static_cast<int>(resolution),
                       override.refreshmin, override.refreshmax);
           }
           else
           {
-            CLog::Log(LOGDEBUG, "Found Resolution %s (%d) from override of fps %.3f (fpsmin:%.3f fpsmax:%.3f refreshmin:%.3f refreshmax:%.3f)",
+            CLog::Log(LOGDEBUG, "Found Resolution {} ({}) from override of fps {:.3f} (fpsmin:{:.3f} fpsmax:{:.3f} refreshmin:{:.3f} refreshmax:{:.3f})",
                       info.strMode.c_str(), static_cast<int>(resolution), fps,
                       override.fpsmin, override.fpsmax, override.refreshmin, override.refreshmax);
           }
@@ -142,7 +142,7 @@ void CResolutionUtils::FindResolutionFromFpsMatch(float fps, int width, bool is3
 
   if (weight >= maxWeight) //not a very good match, try a 2:3 cadence instead
   {
-    CLog::Log(LOGDEBUG, "Resolution %s (%d) not a very good match for fps %.3f (weight: %.3f), trying 2:3 cadence",
+    CLog::Log(LOGDEBUG, "Resolution {} ({}) not a very good match for fps {:.3f} (weight: {:.3f}), trying 2:3 cadence",
         curr.strMode.c_str(), static_cast<int>(resolution), fps, weight);
 
     resolution = FindClosestResolution(fps, width, is3D, 2.5, resolution, weight);
@@ -150,7 +150,7 @@ void CResolutionUtils::FindResolutionFromFpsMatch(float fps, int width, bool is3
 
     if (weight >= maxWeight) //2:3 cadence not a good match
     {
-      CLog::Log(LOGDEBUG, "Resolution %s (%d) not a very good match for fps %.3f with 2:3 cadence (weight: %.3f), choosing 60 hertz",
+      CLog::Log(LOGDEBUG, "Resolution {} ({}) not a very good match for fps {:.3f} with 2:3 cadence (weight: {:.3f}), choosing 60 hertz",
           curr.strMode.c_str(), static_cast<int>(resolution), fps, weight);
 
       //get the resolution with the refreshrate closest to 60 hertz

@@ -67,9 +67,9 @@ void CWinSystemBase::UpdateDesktopResolution(RESOLUTION_INFO& newRes, int screen
   newRes.iHeight = height;
   newRes.iScreenWidth = width;
   newRes.iScreenHeight = height;
-  newRes.strMode = StringUtils::Format("%dx%d", width, height);
+  newRes.strMode = StringUtils::Format("{}x{}", width, height);
   if (refreshRate > 1)
-    newRes.strMode += StringUtils::Format("@ %.2f", refreshRate);
+    newRes.strMode += StringUtils::Format("@ {:.2f}", refreshRate);
   if (dwFlags & D3DPRESENTFLAG_INTERLACED)
     newRes.strMode += "i";
   if (dwFlags & D3DPRESENTFLAG_MODE3DTB)
@@ -77,7 +77,7 @@ void CWinSystemBase::UpdateDesktopResolution(RESOLUTION_INFO& newRes, int screen
   if (dwFlags & D3DPRESENTFLAG_MODE3DSBS)
     newRes.strMode += "sbs";
   if (screen > 0)
-    newRes.strMode = StringUtils::Format("%s #%d", newRes.strMode.c_str(), screen + 1);
+    newRes.strMode = StringUtils::Format("{} #{}", newRes.strMode.c_str(), screen + 1);
   if (refreshRate > 1)
     newRes.strMode += " - Full Screen";
 }

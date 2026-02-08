@@ -214,12 +214,12 @@ bool CRenderSystemGL::ResetRenderSystem(int width, int height, bool fullScreen, 
     GLenum error = glGetError();
     if (error != GL_NO_ERROR)
     {
-      CLog::Log(LOGERROR, "ResetRenderSystem() GL_MAX_TEXTURE_IMAGE_UNITS_ARB returned error %i", (int)error);
+      CLog::Log(LOGERROR, "ResetRenderSystem() GL_MAX_TEXTURE_IMAGE_UNITS_ARB returned error {}", (int)error);
       maxtex = 3;
     }
     else if (maxtex < 1 || maxtex > 32)
     {
-      CLog::Log(LOGERROR, "ResetRenderSystem() GL_MAX_TEXTURE_IMAGE_UNITS_ARB returned invalid value %i", (int)maxtex);
+      CLog::Log(LOGERROR, "ResetRenderSystem() GL_MAX_TEXTURE_IMAGE_UNITS_ARB returned invalid value {}", (int)maxtex);
       maxtex = 3;
     }
 
@@ -486,7 +486,7 @@ void CRenderSystemGL::CalculateMaxTexturesize()
     m_maxTextureSize = 1024;
 #endif
 
-  CLog::Log(LOGINFO, "GL: Maximum texture width: %u", m_maxTextureSize);
+  CLog::Log(LOGINFO, "GL: Maximum texture width: {}", m_maxTextureSize);
 }
 
 void CRenderSystemGL::GetViewPort(CRect& viewPort)
@@ -543,7 +543,7 @@ void CRenderSystemGL::ResetGLErrors()
     count++;
     if (count >= 100)
     {
-      CLog::Log(LOGWARNING, "CRenderSystemGL::ResetGLErrors glGetError didn't return GL_NO_ERROR after %i iterations", count);
+      CLog::Log(LOGWARNING, "CRenderSystemGL::ResetGLErrors glGetError didn't return GL_NO_ERROR after {} iterations", count);
       break;
     }
   }
