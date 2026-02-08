@@ -98,9 +98,6 @@ void CTextureArray::Add(std::shared_ptr<CTexture> texture, int delay)
   if (!texture)
     return;
 
-  m_textures.emplace_back(std::move(texture));
-  m_delays.push_back(delay);
-
   m_texWidth = texture->GetTextureWidth();
   m_texHeight = texture->GetTextureHeight();
 #ifdef HAS_XBOX_D3D
@@ -108,6 +105,9 @@ void CTextureArray::Add(std::shared_ptr<CTexture> texture, int delay)
 #else
   m_texCoordsArePixels = false;
 #endif
+
+  m_textures.emplace_back(std::move(texture));
+  m_delays.push_back(delay);
 }
 
 void CTextureArray::Set(std::shared_ptr<CTexture> texture, int width, int height)
