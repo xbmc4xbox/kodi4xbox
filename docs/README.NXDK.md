@@ -93,4 +93,8 @@ cmake --build .
 ```
 If everything went well you should have Xbox executable inside `build` folder called `default.xbe`
 
-### **Note:** XBMC cannot be run from a DVD (aka as ISO) in XEMU!
+## How to Debug
+- First download [this](https://github.com/antonic901/xbmc4xbox-nxdk/blob/master/docs/resources/FFXXFFXX.zip) archive
+- Extract archive and copy folder FFXXFFXX to your Xbox using FTP. Place it inside `E:\UDATA\`
+- Build Kodi in same way as described above, but make sure to build Debug version, not Release!
+- After succesfull build, open Xemu, load ISO from build folder and then close Xemu. After that, start debugging from within Visual Studio Code by pressing `CTRL+SHIFT+D` and then `F5`

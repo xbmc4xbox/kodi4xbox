@@ -1,0 +1,177 @@
+diff --git a/cmake/PostbuildAction.cmake b/cmake/PostbuildAction.cmake
+index 39496c9..b02d078 100644
+--- a/cmake/PostbuildAction.cmake
++++ b/cmake/PostbuildAction.cmake
+@@ -2,6 +2,18 @@ function(add_xbox_build_steps TARGET_NAME XBE_TITLE XBOX_ISO_DIR)
+     # Ensure ISO output directory exists
+     file(MAKE_DIRECTORY ${XBOX_ISO_DIR})
+ 
++    # Backup original EXE and strip debug symbols
++    add_custom_target(${TARGET_NAME}_strip_exe ALL
++        COMMENT "Preparing EXE: [backup + llvm-strip]"
++        COMMAND ${CMAKE_COMMAND} -E copy
++                ${CMAKE_CURRENT_BINARY_DIR}/${XBE_TITLE}.exe
++                ${CMAKE_CURRENT_BINARY_DIR}/${XBE_TITLE}-stripped.exe
++        COMMAND llvm-strip
++                ${CMAKE_CURRENT_BINARY_DIR}/${XBE_TITLE}-stripped.exe
++        VERBATIM
++    )
++    add_dependencies(${TARGET_NAME}_strip_exe ${TARGET_NAME})
++
+     # Convert EXE to XBE
+     add_custom_target(${TARGET_NAME}_cxbe_convert ALL
+         COMMENT "CXBE Conversion: [EXE -> XBE]"
+@@ -10,9 +22,9 @@ function(add_xbox_build_steps TARGET_NAME XBE_TITLE XBOX_ISO_DIR)
+                 ${NXDK_DIR}/tools/cxbe/cxbe
+                 -OUT:${CMAKE_CURRENT_BINARY_DIR}/default.xbe
+                 -TITLE:${XBE_TITLE}
+-                ${CMAKE_CURRENT_BINARY_DIR}/${XBE_TITLE}.exe > NUL 2>&1
++                ${CMAKE_CURRENT_BINARY_DIR}/${XBE_TITLE}-stripped.exe > NUL 2>&1
+     )
+-    add_dependencies(${TARGET_NAME}_cxbe_convert ${TARGET_NAME})
++    add_dependencies(${TARGET_NAME}_cxbe_convert ${TARGET_NAME}_strip_exe)
+ 
+     # Convert XBE to XISO
+     add_custom_target(${TARGET_NAME}_xbe_iso ALL
+@@ -30,6 +42,7 @@ function(add_xbox_build_steps TARGET_NAME XBE_TITLE XBOX_ISO_DIR)
+     add_dependencies(${TARGET_NAME}_xbe_iso ${TARGET_NAME}_cxbe_convert)
+ 
+     # Silence output
++    set_target_properties(${TARGET_NAME}_strip_exe PROPERTIES OUTPUT_QUIET ON)
+     set_target_properties(${TARGET_NAME}_cxbe_convert PROPERTIES OUTPUT_QUIET ON)
+     set_target_properties(${TARGET_NAME}_xbe_iso PROPERTIES OUTPUT_QUIET ON)
+ endfunction()
+diff --git a/system/addon-manifest.xml b/system/addon-manifest.xml
+index 501b7e4..dffbfc1 100644
+--- a/system/addon-manifest.xml
++++ b/system/addon-manifest.xml
+@@ -7,8 +7,8 @@
+   <addon>metadata.common.musicbrainz.org</addon>
+   <addon>metadata.common.theaudiodb.com</addon>
+   <addon>metadata.local</addon>
+-  <addon>metadata.musicvideos.theaudiodb.com</addon>
+   <addon>metadata.movies.themoviedb.org</addon>
++  <addon>metadata.tvshows.themoviedb.org</addon>
+   <addon>repository.xbmc.org</addon>
+   <addon>resource.images.weathericons.default</addon>
+   <addon>resource.language.en_gb</addon>
+@@ -17,9 +17,6 @@
+   <addon>screensaver.xbmc.builtin.dim</addon>
+   <addon>skin.estuary</addon>
+   <addon>webinterface.default</addon>
+-  <addon>xbmc.addon</addon>
+-  <addon>xbmc.core</addon>
+-  <addon>xbmc.gui</addon>
+   <addon>xbmc.metadata</addon>
+   <addon>xbmc.python</addon>
+   <addon>xbmc.webinterface</addon>
+diff --git a/xbmc/application/Application.cpp b/xbmc/application/Application.cpp
+index 285007b..ca181a6 100644
+--- a/xbmc/application/Application.cpp
++++ b/xbmc/application/Application.cpp
+@@ -330,23 +330,23 @@ bool CApplication::Initialize()
+   CDatabaseManager &databaseManager = m_ServiceManager->GetDatabaseManager();
+ 
+   CEvent event(true);
+-  CServiceBroker::GetJobManager()->Submit([&databaseManager, &event]() {
+-    databaseManager.Initialize();
+-    event.Set();
+-  });
+-
+-  std::string localizedStr = g_localizeStrings.Get(24150);
+-  int iDots = 1;
+-  while (!event.Wait(1000ms))
+-  {
+-    if (databaseManager.IsUpgrading())
+-      CSplash::GetInstance().Show(std::string(iDots, ' ') + localizedStr + std::string(iDots, '.'));
+-
+-    if (iDots == 3)
+-      iDots = 1;
+-    else
+-      ++iDots;
+-  }
++  // CServiceBroker::GetJobManager()->Submit([&databaseManager, &event]() {
++  //   databaseManager.Initialize();
++  //   event.Set();
++  // });
++
++  // std::string localizedStr = g_localizeStrings.Get(24150);
++  // int iDots = 1;
++  // while (!event.Wait(1000ms))
++  // {
++  //   if (databaseManager.IsUpgrading())
++  //     CSplash::GetInstance().Show(std::string(iDots, ' ') + localizedStr + std::string(iDots, '.'));
++
++  //   if (iDots == 3)
++  //     iDots = 1;
++  //   else
++  //     ++iDots;
++  // }
+   CSplash::GetInstance().Show("");
+ 
+   // GUI depends on seek handler
+@@ -372,27 +372,27 @@ bool CApplication::Initialize()
+     {
+       if (CAddonSystemSettings::GetInstance().GetAddonAutoUpdateMode() == AUTO_UPDATES_ON)
+       {
+-        CServiceBroker::GetJobManager()->Submit(
+-            [&event, &incompatibleAddons]() {
+-              if (CServiceBroker::GetRepositoryUpdater().CheckForUpdates())
+-                CServiceBroker::GetRepositoryUpdater().Await();
+-
+-              incompatibleAddons = CServiceBroker::GetAddonMgr().MigrateAddons();
+-              event.Set();
+-            },
+-            CJob::PRIORITY_DEDICATED);
+-        localizedStr = g_localizeStrings.Get(24151);
+-        iDots = 1;
+-        while (!event.Wait(1000ms))
+-        {
+-          CSplash::GetInstance().Show(std::string(iDots, ' ') + localizedStr +
+-                                      std::string(iDots, '.'));
+-          if (iDots == 3)
+-            iDots = 1;
+-          else
+-            ++iDots;
+-        }
+-        m_incompatibleAddons = incompatibleAddons;
++        // CServiceBroker::GetJobManager()->Submit(
++        //     [&event, &incompatibleAddons]() {
++        //       if (CServiceBroker::GetRepositoryUpdater().CheckForUpdates())
++        //         CServiceBroker::GetRepositoryUpdater().Await();
++
++        //       incompatibleAddons = CServiceBroker::GetAddonMgr().MigrateAddons();
++        //       event.Set();
++        //     },
++        //     CJob::PRIORITY_DEDICATED);
++        // localizedStr = g_localizeStrings.Get(24151);
++        // iDots = 1;
++        // while (!event.Wait(1000ms))
++        // {
++        //   CSplash::GetInstance().Show(std::string(iDots, ' ') + localizedStr +
++        //                               std::string(iDots, '.'));
++        //   if (iDots == 3)
++        //     iDots = 1;
++        //   else
++        //     ++iDots;
++        // }
++        // m_incompatibleAddons = incompatibleAddons;
+       }
+       else
+       {
+diff --git a/xbmc/utils/Splash.cpp b/xbmc/utils/Splash.cpp
+index 605aa8d..a209730 100755
+--- a/xbmc/utils/Splash.cpp
++++ b/xbmc/utils/Splash.cpp
+@@ -46,9 +46,9 @@ void CSplash::Show(const std::string& message /* = "" */)
+ 
+   if (!m_image)
+   {
+-    std::string splashImage = "special://home/media/Splash.png";
++    std::string splashImage = "special://home/media/Splash.jpg";
+     if (!XFILE::CFile::Exists(splashImage))
+-      splashImage = "special://xbmc/media/Splash.png";
++      splashImage = "special://xbmc/media/Splash.jpg";
+ 
+     m_image = std::unique_ptr<CGUIImage>(new CGUIImage(0, 0, 0, 0, g_graphicsContext.GetWidth(),
+         g_graphicsContext.GetHeight(), CTextureInfo(splashImage)));

@@ -13,19 +13,20 @@ The first goal is basically getting **GUILIB** working properly. That includes p
 ### Milestone 0
 Milestone 0 (zero) should add missing features to NXDK which are required by XBMC. File [unimplemented.h](https://github.com/antonic901/xbmc4xbox-nxdk/blob/master/xbmc/unimplemented.h) contains mock functions which are still not implemented in NXDK but are required by XBMC.
 
-* [ ] Missing support for **exceptions** and **try/catch** blocks
-* [ ] Missing support for `typeid` and `dynamic_cast`
-* [ ] Missing support for **WideCharToMultiByte**, **MultiByteToWideChar** and **vswprintf**
+* [ ] Missing support for **RTTI**. Stuff like exceptions, dynamic_cast and typeid wont' work
+* [ ] Missing support for widechars. Stuff like WideCharToMultiByte, MultiByteToWideChar, vswprintf, wcstombs etc. won't work
 * [ ] Missing **WINAPI** functions `LocalFileTimeToFileTime`, `FlushFileBuffers`
-* [ ] Missing support for `atof`
+* [ ] Missing support for float numbers. Stuff like `atof`, `strtod`, `strtof` etc. won't work
 
 ### Milestone 1
 Milestone 1 (one) is dealing with GUILIB and everything related to it. That includes:
 * [x] Texture loading -> implementation of CTexture which is used for loading textures (libjpeg-turbo/libpng). Example from XBMC4Xbox is [here](https://github.com/antonic901/xbmc4xbox-redux/blob/master/xbmc/guilib/Texture.h) - added with [0a5a7e22](https://github.com/antonic901/xbmc4xbox-nxdk/commit/0a5a7e22b19a2c2f970e0af39909b800dd9706e9)
 * [x] Texture rendering -> implementation of CGUITexturePBKIT which is used for texture rendering. Example from XBMC4Xbox is [here](https://github.com/antonic901/xbmc4xbox-redux/blob/master/xbmc/guilib/GUITextureD3D.cpp) - added with [0a5a7e22](https://github.com/antonic901/xbmc4xbox-nxdk/commit/0a5a7e22b19a2c2f970e0af39909b800dd9706e9)
-* [ ] Properly initialize GPU device and everything related to it -> That's implementation of CGraphicContext
-* [ ] Properly create and initialize application -> Implement CApplication::Create(...), CApplication::Initialize(...), CApplication::Render(...), CApplication::Process(...) etc.
-* [x] - Font rendering - implementation of CGUIFontTTF, CGUIFont and CGUIFontManager. `freetype` lib is required for this - added with [0a5a7e22](https://github.com/antonic901/xbmc4xbox-nxdk/commit/0a5a7e22b19a2c2f970e0af39909b800dd9706e9)
+* [x] Properly initialize GPU device and everything related to it -> That's implementation of CGraphicContext
+* [x] Properly create and initialize application -> Implement CApplication::Create(...), CApplication::Initialize(...), CApplication::Render(...), CApplication::Process(...) etc.
+* [x] Font rendering - implementation of CGUIFontTTF, CGUIFont and CGUIFontManager. `freetype` lib is required for this - added with [0a5a7e22](https://github.com/antonic901/xbmc4xbox-nxdk/commit/0a5a7e22b19a2c2f970e0af39909b800dd9706e9)
+* [ ] Get splash screen properly rendering on screen
+* [ ] Get Home window properly rendering 
 
 **IMPORTANT:** Texture loading and rendering was added with https://github.com/antonic901/xbmc4xbox-nxdk/pull/17. Read description of that PR to learn more!
 
