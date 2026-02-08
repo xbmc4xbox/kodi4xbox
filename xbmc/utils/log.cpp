@@ -195,7 +195,7 @@ void CLog::PrintDebugString(const std::string& line)
 
 bool CLog::WriteLogString(int logLevel, const std::string& logString)
 {
-  static const char* prefixFormat = "%02d-%02d-%02d %02d:%02d:%02d.%03d %7s: ";
+  static const char* prefixFormat = "{:02}-{:02}-{:02} {:02}:{:02}:{:02}.{:03} {:>7}: ";
 
   std::string strData(logString);
   /* fixup newline alignment, number of spaces should equal prefix length */
