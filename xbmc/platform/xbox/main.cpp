@@ -22,8 +22,13 @@ int main()
   nxMountDrive('X', "\\Device\\Harddisk0\\Partition3\\");
   nxMountDrive('Y', "\\Device\\Harddisk0\\Partition4\\");
   nxMountDrive('Z', "\\Device\\Harddisk0\\Partition5\\");
-  nxMountDrive('F', "\\Device\\Harddisk0\\Partition6\\");
-  nxMountDrive('Q', "\\Device\\Harddisk0\\Partition1\\UDATA\\FFXXFFXX\\");
+  // Mount the root is active xbe to Q:
+  {
+    char targetPath[260];
+    nxGetCurrentXbeNtPath(targetPath);
+    *(strrchr(targetPath, '\\') + 1) = '\0';
+    nxMountDrive('Q', targetPath);
+  }
 
   char* argv[] = {"", "--fullscreen", "--standalone"};
   CAppParamParser appParamParser;

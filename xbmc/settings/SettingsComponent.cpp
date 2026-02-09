@@ -374,12 +374,12 @@ bool CSettingsComponent::InitDirectoriesXbox(bool bPlatformDirectories)
 {
 #ifdef _XBOX
   // TODO: set XBMC path to be parent path of XBE path (or make sure that Q:\\ is mounted to dir where XBE is located)
-  std::string xbmcPath = "E:\\UDATA\\FFXXFFXX\\";
+  std::string xbmcPath = "Q:\\";
   CSpecialProtocol::SetXBMCBinPath(xbmcPath);
   CSpecialProtocol::SetXBMCPath(xbmcPath);
   CSpecialProtocol::SetXBMCBinAddonPath(xbmcPath + "addons");
 
-  std::string strWin32UserFolder = "E:\\UDATA\\FFXXFFXX\\home\\";
+  std::string strWin32UserFolder = "E:\\UDATA\\Kodi\\";
   CSpecialProtocol::SetLogPath(strWin32UserFolder);
   CSpecialProtocol::SetHomePath(strWin32UserFolder);
   CSpecialProtocol::SetMasterProfilePath(URIUtils::AddFileToFolder(strWin32UserFolder, "userdata"));

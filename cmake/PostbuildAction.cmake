@@ -20,6 +20,17 @@ function(add_xbox_build_steps TARGET_NAME XBE_TITLE XBOX_ISO_DIR)
         COMMAND ${CMAKE_COMMAND} -E copy
                 "${CMAKE_CURRENT_BINARY_DIR}/default.xbe"
                 "${XBOX_ISO_DIR}/default.xbe"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${CMAKE_SOURCE_DIR}/media"
+                "${XBOX_ISO_DIR}/media"
+
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${CMAKE_SOURCE_DIR}/system"
+                "${XBOX_ISO_DIR}/system"
+
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${CMAKE_SOURCE_DIR}/addons"
+                "${XBOX_ISO_DIR}/addons"
         COMMAND "${CMAKE_COMMAND}" -E env
                 ${NXDK_DIR}/tools/extract-xiso/build/extract-xiso
                 -c ${XBOX_ISO_DIR}

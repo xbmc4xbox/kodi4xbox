@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="media/splash.png" alt="XBMC Logo"/>
+  <img src="media/splash.jpg" alt="XBMC Logo"/>
 </p>
 
 ## XBMC

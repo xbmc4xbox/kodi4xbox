@@ -20,6 +20,7 @@
 
 #include "system.h"
 #include "Splash.h"
+#include "Util.h"
 #include "guilib/GUIImage.h"
 #include "guilib/GUILabelControl.h"
 #include "guilib/GUIFontManager.h"
@@ -46,9 +47,7 @@ void CSplash::Show(const std::string& message /* = "" */)
 
   if (!m_image)
   {
-    std::string splashImage = "special://home/media/Splash.png";
-    if (!XFILE::CFile::Exists(splashImage))
-      splashImage = "special://xbmc/media/Splash.png";
+    std::string splashImage = CUtil::GetSplashPath();
 
     m_image = std::unique_ptr<CGUIImage>(new CGUIImage(0, 0, 0, 0, g_graphicsContext.GetWidth(),
         g_graphicsContext.GetHeight(), CTextureInfo(splashImage)));
