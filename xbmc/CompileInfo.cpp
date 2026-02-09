@@ -43,7 +43,7 @@ const char* CCompileInfo::GetClass()
 
 const char* CCompileInfo::GetAppName()
 {
-  return "XBMC";
+  return "Kodi";
 }
 
 const char* CCompileInfo::GetSuffix()

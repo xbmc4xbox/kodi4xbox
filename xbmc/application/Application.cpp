@@ -949,7 +949,7 @@ void CApplication::SetLoggingIn(bool switchingProfiles)
 void CApplication::PrintStartupLog()
 {
   CLog::Log(LOGINFO, "-----------------------------------------------------------------------");
-  CLog::Log(LOGNOTICE, "Starting XBMC. Built on {}", __DATE__);
+  CLog::Log(LOGNOTICE, "Starting Kodi. Built on {}", __DATE__);
   CSpecialProtocol::LogPaths();
   CLog::Log(LOGINFO, "-----------------------------------------------------------------------");
 }
