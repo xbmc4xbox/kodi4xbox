@@ -89,6 +89,8 @@ bool CWinSystemXboxGL::ResizeWindow(int newWidth, int newHeight, int newLeft, in
 bool CWinSystemXboxGL::SetFullScreen(bool fullScreen, RESOLUTION_INFO& res, bool blankOtherDisplays)
 {
   // Xbox is always fullscreen
+  CRenderSystemGL::ResetRenderSystem(res.iWidth, res.iHeight, fullScreen, res.fRefreshRate);
+
   m_nWidth      = res.iWidth;
   m_nHeight     = res.iHeight;
 
