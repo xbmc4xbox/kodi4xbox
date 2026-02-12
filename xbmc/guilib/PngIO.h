@@ -1,9 +1,28 @@
+/*
+ *  Copyright (C) 2016-2018 Team Kodi
+ *  This file is part of Kodi - https://kodi.tv
+ *
+ *  SPDX-License-Identifier: GPL-2.0-or-later
+ *  See LICENSES/README.md for more information.
+ */
+
+#pragma once
+
 #include "iimage.h"
+
+#include <png.h>
+
+struct MemBuffer
+{
+  const unsigned char* data = nullptr;
+  size_t size = 0;
+  size_t pos = 0;
+};
 
 class CPngIO : public IImage
 {
 public:
-  CPngIO();
+  CPngIO() = default;
   ~CPngIO() override;
 
   bool LoadImageFromMemory(unsigned char* buffer, unsigned int bufSize,
@@ -17,9 +36,20 @@ public:
                                   unsigned int &bufferoutSize) override;
   void ReleaseThumbnailBuffer() override;
 
-private:
-  std::string m_texturePath;
+protected:
+	static void mem_read_data(png_structp png_ptr, png_bytep outBuffer, png_size_t length)
+	{
+    MemBuffer* buffer = (MemBuffer*)(png_get_io_ptr(png_ptr));
+    if (!buffer || buffer->pos + length > buffer->size)
+      png_error(png_ptr, "Read Error");
 
-  unsigned char* m_inputBuff;
-  unsigned int m_inputBuffSize;
+    memcpy(outBuffer, buffer->data + buffer->pos, length);
+    buffer->pos += length;
+	}
+
+private:
+  MemBuffer m_buf;
+
+  unsigned char* m_texture = nullptr;
+  unsigned char* m_alpha = nullptr;
 };
