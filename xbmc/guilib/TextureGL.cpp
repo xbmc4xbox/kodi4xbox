@@ -110,7 +110,7 @@ void CGLTexture::LoadToGPU()
   if (m_textureWidth > maxSize)
   {
     CLog::Log(LOGERROR, "GL: Image width {} too big to fit into single texture unit, truncating to {}", m_textureWidth, maxSize);
-#ifndef HAS_GLES
+#if !defined(HAS_GLES) && !defined(NXDK)
     glPixelStorei(GL_UNPACK_ROW_LENGTH, m_textureWidth);
     m_textureWidth = maxSize;
   }
