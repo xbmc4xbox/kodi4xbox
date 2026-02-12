@@ -207,7 +207,9 @@ bool CRenderSystemGL::ResetRenderSystem(int width, int height, bool fullScreen, 
     //clear error flags
     ResetGLErrors();
 
-    GLint maxtex;
+#ifdef NXDK
+    GLint maxtex = 4;
+#else
     glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &maxtex);
 
     //some sanity checks
@@ -222,6 +224,7 @@ bool CRenderSystemGL::ResetRenderSystem(int width, int height, bool fullScreen, 
       CLog::Log(LOGERROR, "ResetRenderSystem() GL_MAX_TEXTURE_IMAGE_UNITS_ARB returned invalid value {}", (int)maxtex);
       maxtex = 3;
     }
+#endif
 
     //reset texture matrix for all textures
     for (GLint i = 0; i < maxtex; i++)
