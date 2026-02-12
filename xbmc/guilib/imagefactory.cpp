@@ -12,6 +12,7 @@
 #include "addons/ExtsMimeSupportList.h"
 #include "addons/addoninfo/AddonType.h"
 #include "guilib/JpegIO.h"
+#include "guilib/PngIO.h"
 #include "utils/Mime.h"
 #include "utils/log.h"
 
@@ -42,9 +43,8 @@ IImage* ImageFactory::CreateLoaderFromMimeType(const std::string& strMimeType)
     return new CJpegIO();
   }
   else if (strMimeType == "image/png")
-  { // TODO: use libpng
-    CLog::Log(LOGWARNING, "{} - missing libpng!", __FUNCTION__, strMimeType);
-    return nullptr;
+  {
+    return new CPngIO();
   }
 
   CLog::Log(LOGWARNING, "{} - image '{}' is not supported. Use JPG or PNG!", __FUNCTION__, strMimeType);
