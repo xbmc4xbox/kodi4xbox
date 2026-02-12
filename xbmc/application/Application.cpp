@@ -330,6 +330,8 @@ bool CApplication::Initialize()
   CDatabaseManager &databaseManager = m_ServiceManager->GetDatabaseManager();
 
   CEvent event(true);
+#ifndef NXDK
+  // CEvent and lambdas in combination with Job Manager are broken for some reason
   CServiceBroker::GetJobManager()->Submit([&databaseManager, &event]() {
     databaseManager.Initialize();
     event.Set();
@@ -347,6 +349,11 @@ bool CApplication::Initialize()
     else
       ++iDots;
   }
+#else
+  std::string localizedStr = "";
+  int iDots = 1;
+  databaseManager.Initialize();
+#endif
   CSplash::GetInstance().Show("");
 
   // GUI depends on seek handler
