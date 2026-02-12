@@ -119,9 +119,10 @@ bool CPngIO::LoadImageFromMemory(unsigned char* buffer, unsigned int bufSize,
 
     for (unsigned int x = 0; x < m_width; x++)
     {
-      dstRGB[x * 3 + 0] = src[x * (m_hasAlpha ? 4 : 3) + 0];
-      dstRGB[x * 3 + 1] = src[x * (m_hasAlpha ? 4 : 3) + 1];
-      dstRGB[x * 3 + 2] = src[x * (m_hasAlpha ? 4 : 3) + 2];
+      int offset = m_hasAlpha ? 4 : 3;
+      dstRGB[x * offset + 0] = src[x * offset + 0];
+      dstRGB[x * offset + 1] = src[x * offset + 1];
+      dstRGB[x * offset + 2] = src[x * offset + 2];
 
       if (m_hasAlpha)
         dstA[x] = src[x * 4 + 3];
