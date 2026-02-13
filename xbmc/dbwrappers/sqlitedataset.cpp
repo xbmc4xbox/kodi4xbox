@@ -12,6 +12,7 @@
 
 #include "sqlitedataset.h"
 
+#include "filesystem/File.h"
 #include "utils/StringUtils.h"
 #include "utils/URIUtils.h"
 #include "utils/XTimeUtils.h"
@@ -60,8 +61,10 @@ const std::map<int, const char*> g_SqliteErrorStrings = {
     X(SQLITE_FORMAT),
     X(SQLITE_RANGE),
     X(SQLITE_NOTADB),
+#if 0
     X(SQLITE_NOTICE),
     X(SQLITE_WARNING),
+#endif
     X(SQLITE_ROW),
     X(SQLITE_DONE),
 #if defined(SQLITE_ERROR_MISSING_COLLSEQ)
@@ -73,6 +76,7 @@ const std::map<int, const char*> g_SqliteErrorStrings = {
 #if defined(SQLITE_ERROR_SNAPSHOT)
     X(SQLITE_ERROR_SNAPSHOT),
 #endif
+#if 0
     X(SQLITE_IOERR_READ),
     X(SQLITE_IOERR_SHORT_READ),
     X(SQLITE_IOERR_WRITE),
@@ -158,6 +162,7 @@ const std::map<int, const char*> g_SqliteErrorStrings = {
     X(SQLITE_AUTH_USER),
 #if defined(SQLITE_OK_LOAD_PERMANENTLY)
     X(SQLITE_OK_LOAD_PERMANENTLY),
+#endif
 #endif
 };
 #undef X
@@ -322,10 +327,31 @@ int SqliteDatabase::connect(bool create)
   try
   {
     disconnect();
+#if 0
     int flags = SQLITE_OPEN_READWRITE;
     if (create)
       flags |= SQLITE_OPEN_CREATE;
     int errorCode = sqlite3_open_v2(db_fullpath.c_str(), &conn, flags, NULL);
+#else
+    if (XFILE::CFile::Exists(db_fullpath.c_str()))
+    {
+      XFILE::CFile file;
+      if (file.Open(db_fullpath.c_str()))
+      {
+        if (file.GetLength() == 0)
+        {
+          file.Close();
+          CLog::Log(LOGWARNING, "Found zero byte SQLite database, deleting %s", db_fullpath.c_str());
+          XFILE::CFile::Delete(db_fullpath.c_str());
+        }
+        else
+          file.Close();
+      }
+    }
+    if (!create && !XFILE::CFile::Exists(db_fullpath))
+      return DB_CONNECTION_NONE;
+    int errorCode = sqlite3_open(db_fullpath.c_str(), &conn);
+#endif
     if (create && errorCode == SQLITE_CANTOPEN)
     {
       CLog::Log(LOGFATAL, "SqliteDatabase: can't open {}", db_fullpath);
@@ -333,18 +359,22 @@ int SqliteDatabase::connect(bool create)
     }
     else if (errorCode == SQLITE_OK)
     {
+#if 0
       sqlite3_extended_result_codes(conn, 1);
+#endif
       sqlite3_busy_handler(conn, busy_callback, NULL);
       if (setErr(sqlite3_exec(getHandle(), "PRAGMA empty_result_callbacks=ON", NULL, NULL, NULL),
                  "PRAGMA empty_result_callbacks=ON") != SQLITE_OK)
       {
         throw DbErrors("%s", getErrorMsg());
       }
+#if 0
       else if (sqlite3_db_readonly(conn, nullptr) == 1)
       {
         CLog::Log(LOGFATAL, "SqliteDatabase: {} is read only", db_fullpath);
         throw std::runtime_error("SqliteDatabase: " + db_fullpath + " is read only");
       }
+#endif
       errorCode = sqlite3_create_collation(conn, "ALPHANUM", SQLITE_UTF8, 0, AlphaNumericCollation);
       if (errorCode != SQLITE_OK)
       {
@@ -406,6 +436,7 @@ int SqliteDatabase::copy(const char* backup_name)
   int rc;
   std::string backup_db = backup_name;
 
+#if 0
   sqlite3* pFile; /* Database connection opened on zFilename */
   sqlite3_backup* pBackup; /* Backup object used to copy data */
 
@@ -439,6 +470,26 @@ int SqliteDatabase::copy(const char* backup_name)
 
   if (rc != SQLITE_OK)
     throw DbErrors("Can't copy database. (%d)", rc);
+#else
+  if (backup_name[0] == '/' || backup_name[0] == '\\')
+    backup_db = backup_db.substr(1);
+
+  // ensure the ".db" extension is appended to the end
+  if ( backup_db.find(".db") != (backup_db.length()-3) )
+    backup_db += ".db";
+
+  std::string backup_path = URIUtils::AddFileToFolder(host, backup_db);
+  std::string original_path = URIUtils::AddFileToFolder(host, db);
+
+  std::ifstream original_file(original_path.c_str(), std::ios::binary);
+  std::ofstream destination_file(backup_path.c_str(), std::ios::binary);
+
+  if (!original_file.is_open() || !destination_file.is_open())
+    throw DbErrors("Can't copy database.");
+
+  destination_file << original_file.rdbuf();
+  rc = 1;
+#endif
 
   return rc;
 }
@@ -888,7 +939,11 @@ bool SqliteDataset::query(const std::string& query)
   close();
 
   sqlite3_stmt* stmt = NULL;
+#if 0
   if (db->setErr(sqlite3_prepare_v2(handle(), query.c_str(), -1, &stmt, NULL), query.c_str()) !=
+#else
+  if (db->setErr(sqlite3_prepare(handle(),query.c_str(),-1,&stmt, NULL),query.c_str()) !=
+#endif
       SQLITE_OK)
     throw DbErrors("%s", db->getErrorMsg());
 
