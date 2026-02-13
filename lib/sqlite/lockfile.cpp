@@ -1,3 +1,4 @@
+#ifdef _XBOX
 #include <map>
 #include <vector>
 #include <set>
@@ -221,4 +222,5 @@ BOOL UnlockFile(
 
 #ifdef __cplusplus
 }
+#endif
 #endif
