@@ -30,6 +30,8 @@
 #include "addons/RepositoryUpdater.h"
 #include "addons/Service.h"
 #include "addons/Skin.h"
+#include "addons/addoninfo/AddonInfo.h"
+#include "addons/addoninfo/AddonType.h"
 #include "application/AppParams.h"
 #include "application/ApplicationActionListeners.h"
 #include "application/ApplicationPlayer.h"
@@ -39,18 +41,23 @@
 #include "dialogs/GUIDialogKaiToast.h"
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIFontManager.h"
+#include "interfaces/builtins/Builtins.h"
 #include "interfaces/generic/ScriptInvocationManager.h"
 #include "playlists/PlayListFactory.h"
 
+#include "GUILargeTextureManager.h"
 #include "GUIPassword.h"
+#include "GUIUserMessages.h"
 #include "ServiceBroker.h"
 #include "TextureCache.h"
 #include "filesystem/Directory.h"
 #include "filesystem/SpecialProtocol.h"
 #include "guilib/LocalizeStrings.h"
 #include "input/KeyboardLayoutManager.h"
-#include "input/Key.h"
+#include "input/actions/ActionTranslator.h"
 #include "messaging/ApplicationMessenger.h"
+#include "messaging/helpers/DialogHelper.h"
+#include "messaging/helpers/DialogOKHelper.h"
 #include "messaging/ThreadMessage.h"
 
 #include "playlists/PlayList.h"
@@ -86,6 +93,7 @@
 
 using namespace ADDON;
 using namespace XFILE;
+using namespace KODI;
 using namespace KODI::MESSAGING;
 
 using namespace std::chrono_literals;
@@ -587,6 +595,38 @@ int CApplication::GetMessageMask()
 
 void CApplication::OnApplicationMessage(ThreadMessage* pMsg)
 {
+  uint32_t msg = pMsg->dwMessage;
+
+  switch (msg)
+  {
+  case TMSG_SETLANGUAGE:
+    SetLanguage(pMsg->strParam);
+    break;
+
+  case TMSG_SETVIDEORESOLUTION:
+    g_graphicsContext.SetVideoResolution(static_cast<RESOLUTION>(pMsg->param1), pMsg->param2 == 1);
+    break;
+
+  case TMSG_EXECUTE_SCRIPT:
+    CScriptInvocationManager::GetInstance().ExecuteAsync(pMsg->strParam);
+    break;
+
+  case TMSG_EXECUTE_BUILT_IN:
+    CBuiltins::GetInstance().Execute(pMsg->strParam);
+    break;
+
+  case TMSG_LOADPROFILE:
+    {
+      const int profile = pMsg->param1;
+      if (profile >= 0)
+        CServiceBroker::GetSettingsComponent()->GetProfileManager()->LoadProfile(static_cast<unsigned int>(profile));
+    }
+    break;
+
+  default:
+    CLog::Log(LOGERROR, "{}: Unhandled threadmessage sent, {}", __FUNCTION__, msg);
+    break;
+  }
 }
 
 void CApplication::FrameMove(bool processEvents, bool processGUI)
@@ -738,7 +778,107 @@ void CApplication::StopPlaying()
 
 bool CApplication::OnMessage(CGUIMessage& message)
 {
+  switch (message.GetMessage())
+  {
+  case GUI_MSG_NOTIFY_ALL:
+    {
+      if (message.GetParam1() == GUI_MSG_UI_READY)
+      {
+        // remove splash window
+        CServiceBroker::GetGUI()->GetWindowManager().Delete(WINDOW_SPLASH);
+
+        // TODO: show the volumebar if the volume is muted
+
+        if (!m_incompatibleAddons.empty())
+        {
+          // filter addons that are not dependencies
+          std::vector<std::string> disabledAddonNames;
+          for (const auto& addoninfo : m_incompatibleAddons)
+          {
+            if (!CAddonType::IsDependencyType(addoninfo->MainType()))
+              disabledAddonNames.emplace_back(addoninfo->Name());
+          }
+
+          // migration (incompatible addons) dialog
+          auto addonList = StringUtils::Join(disabledAddonNames, ", ");
+          auto msg = StringUtils::Format(g_localizeStrings.Get(24149), addonList);
+          HELPERS::ShowOKDialogText(CVariant{24148}, CVariant{std::move(msg)});
+          m_incompatibleAddons.clear();
+        }
+
+        m_bInitializing = false;
+
+        if (message.GetSenderId() == WINDOW_SETTINGS_PROFILES)
+          GetComponent<CApplicationSkinHandling>()->ReloadSkin(false);
+      }
+      else if (message.GetParam1() == GUI_MSG_UPDATE_ITEM && message.GetItem())
+      {
+        CFileItemPtr item = std::static_pointer_cast<CFileItem>(message.GetItem());
+        if (m_itemCurrentFile->IsSamePath(item.get()))
+        {
+          m_itemCurrentFile->UpdateInfo(*item);
+          CServiceBroker::GetGUI()->GetInfoManager().UpdateCurrentItem(*item);
+        }
+      }
+    }
+    break;
+
+  case GUI_MSG_EXECUTE:
+    if (message.GetNumStringParams())
+      return ExecuteXBMCAction(message.GetStringParam(), message.GetItem());
+    break;
+  }
   return false;
+}
+
+bool CApplication::ExecuteXBMCAction(std::string actionStr, const CGUIListItemPtr &item /* = NULL */)
+{
+  // see if it is a user set string
+
+  //We don't know if there is unsecure information in this yet, so we
+  //postpone any logging
+  const std::string in_actionStr(actionStr);
+  if (item)
+    actionStr = GUILIB::GUIINFO::CGUIInfoLabel::GetItemLabel(actionStr, item.get());
+  else
+    actionStr = GUILIB::GUIINFO::CGUIInfoLabel::GetLabel(actionStr, INFO::DEFAULT_CONTEXT);
+
+  // user has asked for something to be executed
+  if (CBuiltins::GetInstance().HasCommand(actionStr))
+  {
+    if (!CBuiltins::GetInstance().IsSystemPowerdownCommand(actionStr))
+      CBuiltins::GetInstance().Execute(actionStr);
+  }
+  else
+  {
+    // try translating the action from our ButtonTranslator
+    unsigned int actionID;
+    if (CActionTranslator::TranslateString(actionStr, actionID))
+    {
+      OnAction(CAction(actionID));
+      return true;
+    }
+    CFileItem item(actionStr, false);
+#ifdef HAS_PYTHON
+    if (item.IsPythonScript())
+    { // a python script
+      CScriptInvocationManager::GetInstance().ExecuteAsync(item.GetPath());
+    }
+    else
+#endif
+    if (item.IsAudio() || item.IsVideo() || item.IsGame())
+    { // an audio or video file
+      PlayFile(item, "");
+    }
+    else
+    {
+      //At this point we have given up to translate, so even though
+      //there may be insecure information, we log it.
+      CLog::LogF(LOGDEBUG, "Tried translating, but failed to understand {}", in_actionStr);
+      return false;
+    }
+  }
+  return true;
 }
 
 void CApplication::Process()
@@ -778,7 +918,93 @@ void CApplication::Process()
 // We get called every 500ms
 void CApplication::ProcessSlow()
 {
-  // TODO: clean textures, process jobs etc.
+  // process skin resources (skin timers)
+  GetComponent<CApplicationSkinHandling>()->ProcessSkin();
+
+#if defined(TARGET_DARWIN_OSX) && defined(SDL_FOUND)
+  // There is an issue on OS X that several system services ask the cursor to become visible
+  // during their startup routines.  Given that we can't control this, we hack it in by
+  // forcing the
+  if (CServiceBroker::GetWinSystem()->IsFullScreen())
+  { // SDL thinks it's hidden
+    Cocoa_HideMouse();
+  }
+#endif
+
+  // Temporarily pause pausable jobs when viewing video/picture
+  int currentWindow = CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindow();
+  if (CurrentFileItem().IsVideo() ||
+      CurrentFileItem().IsPicture() ||
+      currentWindow == WINDOW_FULLSCREEN_VIDEO ||
+      currentWindow == WINDOW_FULLSCREEN_GAME ||
+      currentWindow == WINDOW_SLIDESHOW)
+  {
+    CServiceBroker::GetJobManager()->PauseJobs();
+  }
+  else
+  {
+    CServiceBroker::GetJobManager()->UnPauseJobs();
+  }
+
+  // Check if we need to activate the screensaver / DPMS.
+  const auto appPower = GetComponent<CApplicationPowerHandling>();
+  appPower->CheckScreenSaverAndDPMS();
+
+  // Check if we need to shutdown (if enabled).
+#if defined(TARGET_DARWIN)
+  if (CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_POWERMANAGEMENT_SHUTDOWNTIME) &&
+      CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_fullScreen)
+#else
+  if (CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_POWERMANAGEMENT_SHUTDOWNTIME))
+#endif
+  {
+    appPower->CheckShutdown();
+  }
+
+#if defined(TARGET_POSIX)
+  if (CPlatformPosix::TestQuitFlag())
+  {
+    CLog::Log(LOGINFO, "Quitting due to POSIX signal");
+    CServiceBroker::GetAppMessenger()->PostMsg(TMSG_QUIT);
+  }
+#endif
+
+#ifdef TARGET_ANDROID
+  // Pass the slow loop to droid
+  CXBMCApp::Get().ProcessSlow();
+#endif
+
+  CServiceBroker::GetGUI()->GetLargeTextureManager().CleanupUnusedImages();
+
+  CServiceBroker::GetGUI()->GetTextureManager().FreeUnusedTextures(5000);
+
+#ifdef HAS_DVD_DRIVE
+  // checks whats in the DVD drive and tries to autostart the content (xbox games, dvd, cdda, avi files...)
+  if (!appPlayer->IsPlayingVideo())
+    m_Autorun->HandleAutorun();
+#endif
+
+  // update upnp server/renderer states
+#ifdef HAS_UPNP
+  if (CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(CSettings::SETTING_SERVICES_UPNP) && UPNP::CUPnP::IsInstantiated())
+    UPNP::CUPnP::GetInstance()->UpdateState();
+#endif
+
+#if defined(TARGET_POSIX) && defined(HAS_FILESYSTEM_SMB)
+  smb.CheckIfIdle();
+#endif
+
+#ifdef HAS_FILESYSTEM_NFS
+  gNfsConnection.CheckIfIdle();
+#endif
+
+  CServiceBroker::GetMediaManager().ProcessEvents();
+
+  // if we don't render the gui there's no reason to start the screensaver.
+  // that way the screensaver won't kick in if we maximize the XBMC window
+  // after the screensaver start time.
+  if (!appPower->GetRenderGUI())
+    appPower->ResetScreenSaverTimer();
 }
 
 void CApplication::Restart(bool bSamePosition)

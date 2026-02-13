@@ -146,6 +146,8 @@ public:
 
   void UpdateCurrentPlayArt();
 
+  bool ExecuteXBMCAction(std::string action, const CGUIListItemPtr &item = NULL);
+
   std::string m_strPlayListFile;
 
   bool OnAction(const CAction &action);
