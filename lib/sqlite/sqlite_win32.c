@@ -1,61 +1,83 @@
-// https://github.com/Ryzee119/LithiumX/blob/master/src/platform/win32/sqlite_win32.c
-// Copyright 2023, Ryzee119
-// SPDX-License-Identifier: MIT
-
 /*
-XBE_TITLE = nxdk\ sample\ -\ hello
-GEN_XISO = $(XBE_TITLE).iso
-NXDK_DIR ?= $(CURDIR)/../..
-SRCS = \
-	$(CURDIR)/main.c \
-	$(CURDIR)/sqlite_nxdk.c \
-	$(CURDIR)/sqlite/sqlite3.c
-CFLAGS += \
-	-DSQLITE_DISABLE_INTRINSIC=1 \
-	-DSQLITE_WITHOUT_MSIZE=1 \
-	-DSQLITE_DISABLE_LFS=1 \
-	-DSQLITE_SYSTEM_MALLOC=1 \
-	-DSQLITE_THREADSAFE=0 \
-	-DSQLITE_NO_SYNC=1 \
-	-DSQLITE_OS_OTHER=1 \
-	-O2
-include $(NXDK_DIR)/Makefile
-*/
+ *  Copyright (C) Nikola Antonic, Ryzee119
+ *
+ *  SPDX-License-Identifier: GPL-2.0-or-later
+ *  See LICENSES/README.md for more information.
+ */
 
+// This implementation is based on LithiumX version.
+// Locking and other missing implementation are taken from XBMC4Xbox's SQLite3 (os_win.c)
+// https://github.com/Ryzee119/LithiumX/blob/master/src/platform/win32/sqlite_win32.c
+// https://github.com/antonic901/xbmc4xbox-redux/blob/master/docs/libSQLite3.rar
+
+#include "sqlite3.h"
+#include "lockfile.h"
+
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <windows.h>
-#include "sqlite3.h"
 
 #define UNUSED_PARAMETER(x) (void)(x)
+
+#define PENDING_BYTE      0x40000000  /* First byte past the 1GB boundary */
+
+#define RESERVED_BYTE     (PENDING_BYTE+1)
+#define SHARED_FIRST      (PENDING_BYTE+2)
+#define SHARED_SIZE       510
 
 typedef struct _winFile
 {
     sqlite3_file base;
     HANDLE h;
+    unsigned char locktype; /* Type of lock currently held on this file */
+    unsigned char isOpen;   /* True if needs to be closed */
+    short sharedLockByte;   /* Randomly chosen byte used as a shared lock */
 } winFile;
 
 #define sql_DbgPrint (void)
 
+/*
+** Undo a readlock
+*/
+static int unlockReadLock(sqlite3_file *id)
+{
+    winFile *f = (winFile *)id;
+    return UnlockFile(f->h, SHARED_FIRST + f->sharedLockByte, 0, 1, 0);
+}
+
+/*
+** Acquire a reader lock.
+*/
+static int getReadLock(sqlite3_file *id){
+    winFile *f = (winFile *)id;
+
+    int lk;
+    sqlite3_randomness(sizeof(lk), &lk);
+    f->sharedLockByte = (lk & 0x7fffffff) % (SHARED_SIZE - 1);
+    return LockFile(f->h, SHARED_FIRST + f->sharedLockByte, 0, 1, 0);
+}
+
 static int winClose(sqlite3_file *id)
 {
-    winFile *f;
-
-    f = (winFile *)id;
-    if (CloseHandle(f->h))
+    winFile *f = (winFile *)id;
+    if(f->isOpen)
     {
-        return SQLITE_OK;
+        RemoveLockMap(f->h);
+        CloseHandle(f->h);
+        f->isOpen = 0;
     }
-    return SQLITE_IOERR_CLOSE;
+
+    return SQLITE_OK;
 }
 
 static int winRead(sqlite3_file *id, void *pBuf, int amt, sqlite3_int64 offset)
 {
-    winFile *f;
+    winFile *f = (winFile *)id;
+    assert(f->isOpen);
+
     DWORD read;
     LARGE_INTEGER loffset;
-
-    f = (winFile *)id;
     loffset.QuadPart = offset;
 
     if (SetFilePointerEx(f->h, loffset, NULL, FILE_BEGIN) == 0)
@@ -75,11 +97,12 @@ static int winRead(sqlite3_file *id, void *pBuf, int amt, sqlite3_int64 offset)
 
 static int winWrite(sqlite3_file *id, const void *pBuf, int amt, sqlite3_int64 offset)
 {
-    winFile *f;
+    winFile *f = (winFile *)id;
+    assert(f->isOpen);
+    assert(amt > 0);
+
     DWORD written;
     LARGE_INTEGER loffset;
-
-    f = (winFile *)id;
     loffset.QuadPart = offset;
 
     if (SetFilePointerEx(f->h, loffset, NULL, FILE_BEGIN) == 0)
@@ -99,54 +122,214 @@ static int winWrite(sqlite3_file *id, const void *pBuf, int amt, sqlite3_int64 o
 
 static int winTruncate(sqlite3_file *id, sqlite3_int64 nByte)
 {
-    return SQLITE_IOERR_TRUNCATE;
+    winFile *f = (winFile *)id;
+    assert(f->isOpen);
+
+    LONG upperBits = nByte >> 32;
+    SetFilePointer(f->h, nByte, &upperBits, FILE_BEGIN);
+    SetEndOfFile(f->h);
+
+    return SQLITE_OK;
 }
 
 static int winSync(sqlite3_file *id, int flags)
 {
-    return SQLITE_OK;
+    winFile *f = (winFile *)id;
+    assert(f->isOpen);
+
+    IO_STATUS_BLOCK ioStatus;
+    if(NtFlushBuffersFile(f->h, &ioStatus) == 0)
+    {
+        return SQLITE_OK;
+    }
+
+    return SQLITE_IOERR;
 }
 
 static int winFileSize(sqlite3_file *id, sqlite3_int64 *pSize)
 {
-    winFile *f;
-    LARGE_INTEGER fs;
+    winFile *f = (winFile *)id;
+    assert(f->isOpen);
 
-    f = (winFile *)id;
-    fs.LowPart = GetFileSize(f->h, (LPDWORD)&fs.HighPart);
-
-    if (fs.LowPart == INVALID_FILE_SIZE)
-    {
-        return SQLITE_IOERR_FSTAT;
-    }
-
-    if (pSize)
-    {
-        *pSize = fs.QuadPart;
-    }
+    DWORD upperBits;
+    DWORD lowerBits = GetFileSize(f->h, &upperBits);
+    *pSize = (((sqlite_int64)upperBits) << 32) + lowerBits;
 
     return SQLITE_OK;
 }
 
 static int winLock(sqlite3_file *id, int locktype)
 {
-    UNUSED_PARAMETER(id);
-    UNUSED_PARAMETER(locktype);
-    return SQLITE_OK;
+    winFile *f = (winFile *)id;
+    assert(f->isOpen);
+
+    int rc = SQLITE_OK;    /* Return code from subroutines */
+    int res = 1;           /* Result of a windows lock call */
+    int newLocktype;       /* Set id->locktype to this value before exiting */
+    int gotPendingLock = 0;/* True if we acquired a PENDING lock this time */
+
+    /* If there is already a lock of this type or more restrictive on the
+    ** OsFile, do nothing. Don't use the end_lock: exit path, as
+    ** sqlite3OsEnterMutex() hasn't been called yet.
+    */
+    if (f->locktype >= locktype)
+    {
+        return SQLITE_OK;
+    }
+
+    /* Make sure the locking sequence is correct
+    */
+    assert(f->locktype != SQLITE_LOCK_NONE || locktype == SQLITE_LOCK_SHARED);
+    assert(locktype != SQLITE_LOCK_PENDING );
+    assert(locktype != SQLITE_LOCK_RESERVED || f->locktype == SQLITE_LOCK_SHARED);
+
+    /* Lock the SQLITE_LOCK_PENDING byte if we need to acquire a PENDING lock or
+    ** a SHARED lock.  If we are acquiring a SHARED lock, the acquisition of
+    ** the SQLITE_LOCK_PENDING byte is temporary.
+    */
+    newLocktype = f->locktype;
+    if (f->locktype==SQLITE_LOCK_NONE || (locktype == SQLITE_LOCK_EXCLUSIVE && f->locktype == SQLITE_LOCK_RESERVED))
+    {
+        int cnt = 3;
+        while(cnt-- > 0 && (res = LockFile(f->h, PENDING_BYTE, 0, 1, 0)) == 0)
+        {
+            /* Try 3 times to get the pending lock.  The pending lock might be
+            ** held by another reader process who will release it momentarily.
+            */
+            Sleep(1);
+        }
+        gotPendingLock = res;
+    }
+
+    /* Acquire a shared lock
+    */
+    if (locktype == SQLITE_LOCK_SHARED && res)
+    {
+        assert(f->locktype == SQLITE_LOCK_NONE);
+        res = getReadLock(id);
+        if(res)
+        {
+            newLocktype = SQLITE_LOCK_SHARED;
+        }
+    }
+
+    /* Acquire a RESERVED lock
+    */
+    if (locktype == SQLITE_LOCK_RESERVED && res)
+    {
+        assert(f->locktype == SQLITE_LOCK_SHARED);
+        res = LockFile(f->h, RESERVED_BYTE, 0, 1, 0);
+        if(res)
+        {
+            newLocktype = SQLITE_LOCK_RESERVED;
+        }
+    }
+
+    /* Acquire a PENDING lock
+    */
+    if (locktype == SQLITE_LOCK_EXCLUSIVE && res)
+    {
+        newLocktype = SQLITE_LOCK_PENDING;
+        gotPendingLock = 0;
+    }
+
+    /* Acquire an EXCLUSIVE lock
+    */
+    if (locktype == SQLITE_LOCK_EXCLUSIVE && res)
+    {
+        assert( f->locktype >= SQLITE_LOCK_SHARED);
+        res = unlockReadLock(id);
+        res = LockFile(f->h, SHARED_FIRST, 0, SHARED_SIZE, 0);
+        if (res)
+        {
+            newLocktype = SQLITE_LOCK_EXCLUSIVE;
+        }
+        else
+        {
+            // ERROR
+        }
+    }
+
+    /* If we are holding a PENDING lock that ought to be released, then
+    ** release it now.
+    */
+    if (gotPendingLock && locktype == SQLITE_LOCK_SHARED )
+    {
+        UnlockFile(f->h, PENDING_BYTE, 0, 1, 0);
+    }
+
+    /* Update the state of the lock has held in the file descriptor then
+    ** return the appropriate result code.
+    */
+    if ( res )
+    {
+        rc = SQLITE_OK;
+    }
+    else
+    {
+        rc = SQLITE_BUSY;
+    }
+    f->locktype = newLocktype;
+    return rc;
 }
 
 static int winUnlock(sqlite3_file *id, int locktype)
 {
-    UNUSED_PARAMETER(id);
-    UNUSED_PARAMETER(locktype);
-    return SQLITE_OK;
+    winFile *f = (winFile *)id;
+    assert(f->isOpen);
+    assert(f->isOpen);
+    assert(locktype <= SQLITE_LOCK_SHARED);
+
+    int rc = SQLITE_OK;
+
+    int type = f->locktype;
+    if(type >= SQLITE_LOCK_EXCLUSIVE)
+    {
+        UnlockFile(f->h, SHARED_FIRST, 0, SHARED_SIZE, 0);
+        if(locktype == SQLITE_LOCK_SHARED && !getReadLock(id))
+        {
+            /* This should never happen.  We should always be able to
+            ** reacquire the read lock */
+            rc = SQLITE_IOERR;
+        }
+    }
+    if(type >= SQLITE_LOCK_RESERVED)
+    {
+        UnlockFile(f->h, RESERVED_BYTE, 0, 1, 0);
+    }
+    if(locktype == SQLITE_LOCK_NONE && type >= SQLITE_LOCK_SHARED)
+    {
+        unlockReadLock(id);
+    }
+    if(type >= SQLITE_LOCK_PENDING)
+    {
+        UnlockFile(f->h, PENDING_BYTE, 0, 1, 0);
+    }
+    f->locktype = locktype;
+
+    return rc;
 }
 
 static int winCheckReservedLock(sqlite3_file *id, int *pResOut)
 {
-    UNUSED_PARAMETER(id);
-    *pResOut = 0;
-    return SQLITE_OK;
+    winFile *f = (winFile *)id;
+    assert(f->isOpen);
+
+    int rc;
+    if( f->locktype >= SQLITE_LOCK_RESERVED)
+    {
+        rc = 1;
+    }
+    else
+    {
+        rc = LockFile(f->h, RESERVED_BYTE, 0, 1, 0);
+        if(rc)
+        {
+            UnlockFile(f->h, RESERVED_BYTE, 0, 1, 0);
+        }
+        rc = !rc;
+    }
+    return rc;
 }
 
 static int winFileControl(sqlite3_file *id, int op, void *pArg)
@@ -216,13 +399,13 @@ static DWORD sqlite_to_win_attr(int sql_flags)
 static int winOpen(
     sqlite3_vfs *pVfs, const char *zFilename, sqlite3_file *id, int flags, int *pOutFlags)
 {
-    winFile *f;
-
     UNUSED_PARAMETER(pVfs);
 
-    f = (winFile *)id;
+    winFile *f = (winFile *)id;
+    assert(!f->isOpen);
+
     f->base.pMethods = &nxdk_io;
-    f->h = CreateFileA(zFilename, sqlite_to_win_access(flags), FILE_SHARE_READ, NULL,
+    f->h = CreateFileA(zFilename, sqlite_to_win_access(flags), FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
                        sqlite_to_win_attr(flags), FILE_ATTRIBUTE_NORMAL, NULL);
     if (f->h == INVALID_HANDLE_VALUE)
     {
@@ -234,6 +417,11 @@ static int winOpen(
         *pOutFlags = flags;
     }
 
+    AddLockMap(zFilename, f->h);
+    f->locktype = SQLITE_LOCK_NONE;
+    f->sharedLockByte = 0;
+    f->isOpen = 1;
+
     return SQLITE_OK;
 }
 
@@ -241,14 +429,12 @@ static int winDelete(sqlite3_vfs *pVfs, const char *zFilename, int syncDir)
 {
     UNUSED_PARAMETER(pVfs);
     UNUSED_PARAMETER(syncDir);
-    if (DeleteFile(zFilename))
+    if (DeleteFileA(zFilename))
     {
         return SQLITE_OK;
     }
-    else
-    {
-        return SQLITE_IOERR_DELETE_NOENT;
-    }
+
+    return SQLITE_IOERR_DELETE_NOENT;
 }
 
 static int winAccess(sqlite3_vfs *pVfs, const char *zFilename, int flags, int *pResOut)
@@ -331,7 +517,8 @@ static int winRandomness(sqlite3_vfs *pVfs, int nBuf, char *zBuf)
 
 static int winSleep(sqlite3_vfs *pVfs, int microsec)
 {
-    Sleep((microsec+999)/1000);
+    UNUSED_PARAMETER(pVfs);
+    Sleep((microsec + 999) / 1000);
     return microsec;
 }
 
