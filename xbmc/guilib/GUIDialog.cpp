@@ -143,7 +143,7 @@ void CGUIDialog::UpdateVisibility()
     else
       Close();
   }
-  
+
   if (m_autoClosing)
   { // check if our timer is running
     if (!m_showStartTime)
@@ -206,7 +206,7 @@ void CGUIDialog::Open_Internal(bool bProcessRenderLoop, const std::string &param
 
 void CGUIDialog::Open(const std::string &param /* = "" */)
 {
-  if (!g_application.IsCurrentThread())
+  if (!CServiceBroker::GetAppMessenger()->IsProcessThread())
   {
     // make sure graphics lock is not held
     CSingleExit leaveIt(g_graphicsContext);

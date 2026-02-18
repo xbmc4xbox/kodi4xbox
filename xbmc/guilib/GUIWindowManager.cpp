@@ -612,7 +612,7 @@ void CGUIWindowManager::ForceActivateWindow(int iWindowID, const std::string& st
 
 void CGUIWindowManager::ActivateWindow(int iWindowID, const std::vector<std::string>& params, bool swappingWindows /* = false */, bool force /* = false */)
 {
-  if (!g_application.IsCurrentThread())
+  if (!CServiceBroker::GetAppMessenger()->IsProcessThread())
   {
     // make sure graphics lock is not held
     CSingleExit leaveIt(g_graphicsContext);
@@ -882,7 +882,7 @@ bool RenderOrderSortFunction(CGUIWindow *first, CGUIWindow *second)
 
 void CGUIWindowManager::Process(unsigned int currentTime)
 {
-  assert(g_application.IsCurrentThread());
+  assert(CServiceBroker::GetAppMessenger()->IsProcessThread());
   std::unique_lock<CCriticalSection> lock(g_graphicsContext);
 
   CDirtyRegionList dirtyregions;
@@ -953,7 +953,7 @@ void CGUIWindowManager::RenderEx() const
 
 bool CGUIWindowManager::Render()
 {
-  assert(g_application.IsCurrentThread());
+  assert(CServiceBroker::GetAppMessenger()->IsProcessThread());
   CSingleExit lock(g_graphicsContext);
 
   CDirtyRegionList dirtyRegions = m_tracker.GetDirtyRegions();
@@ -1019,7 +1019,7 @@ void CGUIWindowManager::AfterRender()
 
 void CGUIWindowManager::FrameMove()
 {
-  assert(g_application.IsCurrentThread());
+  assert(CServiceBroker::GetAppMessenger()->IsProcessThread());
   std::unique_lock<CCriticalSection> lock(g_graphicsContext);
 
   if(m_iNested == 0)
@@ -1077,7 +1077,7 @@ CGUIWindow* CGUIWindowManager::GetWindow(int id) const
 
 void CGUIWindowManager::ProcessRenderLoop(bool renderOnly /*= false*/)
 {
-  if (g_application.IsCurrentThread() && m_pCallback)
+  if (CServiceBroker::GetAppMessenger()->IsProcessThread() && m_pCallback)
   {
     m_iNested++;
     if (!renderOnly)
