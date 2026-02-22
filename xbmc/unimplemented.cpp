@@ -1,44 +1,65 @@
 #include "unimplemented.h"
 
-int WideCharToMultiByte(unsigned int codePage, unsigned long flags,
-                        const wchar_t* wideStr, int wideLen,
-                        char* multiByteStr, int multiByteLen,
-                        const char* defaultChar, bool* usedDefaultChar)
+#include <wchar.h>
+
+int WideCharToMultiByte(unsigned int page, unsigned long flags, const wchar_t* src, int srclen, char* dst, int dstlen, const char* defchar, bool *used )
 {
-  if (codePage != CP_UTF8)
-    return 0;
-
-  std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-  std::string utf8Str = converter.to_bytes(wideStr, wideStr + wideLen);
-
-  if (multiByteStr && multiByteLen > 0)
-  {
-    size_t copyLen = (utf8Str.size() < (size_t)multiByteLen) ? utf8Str.size() : (size_t)multiByteLen;
-    memcpy(multiByteStr, utf8Str.c_str(), copyLen);
-    return (int)copyLen;
-  }
-
-  return (int)utf8Str.size();
+  return _WideCharToMultiByte(page, flags, reinterpret_cast<LPCWSTR>(src), srclen, dst, dstlen, defchar, reinterpret_cast<BOOL*>(used));
 }
 
-int MultiByteToWideChar(unsigned int codePage, unsigned long flags,
-                        const char* multiByteStr, int multiByteLen,
-                        wchar_t* wideStr, int wideLen)
+int MultiByteToWideChar(unsigned int page, unsigned long flags, const char* src, int srclen, wchar_t* dst, int dstlen )
 {
-  if (codePage != CP_UTF8)
+  return _MultiByteToWideChar(page, flags, src, srclen, reinterpret_cast<LPWSTR>(dst), dstlen);
+}
+
+INT _WideCharToMultiByte(UINT page, DWORD flags, LPCWSTR src, INT srclen, LPSTR dst, INT dstlen, LPCSTR defchar, BOOL *used )
+{
+  if (page != CP_UTF8)
     return 0;
 
-  std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-  std::wstring wide = converter.from_bytes(multiByteStr, multiByteStr + multiByteLen);
+  int i;
 
-  if (wideStr && wideLen > 0)
+  if (!src || !srclen || (!dst && dstlen))
   {
-    size_t copyLen = (wide.size() < (size_t)wideLen) ? wide.size() : (size_t)wideLen;
-    wcsncpy(wideStr, wide.c_str(), copyLen);
-    return (int)copyLen;
+    SetLastError( ERROR_INVALID_PARAMETER );
+    return 0;
   }
 
-  return (int)wide.size();
+  if (srclen < 0) srclen = wcslen((wchar_t*)src) + 1;
+
+  if(!dstlen)
+    return srclen;
+
+  for(i=0; i<srclen && i<dstlen; i++)
+    dst[i] = src[i] & 0xFF;
+
+  if (used) *used = FALSE;
+
+  return i;
+}
+
+INT _MultiByteToWideChar(UINT page, DWORD flags, LPCSTR src, INT srclen, LPWSTR dst, INT dstlen )
+{
+  if (page != CP_UTF8)
+    return 0;
+
+  int i;
+
+  if (!src || !srclen || (!dst && dstlen))
+  {
+    SetLastError( ERROR_INVALID_PARAMETER );
+    return 0;
+  }
+
+  if (srclen < 0) srclen = strlen(src) + 1;
+
+  if(!dstlen)
+    return srclen;
+
+  for(i=0; i<srclen && i<dstlen; i++)
+    dst[i] = src[i];
+
+  return i;
 }
 
 static const uint64_t EPOCH_DIFFERENCE = 116444736000000000ULL; // 1601 to 1970 in 100ns units
