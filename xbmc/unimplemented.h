@@ -15,6 +15,4 @@ int MultiByteToWideChar(unsigned int page, unsigned long flags, const char* src,
 INT _WideCharToMultiByte(UINT page, DWORD flags, LPCWSTR src, INT srclen, LPSTR dst, INT dstlen, LPCSTR defchar, BOOL *used );
 INT _MultiByteToWideChar(UINT page, DWORD flags, LPCSTR src, INT srclen, LPWSTR dst, INT dstlen );
 
-BOOL LocalFileTimeToFileTime(const FILETIME *lpLocalFileTime, LPFILETIME lpFileTime);
-
 #endif // UNIMPLEMENTED_H
