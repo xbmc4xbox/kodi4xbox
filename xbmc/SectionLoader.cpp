@@ -43,7 +43,7 @@ CSectionLoader::~CSectionLoader(void)
 
 bool CSectionLoader::IsLoaded(const CStdString& strSection)
 {
-  CSingleLock lock(g_sectionLoader.m_critSection);
+  std::unique_lock<CCriticalSection> lock(g_sectionLoader.m_critSection);
 
   for (int i = 0; i < (int)g_sectionLoader.m_vecLoadedSections.size(); ++i)
   {
@@ -55,7 +55,7 @@ bool CSectionLoader::IsLoaded(const CStdString& strSection)
 
 bool CSectionLoader::Load(const CStdString& strSection)
 {
-  CSingleLock lock(g_sectionLoader.m_critSection);
+  std::unique_lock<CCriticalSection> lock(g_sectionLoader.m_critSection);
 
   for (int i = 0; i < (int)g_sectionLoader.m_vecLoadedSections.size(); ++i)
   {
@@ -92,7 +92,7 @@ bool CSectionLoader::Load(const CStdString& strSection)
 
 void CSectionLoader::Unload(const CStdString& strSection)
 {
-  CSingleLock lock(g_sectionLoader.m_critSection);
+  std::unique_lock<CCriticalSection> lock(g_sectionLoader.m_critSection);
   if (!CSectionLoader::IsLoaded(strSection)) return ;
 
   ivecLoadedSections i;
@@ -118,7 +118,7 @@ void CSectionLoader::Unload(const CStdString& strSection)
 
 LibraryLoader *CSectionLoader::LoadDLL(const CStdString &dllname, bool bDelayUnload /*=true*/, bool bLoadSymbols /*=false*/)
 {
-  CSingleLock lock(g_sectionLoader.m_critSection);
+  std::unique_lock<CCriticalSection> lock(g_sectionLoader.m_critSection);
 
   if (!dllname) return NULL;
   // check if it's already loaded, and increase the reference count if so
@@ -150,7 +150,7 @@ LibraryLoader *CSectionLoader::LoadDLL(const CStdString &dllname, bool bDelayUnl
 
 void CSectionLoader::UnloadDLL(const CStdString &dllname)
 {
-  CSingleLock lock(g_sectionLoader.m_critSection);
+  std::unique_lock<CCriticalSection> lock(g_sectionLoader.m_critSection);
 
   if (!dllname) return;
   // check if it's already loaded, and decrease the reference count if so
@@ -180,7 +180,7 @@ void CSectionLoader::UnloadDLL(const CStdString &dllname)
 
 void CSectionLoader::UnloadDelayed()
 {
-  CSingleLock lock(g_sectionLoader.m_critSection);
+  std::unique_lock<CCriticalSection> lock(g_sectionLoader.m_critSection);
 
   ivecLoadedSections i = g_sectionLoader.m_vecLoadedSections.begin();
   while( i != g_sectionLoader.m_vecLoadedSections.end() )
@@ -230,7 +230,7 @@ void CSectionLoader::UnloadAll()
   }
 
   // delete the dll's
-  CSingleLock lock(g_sectionLoader.m_critSection);
+  std::unique_lock<CCriticalSection> lock(g_sectionLoader.m_critSection);
   vector<CDll>::iterator it = g_sectionLoader.m_vecLoadedDLLs.begin();
   while (it != g_sectionLoader.m_vecLoadedDLLs.end())
   {

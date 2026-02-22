@@ -30,7 +30,7 @@ extern "C" void tracker_socket_track(uintptr_t caller, SOCKET socket)
   DllTrackInfo* pInfo = tracker_get_dlltrackinfo(caller);
   if (pInfo)
   {
-    CSingleLock lock(g_trackerLock);
+    std::unique_lock<CCriticalSection> lock(g_trackerLock);
     pInfo->socketList.push_back(socket);
   }
 }
@@ -40,7 +40,7 @@ extern "C" void tracker_socket_free(uintptr_t caller, SOCKET socket)
   DllTrackInfo* pInfo = tracker_get_dlltrackinfo(caller);
   if (pInfo)
   {
-    CSingleLock lock(g_trackerLock);
+    std::unique_lock<CCriticalSection> lock(g_trackerLock);
     pInfo->socketList.remove(socket);
   }
 }
@@ -49,7 +49,7 @@ extern "C" void tracker_socket_free_all(DllTrackInfo* pInfo)
 {
   if (!pInfo->fileList.empty())
   {
-    CSingleLock lock(g_trackerLock);
+    std::unique_lock<CCriticalSection> lock(g_trackerLock);
     SOCKET socket;
     CLog::Log(LOGDEBUG,"{}: Detected open sockets: {}", pInfo->pDll->GetFileName(), pInfo->socketList.size());
     for (SocketListIter it = pInfo->socketList.begin(); it != pInfo->socketList.end(); ++it)
