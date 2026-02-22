@@ -19,7 +19,13 @@
  */
 
 #include "system.h"
+
+#include "ServiceBroker.h"
+#include "settings/Settings.h"
+#include "settings/SettingsComponent.h"
 #include "utils/log.h"
+#include "utils/StringUtils.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -128,22 +134,25 @@ extern "C" void __stdcall init_emu_environ()
 
 extern "C" void __stdcall update_emu_environ()
 {
+  const std::shared_ptr<CSettings> settings = CServiceBroker::GetSettingsComponent()->GetSettings();
+
   // Use a proxy, if the GUI was configured as such
-  if (CSettings::GetInstance().GetBool("network.usehttpproxy")
-      && !CSettings::GetInstance().GetString("network.httpproxyserver").empty()
-      && !CSettings::GetInstance().GetString("network.httpproxyport").empty()
-      && CSettings::GetInstance().GetInt("network.httpproxytype") == 0)
+  if (settings->GetBool("network.usehttpproxy")
+      && !settings->GetString("network.httpproxyserver").empty()
+      && !settings->GetString("network.httpproxyport").empty()
+      && settings->GetInt("network.httpproxytype") == 0)
   {
-    CStdString strProxy;
-    if (!CSettings::GetInstance().GetString("network.httpproxyusername").empty() &&
-        !CSettings::GetInstance().GetString("network.httpproxypassword").empty())
+    std::string strProxy;
+    if (!settings->GetString("network.httpproxyusername").empty() &&
+        !settings->GetString("network.httpproxypassword").empty())
     {
-      strProxy.Format("%s:%s@", CSettings::GetInstance().GetString("network.httpproxyusername").c_str(),
-                                CSettings::GetInstance().GetString("network.httpproxypassword").c_str());
+      strProxy = StringUtils::Format(
+          "{}:{}@", settings->GetString("network.httpproxyusername").c_str(),
+          settings->GetString("network.httpproxypassword").c_str());
     }
 
-    strProxy += CSettings::GetInstance().GetString("network.httpproxyserver");
-    strProxy += ":" + CSettings::GetInstance().GetString("network.httpproxyport");
+    strProxy += settings->GetString("network.httpproxyserver");
+    strProxy += ":" + settings->GetString("network.httpproxyport");
 
     dll_putenv(("HTTP_PROXY=http://" +strProxy).c_str());
     dll_putenv(("HTTPS_PROXY=http://" +strProxy).c_str());
@@ -627,11 +636,11 @@ extern "C"
       return _findfirst(CUtil::ValidatePath(CSpecialProtocol::TranslatePath(str), true), data);
     }
     // non-local files. handle through IDirectory-class - only supports '*.bah' or '*.*'
-    CStdString strMask;
+    std::string strMask;
     if (url.GetFileName().find("*.*") != string::npos)
     {
-      CStdString strReplaced = url.GetFileName();
-      strReplaced.Replace("*.*","");
+      std::string strReplaced = url.GetFileName();
+      StringUtils::Replace(strReplaced, "*.*","");
       url.SetFileName(strReplaced);
     }
     else if (url.GetFileName().find("*.") != string::npos)
@@ -648,9 +657,9 @@ extern "C"
       CURL url2(url.GetFileName());
       url = url2;
     }
-    CStdString fName = url.GetFileName();
+    std::string fName = url.GetFileName();
     url.SetFileName("");
-    CStdString strURL = url.Get();
+    std::string strURL = url.Get();
     bVecDirsInited = true;
     vecDirsOpen[iDirSlot].items.Clear();
     vecDirsOpen[iDirSlot].Directory = CFactoryDirectory::Create(url);
@@ -1101,7 +1110,7 @@ extern "C"
 
   int dllvprintf(const char *format, va_list va)
   {
-    CStdString buffer = StringUtils::FormatV(format, va);
+    std::string buffer = StringUtils::FormatV(format, va);
     CLog::Log(LOGDEBUG, "  msg: {}", buffer.c_str());
     return buffer.length();
   }

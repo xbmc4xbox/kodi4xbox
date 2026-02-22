@@ -127,7 +127,7 @@ LibraryLoader* DllLoaderContainer::LoadModule(const char* sName, const char* sCu
   }
   else if (sCurrentDir)
   {
-    CStdString strPath=sCurrentDir;
+    std::string strPath=sCurrentDir;
     strPath+=sName;
     pDll = GetModule(strPath.c_str());
   }
@@ -159,10 +159,10 @@ LibraryLoader* DllLoaderContainer::FindModule(const char* sName, const char* sCu
   if (URIUtils::IsInArchive(sName))
   {
     CURL url(sName);
-    CStdString newName = "special://temp/";
+    std::string newName = "special://temp/";
     newName += url.GetFileName();
     CFile::Copy(sName, newName);
-    return FindModule(newName, sCurrentDir, bLoadSymbols);
+    return FindModule(newName.c_str(), sCurrentDir, bLoadSymbols);
   }
 
   if (CURL::IsFullPath(sName))
@@ -171,7 +171,7 @@ LibraryLoader* DllLoaderContainer::FindModule(const char* sName, const char* sCu
   }
   else if (sCurrentDir)
   { // in the path of the parent dll?
-    CStdString strPath=sCurrentDir;
+    std::string strPath=sCurrentDir;
     strPath+=sName;
 
     if (CFile::Exists(strPath))
@@ -179,12 +179,11 @@ LibraryLoader* DllLoaderContainer::FindModule(const char* sName, const char* sCu
   }
 
   //  in environment variable?
-  CStdStringArray vecEnv;
-  StringUtils::SplitString(ENV_PATH, ";", vecEnv);
+  std::vector<std::string> vecEnv = StringUtils::Split(ENV_PATH, ";");
 
   for (int i=0; i<(int)vecEnv.size(); ++i)
   {
-    CStdString strPath=vecEnv[i];
+    std::string strPath=vecEnv[i];
 
 #ifdef LOGALL
     CLog::Log(LOGDEBUG, "Searching for the dll {} in directory {}", sName, strPath.c_str());

@@ -18,10 +18,11 @@
  *
  */
 
-#include "utils/log.h"
 #include "DynamicDll.h"
-#include "filesystem/File.h"
+
 #include "SectionLoader.h"
+#include "filesystem/File.h"
+#include "utils/log.h"
 
 using namespace XFILE;
 
@@ -31,7 +32,7 @@ DllDynamic::DllDynamic()
   m_DelayUnload=true;
 }
 
-DllDynamic::DllDynamic(const CStdString& strDllName)
+DllDynamic::DllDynamic(const std::string& strDllName)
 {
   m_strDllName=strDllName;
   m_dll=NULL;
@@ -83,7 +84,7 @@ bool DllDynamic::EnableDelayedUnload(bool bOnOff)
   return true;
 }
 
-bool DllDynamic::SetFile(const CStdString& strDllName)
+bool DllDynamic::SetFile(const std::string& strDllName)
 {
   if (m_dll)
     return false;

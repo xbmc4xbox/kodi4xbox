@@ -18,14 +18,28 @@
  *
  */
 
-#include "threads/SystemClock.h"
-#include "system.h"
 #include "SectionLoader.h"
+
 #include "cores/DllLoader/DllLoaderContainer.h"
-#include "threads/SingleLock.h"
 #include "utils/log.h"
 
 using namespace std;
+
+namespace XbmcThreads
+{
+  unsigned int SystemClockMillis()
+  {
+    uint64_t now_time = (uint64_t)GetTickCount();
+    static uint64_t start_time = 0;
+    static bool start_time_set = false;
+    if (!start_time_set)
+    {
+      start_time = now_time;
+      start_time_set = true;
+    }
+    return (unsigned int)(now_time - start_time);
+  }
+}
 
 #define g_sectionLoader XBMC_GLOBAL_USE(CSectionLoader)
 
@@ -41,7 +55,7 @@ CSectionLoader::CSectionLoader(void)
 CSectionLoader::~CSectionLoader(void)
 {}
 
-bool CSectionLoader::IsLoaded(const CStdString& strSection)
+bool CSectionLoader::IsLoaded(const std::string& strSection)
 {
   std::unique_lock<CCriticalSection> lock(g_sectionLoader.m_critSection);
 
@@ -53,7 +67,7 @@ bool CSectionLoader::IsLoaded(const CStdString& strSection)
   return false;
 }
 
-bool CSectionLoader::Load(const CStdString& strSection)
+bool CSectionLoader::Load(const std::string& strSection)
 {
   std::unique_lock<CCriticalSection> lock(g_sectionLoader.m_critSection);
 
@@ -90,7 +104,7 @@ bool CSectionLoader::Load(const CStdString& strSection)
   return true;
 }
 
-void CSectionLoader::Unload(const CStdString& strSection)
+void CSectionLoader::Unload(const std::string& strSection)
 {
   std::unique_lock<CCriticalSection> lock(g_sectionLoader.m_critSection);
   if (!CSectionLoader::IsLoaded(strSection)) return ;
@@ -116,16 +130,16 @@ void CSectionLoader::Unload(const CStdString& strSection)
   }
 }
 
-LibraryLoader *CSectionLoader::LoadDLL(const CStdString &dllname, bool bDelayUnload /*=true*/, bool bLoadSymbols /*=false*/)
+LibraryLoader *CSectionLoader::LoadDLL(const std::string &dllname, bool bDelayUnload /*=true*/, bool bLoadSymbols /*=false*/)
 {
   std::unique_lock<CCriticalSection> lock(g_sectionLoader.m_critSection);
 
-  if (!dllname) return NULL;
+  if (dllname.empty()) return NULL;
   // check if it's already loaded, and increase the reference count if so
   for (int i = 0; i < (int)g_sectionLoader.m_vecLoadedDLLs.size(); ++i)
   {
     CDll& dll = g_sectionLoader.m_vecLoadedDLLs[i];
-    if (dll.m_strDllName.Equals(dllname))
+    if (dll.m_strDllName == dllname)
     {
       dll.m_lReferenceCount++;
       return dll.m_pDll;
@@ -148,16 +162,16 @@ LibraryLoader *CSectionLoader::LoadDLL(const CStdString &dllname, bool bDelayUnl
   return newDLL.m_pDll;
 }
 
-void CSectionLoader::UnloadDLL(const CStdString &dllname)
+void CSectionLoader::UnloadDLL(const std::string &dllname)
 {
   std::unique_lock<CCriticalSection> lock(g_sectionLoader.m_critSection);
 
-  if (!dllname) return;
+  if (dllname.empty()) return;
   // check if it's already loaded, and decrease the reference count if so
   for (int i = 0; i < (int)g_sectionLoader.m_vecLoadedDLLs.size(); ++i)
   {
     CDll& dll = g_sectionLoader.m_vecLoadedDLLs[i];
-    if (dll.m_strDllName.Equals(dllname))
+    if (dll.m_strDllName == dllname)
     {
       dll.m_lReferenceCount--;
       if (0 == dll.m_lReferenceCount)

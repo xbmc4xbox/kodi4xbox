@@ -263,7 +263,7 @@ int DllLoader::Parse()
 {
   int iResult = 0;
 
-  CStdString strFileName= GetFileName();
+  std::string strFileName= GetFileName();
   FILE* fp = fopen_utf8(CSpecialProtocol::TranslatePath(strFileName).c_str(), "rb");
 
   if (fp)
