@@ -179,7 +179,7 @@ extern "C" int WINAPI dllMessageBoxA(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption,
   else
     strcpy(szCaption, lpCaption);
 
-  CLog::Log(LOGDEBUG, "MessageBoxA(hwnd: 0x%x, text: '%s', caption '%s', type: 0x%x", hWnd, szText, szCaption, uType);
+  CLog::Log(LOGDEBUG, "MessageBoxA(hwnd: 0x{:x}, text: '{}', caption '{}', type: 0x{:x}", hWnd, szText, szCaption, uType);
   //not_implement("user32.dll fake function MessageBoxA called\n"); //warning
   return NULL;
 }
@@ -272,7 +272,7 @@ extern "C" UINT WINAPI dllGetDC(HANDLE hWnd)
 
 {
 
-  CLog::Log(LOGDEBUG, "GetDC(0x%x) => 1\n", hWnd);
+  CLog::Log(LOGDEBUG, "GetDC(0x{:x}) => 1\n", hWnd);
 
   return 1;
 
@@ -282,7 +282,7 @@ extern "C" UINT WINAPI dllReleaseDC(HANDLE hWnd, HANDLE hDC)
 
 {
 
-  CLog::Log(LOGDEBUG, "ReleaseDC(0x%x, 0x%x) => 1\n", hWnd, hDC);
+  CLog::Log(LOGDEBUG, "ReleaseDC(0x{:x}, 0x{:x}) => 1\n", hWnd, hDC);
 
   return 1;
 
@@ -294,7 +294,7 @@ extern "C" UINT WINAPI dllGetWindowRect(HWND win, RECT *r)
 
 {
 
-  CLog::Log(LOGDEBUG, "GetWindowRect(0x%x, 0x%x) => 1\n", win, r);
+  CLog::Log(LOGDEBUG, "GetWindowRect(0x{:x}, 0x{:x}) => 1\n", win, r);
 
 #define PSEUDO_SCREEN_WIDTH /*640*/800
 
@@ -325,7 +325,7 @@ extern "C" UINT WINAPI dllShowCursor(int show)
 
 {
 
-  CLog::Log(LOGDEBUG, "ShowCursor(%d) => %d\n", show, show);
+  CLog::Log(LOGDEBUG, "ShowCursor({}) => {}\n", show, show);
 
   if (show)
 
@@ -397,7 +397,7 @@ unsigned long VobSubPFOpen(int id)
   }
   if (hFile != INVALID_HANDLE_VALUE)
   {
-    CLog::Log(LOGDEBUG,"Open %s", CSpecialProtocol::TranslatePath(filename));
+    CLog::Log(LOGDEBUG,"Open {}", CSpecialProtocol::TranslatePath(filename));
     return (unsigned long)hFile;
   }
   return -1;
@@ -585,7 +585,7 @@ extern "C" UINT WINAPI dllGetDeviceCaps(int hdc, int unk)
 
 {
 
-  CLog::Log(LOGDEBUG, "GetDeviceCaps(0x%x, %d) => 0\n", hdc, unk);
+  CLog::Log(LOGDEBUG, "GetDeviceCaps(0x{:x}, {}) => 0\n", hdc, unk);
 
 #define BITSPIXEL 12
 
@@ -608,7 +608,7 @@ extern "C" HPALETTE WINAPI dllCreatePalette(CONST LOGPALETTE *lpgpl)
 
 {
 
-  CLog::Log(LOGDEBUG, "CreatePalette(%x) => NULL\n", lpgpl);
+  CLog::Log(LOGDEBUG, "CreatePalette({:x}) => NULL\n", lpgpl);
 
   return NULL;
 
@@ -630,7 +630,7 @@ extern "C" int WINAPI dllGetSystemMetrics(int nIndex)
 
 #define SM_CMONITORS  80
 
-  CLog::Log(LOGDEBUG, "GetSystemMetrics(%d)\n", nIndex);
+  CLog::Log(LOGDEBUG, "GetSystemMetrics({})\n", nIndex);
 
   switch (nIndex)
 
@@ -666,13 +666,13 @@ extern "C" int WINAPI dllGetSystemMetrics(int nIndex)
 
 extern "C" int WINAPI dllMonitorFromWindow(HWND win, int flags)
 {
-  CLog::Log(LOGDEBUG, "MonitorFromWindow(0x%x, 0x%x) => 0\n", win, flags);
+  CLog::Log(LOGDEBUG, "MonitorFromWindow(0x{:x}, 0x{:x}) => 0\n", win, flags);
   return 0;
 }
 
 extern "C" int WINAPI dllMonitorFromRect(RECT *r, int flags)
 {
-  CLog::Log(LOGDEBUG, "MonitorFromRect(0x%x, 0x%x) => 0\n", r, flags);
+  CLog::Log(LOGDEBUG, "MonitorFromRect(0x{:x}, 0x{:x}) => 0\n", r, flags);
   return 0;
 }
 
@@ -680,7 +680,7 @@ extern "C" int WINAPI dllMonitorFromPoint(void *p, int flags)
 
 {
 
-  CLog::Log(LOGDEBUG, "MonitorFromPoint(0x%x, 0x%x) => 0\n", p, flags);
+  CLog::Log(LOGDEBUG, "MonitorFromPoint(0x{:x}, 0x{:x}) => 0\n", p, flags);
 
   return 0;
 
@@ -691,7 +691,7 @@ extern "C" int WINAPI dllEnumDisplayMonitors(HDC hdc, LPRECT lprcClip, MONITOREN
 
 {
 
-  CLog::Log(LOGDEBUG, "EnumDisplayMonitors(0x%x, 0x%x, 0x%x, 0x%x) => ?\n",
+  CLog::Log(LOGDEBUG, "EnumDisplayMonitors(0x{:x}, 0x{:x}, 0x{:x}, 0x{:x}) => ?\n",
 
             hdc, lprcClip, lpfnEnum, dwData);
 
@@ -711,7 +711,7 @@ extern "C" int WINAPI dllGetMonitorInfoA(void *mon, LPMONITORINFO lpmi)
 
 {
 
-  CLog::Log(LOGDEBUG, "GetMonitorInfoA(0x%x, 0x%x) => 1\n", mon, lpmi);
+  CLog::Log(LOGDEBUG, "GetMonitorInfoA(0x{:x}, 0x{:x}) => 1\n", mon, lpmi);
 
 
 
@@ -756,7 +756,7 @@ extern "C" int WINAPI dllEnumDisplayDevicesA(const char *device, int devnum,
 
 {
 
-  CLog::Log(LOGDEBUG, "EnumDisplayDevicesA(0x%x = %s, %d, 0x%x, %x) => 1\n",
+  CLog::Log(LOGDEBUG, "EnumDisplayDevicesA(0x{:x} = {}, {}, 0x{:x}, {:x}) => 1\n",
 
             device, device, devnum, dispdev, flags);
 
@@ -770,7 +770,7 @@ extern "C" int WINAPI dllIsWindowVisible(HWND win)
 
 {
 
-  CLog::Log(LOGDEBUG, "IsWindowVisible(0x%x) => 1\n", win);
+  CLog::Log(LOGDEBUG, "IsWindowVisible(0x{:x}) => 1\n", win);
 
   return 1;
 
@@ -804,7 +804,7 @@ extern "C" HWND WINAPI dllCreateUpDownControl (DWORD style, INT x, INT y, INT cx
 
 extern "C" MMRESULT WINAPI dlltimeGetDevCaps(LPTIMECAPS lpCaps, UINT wSize)
 {
-  CLog::Log(LOGDEBUG, "timeGetDevCaps(%p, %u) !\n", lpCaps, wSize);
+  CLog::Log(LOGDEBUG, "timeGetDevCaps({:p}, {}) !\n", lpCaps, wSize);
   lpCaps->wPeriodMin = 1;
   lpCaps->wPeriodMax = 65535;
   return 0;
@@ -812,14 +812,14 @@ extern "C" MMRESULT WINAPI dlltimeGetDevCaps(LPTIMECAPS lpCaps, UINT wSize)
 
 extern "C" MMRESULT WINAPI dlltimeBeginPeriod(UINT wPeriod)
 {
-  CLog::Log(LOGDEBUG, "timeBeginPeriod(%u) !\n", wPeriod);
+  CLog::Log(LOGDEBUG, "timeBeginPeriod({}) !\n", wPeriod);
   if (wPeriod < 1 || wPeriod > 65535) return 96 + 1; //TIMERR_NOCANDO;
   return 0;
 }
 
 extern "C" MMRESULT WINAPI dlltimeEndPeriod(UINT wPeriod)
 {
-  CLog::Log(LOGDEBUG, "timeEndPeriod(%u) !\n", wPeriod);
+  CLog::Log(LOGDEBUG, "timeEndPeriod({}) !\n", wPeriod);
   if (wPeriod < 1 || wPeriod > 65535) return 96 + 1; //TIMERR_NOCANDO;
   return 0;
 }
@@ -836,7 +836,7 @@ extern "C" int WINAPI dllwsprintfA(char* string, const char* format, ...)
   int result;
   va_start(va, format);
   result = vsprintf(string, format, va);
-  CLog::Log(LOGDEBUG, "wsprintfA(0x%x, '%s', ...) => %d\n", string, format, result);
+  CLog::Log(LOGDEBUG, "wsprintfA(0x{:x}, '{}', ...) => {}\n", string, format, result);
   va_end(va);
   return result;
 }

@@ -80,7 +80,7 @@ extern "C" void tracker_memory_free_all(DllTrackInfo* pInfo)
   CSingleLock lock(g_trackerLock);
   if (!pInfo->dataList.empty() || !pInfo->virtualList.empty())
   {
-    CLog::Log(LOGDEBUG,"%s (base %p): Detected memory leaks: %d leaks", pInfo->pDll->GetFileName(), pInfo->pDll->hModule, (int)(pInfo->dataList.size() + pInfo->virtualList.size()));
+    CLog::Log(LOGDEBUG,"{} (base {:p}): Detected memory leaks: {} leaks", pInfo->pDll->GetFileName(), pInfo->pDll->hModule, (int)(pInfo->dataList.size() + pInfo->virtualList.size()));
     size_t total = 0;
     CallerMap tempMap;
     CallerMapIter itt;
@@ -105,7 +105,7 @@ extern "C" void tracker_memory_free_all(DllTrackInfo* pInfo)
       }
       catch(...)
       {
-        CLog::Log(LOGERROR, "failed to free memory at address %p. buffer overrun is likely cause", (void*)p->first);
+        CLog::Log(LOGERROR, "failed to free memory at address {:p}. buffer overrun is likely cause", (void*)p->first);
       }
 
     }
@@ -129,9 +129,9 @@ extern "C" void tracker_memory_free_all(DllTrackInfo* pInfo)
 
     for ( itt = tempMap.begin(); itt != tempMap.end();++itt )
     {
-      CLog::Log(LOGDEBUG,"leak caller address %p, size %8i, counter %"PRIdS"", (void*)itt->first, (int)(itt->second).size, (itt->second).count);
+      CLog::Log(LOGDEBUG,"leak caller address {:p}, size {:8}, counter {}", (void*)itt->first, (int)(itt->second).size, (itt->second).count);
     }
-    CLog::Log(LOGDEBUG,"%s: Total bytes leaked: %"PRIdS"", pInfo->pDll->GetName(), total);
+    CLog::Log(LOGDEBUG,"{}: Total bytes leaked: {}", pInfo->pDll->GetName(), total);
     tempMap.erase(tempMap.begin(), tempMap.end());
   }
   pInfo->dataList.erase(pInfo->dataList.begin(), pInfo->dataList.end());
@@ -145,7 +145,7 @@ extern "C" void* __cdecl track_malloc(size_t s)
   void* p = malloc(s);
   if (!p)
   {
-    CLog::Log(LOGSEVERE, "DLL: %s : malloc failed, crash imminent (Out of memory requesting %"PRIdS" bytes)", tracker_getdllname(loc), s);
+    CLog::Log(LOGSEVERE, "DLL: {} : malloc failed, crash imminent (Out of memory requesting {} bytes)", tracker_getdllname(loc), s);
     return NULL;
   }
 
@@ -161,7 +161,7 @@ extern "C" void* __cdecl track_calloc(size_t n, size_t s)
   void* p = calloc(n, s);
   if (!p)
   {
-    CLog::Log(LOGSEVERE, "DLL: %s : calloc failed, crash imminent (Out of memory)", tracker_getdllname(loc));
+    CLog::Log(LOGSEVERE, "DLL: {} : calloc failed, crash imminent (Out of memory)", tracker_getdllname(loc));
     return NULL;
   }
 
@@ -178,7 +178,7 @@ extern "C" void* __cdecl track_realloc(void* p, size_t s)
   if (!q)
   {
     //  a dll may realloc with a size of 0, so NULL is the correct return value is this case
-    if (s > 0) CLog::Log(LOGSEVERE, "DLL: %s : realloc failed, crash imminent (Out of memory)", tracker_getdllname(loc));
+    if (s > 0) CLog::Log(LOGSEVERE, "DLL: {} : realloc failed, crash imminent (Out of memory)", tracker_getdllname(loc));
     return NULL;
   }
 
@@ -236,7 +236,7 @@ extern "C" void tracker_heapobjects_free_all(DllTrackInfo* pInfo)
 {
   if (!pInfo->heapobjectList.empty())
   {
-    CLog::Log(LOGDEBUG,"%s: Detected heapobject leaks: %d leaks", pInfo->pDll->GetFileName(), pInfo->heapobjectList.size());
+    CLog::Log(LOGDEBUG,"{}: Detected heapobject leaks: {} leaks", pInfo->pDll->GetFileName(), pInfo->heapobjectList.size());
 
     CSingleLock lock(g_trackerLock);
     for (HeapObjectListIter it = pInfo->heapobjectList.begin(); it != pInfo->heapobjectList.end(); ++it)

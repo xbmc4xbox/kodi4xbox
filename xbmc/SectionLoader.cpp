@@ -64,7 +64,7 @@ bool CSectionLoader::Load(const CStdString& strSection)
     {
 
 #ifdef LOGALL
-      CLog::Log(LOGDEBUG,"SECTION:LoadSection(%s) count:%i\n", strSection.c_str(), section.m_lReferenceCount);
+      CLog::Log(LOGDEBUG,"SECTION:LoadSection({}) count:{}\n", strSection.c_str(), section.m_lReferenceCount);
 #endif
 
       section.m_lReferenceCount++;
@@ -75,12 +75,12 @@ bool CSectionLoader::Load(const CStdString& strSection)
 #ifdef HAS_SECTIONS
   if ( NULL == XLoadSection(strSection.c_str() ) )
   {
-    CLog::Log(LOGDEBUG,"SECTION:LoadSection(%s) load failed!!\n", strSection.c_str());
+    CLog::Log(LOGDEBUG,"SECTION:LoadSection({}) load failed!!\n", strSection.c_str());
     return false;
   }
   HANDLE hHandle = XGetSectionHandle(strSection.c_str());
 
-  CLog::Log(LOGDEBUG,"SECTION:Section %s loaded count:1 size:%i\n", strSection.c_str(), XGetSectionSize(hHandle) );
+  CLog::Log(LOGDEBUG,"SECTION:Section {} loaded count:1 size:{}\n", strSection.c_str(), XGetSectionSize(hHandle) );
 #endif
 
   CSection newSection;
@@ -103,7 +103,7 @@ void CSectionLoader::Unload(const CStdString& strSection)
     if (section.m_strSectionName == strSection)
     {
 #ifdef LOGALL
-      CLog::Log(LOGDEBUG,"SECTION:FreeSection(%s) count:%i\n", strSection.c_str(), section.m_lReferenceCount);
+      CLog::Log(LOGDEBUG,"SECTION:FreeSection({}) count:{}\n", strSection.c_str(), section.m_lReferenceCount);
 #endif
       section.m_lReferenceCount--;
       if ( 0 == section.m_lReferenceCount)
@@ -133,7 +133,7 @@ LibraryLoader *CSectionLoader::LoadDLL(const CStdString &dllname, bool bDelayUnl
   }
 
   // ok, now load the dll
-  CLog::Log(LOGDEBUG, "SECTION:LoadDLL(%s)\n", dllname.c_str());
+  CLog::Log(LOGDEBUG, "SECTION:LoadDLL({})\n", dllname.c_str());
   LibraryLoader* pDll = DllLoaderContainer::LoadModule(dllname.c_str(), NULL, bLoadSymbols);
   if (!pDll)
     return NULL;
@@ -166,7 +166,7 @@ void CSectionLoader::UnloadDLL(const CStdString &dllname)
           dll.m_unloadDelayStartTick = XbmcThreads::SystemClockMillis();
         else
         {
-          CLog::Log(LOGDEBUG,"SECTION:UnloadDll(%s)", dllname.c_str());
+          CLog::Log(LOGDEBUG,"SECTION:UnloadDll({})", dllname.c_str());
           if (dll.m_pDll)
             DllLoaderContainer::ReleaseModule(dll.m_pDll);
           g_sectionLoader.m_vecLoadedDLLs.erase(g_sectionLoader.m_vecLoadedDLLs.begin() + i);
@@ -188,7 +188,7 @@ void CSectionLoader::UnloadDelayed()
     CSection& section = *i;
     if( section.m_lReferenceCount == 0 && XbmcThreads::SystemClockMillis() - section.m_unloadDelayStartTick > UNLOAD_DELAY)
     {
-      CLog::Log(LOGDEBUG,"SECTION:UnloadDelayed(SECTION: %s)", section.m_strSectionName.c_str());
+      CLog::Log(LOGDEBUG,"SECTION:UnloadDelayed(SECTION: {})", section.m_strSectionName.c_str());
 #ifdef HAS_SECTIONS
       XFreeSection(section.m_strSectionName.c_str());
 #endif
@@ -204,7 +204,7 @@ void CSectionLoader::UnloadDelayed()
     CDll& dll = g_sectionLoader.m_vecLoadedDLLs[i];
     if (dll.m_lReferenceCount == 0 && XbmcThreads::SystemClockMillis() - dll.m_unloadDelayStartTick > UNLOAD_DELAY)
     {
-      CLog::Log(LOGDEBUG,"SECTION:UnloadDelayed(DLL: %s)", dll.m_strDllName.c_str());
+      CLog::Log(LOGDEBUG,"SECTION:UnloadDelayed(DLL: {})", dll.m_strDllName.c_str());
 
       if (dll.m_pDll)
         DllLoaderContainer::ReleaseModule(dll.m_pDll);
@@ -222,7 +222,7 @@ void CSectionLoader::UnloadAll()
   {
     CSection& section = *i;
     //g_sectionLoader.m_vecLoadedSections.erase(i);
-    CLog::Log(LOGDEBUG,"SECTION:UnloadAll(SECTION: %s)", section.m_strSectionName.c_str());
+    CLog::Log(LOGDEBUG,"SECTION:UnloadAll(SECTION: {})", section.m_strSectionName.c_str());
 #ifdef HAS_SECTIONS
     XFreeSection(section.m_strSectionName.c_str());
 #endif
@@ -235,7 +235,7 @@ void CSectionLoader::UnloadAll()
   while (it != g_sectionLoader.m_vecLoadedDLLs.end())
   {
     CDll& dll = *it;
-    CLog::Log(LOGDEBUG,"SECTION:UnloadAll(DLL: %s)", dll.m_strDllName.c_str());
+    CLog::Log(LOGDEBUG,"SECTION:UnloadAll(DLL: {})", dll.m_strDllName.c_str());
     if (dll.m_pDll)
       DllLoaderContainer::ReleaseModule(dll.m_pDll);
     it = g_sectionLoader.m_vecLoadedDLLs.erase(it);

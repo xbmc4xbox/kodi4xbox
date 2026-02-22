@@ -40,7 +40,7 @@ extern "C" HRESULT WINAPI dllCoCreateInstance( REFCLSID rclsid, LPUNKNOWN pUnkOu
 {
   if( IsEqualCLSID(rclsid, CLSID_MemoryAllocator) )
   {
-    CLog::Log(LOGDEBUG, __FUNCTION__" - CLSID_MemoryAllocator");
+    CLog::Log(LOGDEBUG, "{} - CLSID_MemoryAllocator", __FUNCTION__);
     /* use the mplayer version if that is available */
 #if defined(HAS_VIDEO_PLAYBACK) && defined(HAS_XBOX_HARDWARE)
     IUnknown *obj = mplayer_MemAllocatorCreate();
@@ -49,7 +49,7 @@ extern "C" HRESULT WINAPI dllCoCreateInstance( REFCLSID rclsid, LPUNKNOWN pUnkOu
 #endif
     if( obj == NULL )
     {
-      CLog::Log(LOGDEBUG, __FUNCTION__" - MPlayer MemoryAllocator not available");
+      CLog::Log(LOGDEBUG, "{} - MPlayer MemoryAllocator not available", __FUNCTION__);
       return REGDB_E_CLASSNOTREG;
     }
 

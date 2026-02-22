@@ -723,7 +723,7 @@ static bool load_registry_key(long handle, TiXmlElement *key)
   if(!path)
   {
     reg_handle_t* t = find_handle(handle);
-    CLog::Log(LOGERROR, __FUNCTION__" - key element is missing path, parent %s", t ? t->name : "");
+    CLog::Log(LOGERROR, __FUNCTION__" - key element is missing path, parent {}", t ? t->name : "");
     return false;
   }
 
@@ -742,7 +742,7 @@ static bool load_registry_key(long handle, TiXmlElement *key)
     }
     else
     {
-      CLog::Log(LOGERROR, __FUNCTION__" - invalid root element %s", path);
+      CLog::Log(LOGERROR, __FUNCTION__" - invalid root element {}", path);
       return false;
     }
   }
@@ -795,13 +795,13 @@ static bool load_registry_xml(char* filename)
   if(!doc.LoadFile(filename))
   {
     if(doc.ErrorId() != TiXmlBase::TIXML_ERROR_OPENING_FILE)
-      CLog::Log(LOGERROR, __FUNCTION__"(%s) - %s on row %d and col %d", filename, doc.ErrorDesc(), doc.ErrorRow(), doc.ErrorCol());
+      CLog::Log(LOGERROR, "{} - ({}) - {} on row {} and col {}", __FUNCTION__, filename, doc.ErrorDesc(), doc.ErrorRow(), doc.ErrorCol());
     return false;
   }
 
   if(strcmp("registry", doc.RootElement()->Value()))
   {
-    CLog::Log(LOGERROR, __FUNCTION__"(%s) - Invalid root element expected ""registry""", doc.RootElement()->Value());
+    CLog::Log(LOGERROR, "{} - ({}) - Invalid root element expected ""registry""", __FUNCTION__, doc.RootElement()->Value());
     return false;
   }
 

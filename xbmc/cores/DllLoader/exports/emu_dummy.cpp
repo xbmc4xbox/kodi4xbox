@@ -25,7 +25,7 @@ extern "C" void not_implement( LPCSTR debuginfo)
 {
   if (debuginfo)
   {
-    CLog::Log(LOGDEBUG, "%s", debuginfo);
+    CLog::Log(LOGDEBUG, "{}", debuginfo);
   }
 }
 

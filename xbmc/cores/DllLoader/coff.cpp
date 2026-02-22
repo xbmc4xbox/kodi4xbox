@@ -30,7 +30,6 @@
 #endif
 
 #include "utils/log.h"
-#define printf CLog::DebugLog
 
 const char *DATA_DIR_NAME[16] =
   {
@@ -137,7 +136,7 @@ int CoffLoader::ParseHeaders(void* hModule)
   // process Option Header
   if (OptionHeader->Magic == OPTMAGIC_PE32P)
   {
-    printf("PE32+ not supported\n");
+    CLog::Log(LOGDEBUG, "PE32+ not supported\n");
     return 0;
   }
   else if (OptionHeader->Magic == OPTMAGIC_PE32)
@@ -158,9 +157,9 @@ int CoffLoader::ParseHeaders(void* hModule)
 #ifdef DUMPING_DATA
   for (int DirCount = 0; DirCount < NumOfDirectories; DirCount++)
   {
-    printf("Data Directory %02d: %s\n", DirCount + 1, DATA_DIR_NAME[DirCount]);
-    printf("                    RVA:  %08X\n", Directory[DirCount].RVA);
-    printf("                    Size: %08X\n\n", Directory[DirCount].Size);
+    CLog::Log(LOGDEBUG, "Data Directory {:02}: {}\n", DirCount + 1, DATA_DIR_NAME[DirCount]);
+    CLog::Log(LOGDEBUG, "                    RVA:  {:08X}\n", Directory[DirCount].RVA);
+    CLog::Log(LOGDEBUG, "                    Size: {:08X}\n\n", Directory[DirCount].Size);
   }
 #endif
 
@@ -244,7 +243,7 @@ int CoffLoader::LoadCoffHModule(FILE *fp)
   // process Option Header
   if (OptionHeader->Magic == OPTMAGIC_PE32P)
   {
-    printf("PE32+ not supported\n");
+    CLog::Log(LOGDEBUG, "PE32+ not supported\n");
     return 0;
   }
   else if (OptionHeader->Magic == OPTMAGIC_PE32)
@@ -265,9 +264,9 @@ int CoffLoader::LoadCoffHModule(FILE *fp)
 #ifdef DUMPING_DATA
   for (int DirCount = 0; DirCount < NumOfDirectories; DirCount++)
   {
-    printf("Data Directory %02d: %s\n", DirCount + 1, DATA_DIR_NAME[DirCount]);
-    printf("                    RVA:  %08X\n", Directory[DirCount].RVA);
-    printf("                    Size: %08X\n\n", Directory[DirCount].Size);
+    CLog::Log(LOGDEBUG, "Data Directory {:02}: {}\n", DirCount + 1, DATA_DIR_NAME[DirCount]);
+    CLog::Log(LOGDEBUG, "                    RVA:  {:08X}\n", Directory[DirCount].RVA);
+    CLog::Log(LOGDEBUG, "                    Size: {:08X}\n\n", Directory[DirCount].Size);
   }
 #endif
 
@@ -286,7 +285,7 @@ int CoffLoader::LoadSymTable(FILE *fp)
   SymbolTable_t *tmp = new SymbolTable_t[CoffFileHeader->NumberOfSymbols];
   if (!tmp)
   {
-    printf("Could not allocate memory for symbol table!\n");
+    CLog::Log(LOGDEBUG, "Could not allocate memory for symbol table!\n");
     return 0;
   }
   fread((void *)tmp, CoffFileHeader->NumberOfSymbols, sizeof(SymbolTable_t), fp);
@@ -316,7 +315,7 @@ int CoffLoader::LoadStringTable(FILE *fp)
     tmp = new char[StringTableSize];
     if (tmp == NULL)
     {
-      printf("Could not allocate memory for string table\n");
+      CLog::Log(LOGDEBUG, "Could not allocate memory for string table\n");
       return 0;
     }
     fread((void *)tmp, StringTableSize, sizeof(char), fp);
@@ -401,7 +400,7 @@ int CoffLoader::RVA2Section(unsigned long RVA)
         if ( RVA < SectionHeader[i + 1].VirtualAddress )
         {
           if ( SectionHeader[i].VirtualAddress + SectionHeader[i].VirtualSize <= RVA )
-            printf("Warning! Address outside of Section: %x!\n", RVA);
+            CLog::Log(LOGDEBUG, "Warning! Address outside of Section: {:x}!\n", RVA);
           //                    else
           return i;
         }
@@ -409,13 +408,13 @@ int CoffLoader::RVA2Section(unsigned long RVA)
       else
       {
         if ( SectionHeader[i].VirtualAddress + SectionHeader[i].VirtualSize <= RVA )
-          printf("Warning! Address outside of Section: %x!\n", RVA);
+          CLog::Log(LOGDEBUG, "Warning! Address outside of Section: {:x}!\n", RVA);
         //                else
         return i;
       }
     }
   }
-  printf("RVA2Section lookup failure!\n");
+  CLog::Log(LOGDEBUG, "RVA2Section lookup failure!\n");
   return 0;
 }
 
@@ -490,14 +489,14 @@ void CoffLoader::PrintStringTable(void)
   int index = 0;
   char *table = StringTable;
 
-  printf("\nSTRING TABLE\n");
+  CLog::Log(LOGDEBUG, "\nSTRING TABLE\n");
   while (size)
   {
-    printf("%2d: %s\n", index++, table);
+    CLog::Log(LOGDEBUG, "{:2}: {}\n", index++, table);
     size -= strlen(table) + 1;
     table += strlen(table) + 1;
   }
-  printf("\n");
+  CLog::Log(LOGDEBUG, "\n");
 }
 
 
@@ -505,203 +504,203 @@ void CoffLoader::PrintSymbolTable(void)
 {
   int SymIndex;
 
-  printf("COFF SYMBOL TABLE\n");
+  CLog::Log(LOGDEBUG, "COFF SYMBOL TABLE\n");
   for (SymIndex = 0; SymIndex < NumberOfSymbols; SymIndex++)
   {
-    printf("%03X ", SymIndex);
-    printf("%08X ", SymTable[SymIndex].Value);
+    CLog::Log(LOGDEBUG, "{:03X} ", SymIndex);
+    CLog::Log(LOGDEBUG, "{:08X} ", SymTable[SymIndex].Value);
 
     if (SymTable[SymIndex].SectionNumber == IMAGE_SYM_ABSOLUTE)
-      printf("ABS     ");
+      CLog::Log(LOGDEBUG, "ABS     ");
     else if (SymTable[SymIndex].SectionNumber == IMAGE_SYM_DEBUG)
-      printf("DEBUG   ");
+      CLog::Log(LOGDEBUG, "DEBUG   ");
     else if (SymTable[SymIndex].SectionNumber == IMAGE_SYM_UNDEFINED)
-      printf("UNDEF   ");
+      CLog::Log(LOGDEBUG, "UNDEF   ");
     else
     {
-      printf("SECT%d ", SymTable[SymIndex].SectionNumber);
+      CLog::Log(LOGDEBUG, "SECT{} ", SymTable[SymIndex].SectionNumber);
       if (SymTable[SymIndex].SectionNumber < 10)
-        printf(" ");
+        CLog::Log(LOGDEBUG, " ");
       if (SymTable[SymIndex].SectionNumber < 100)
-        printf(" ");
+        CLog::Log(LOGDEBUG, " ");
     }
 
     if (SymTable[SymIndex].Type == 0)
-      printf("notype       ");
+      CLog::Log(LOGDEBUG, "notype       ");
     else
     {
-      printf("%X         ", SymTable[SymIndex].Type);
+      CLog::Log(LOGDEBUG, "{:X}         ", SymTable[SymIndex].Type);
       if (SymTable[SymIndex].Type < 0x10)
-        printf(" ");
+        CLog::Log(LOGDEBUG, " ");
       if (SymTable[SymIndex].Type < 0x100)
-        printf(" ");
+        CLog::Log(LOGDEBUG, " ");
       if (SymTable[SymIndex].Type < 0x1000)
-        printf(" ");
+        CLog::Log(LOGDEBUG, " ");
     }
 
     if (SymTable[SymIndex].StorageClass == IMAGE_SYM_CLASS_END_OF_FUNCTION)
-      printf("End of Function   ");
+      CLog::Log(LOGDEBUG, "End of Function   ");
     if (SymTable[SymIndex].StorageClass == IMAGE_SYM_CLASS_NULL)
-      printf("Null              ");
+      CLog::Log(LOGDEBUG, "Null              ");
     if (SymTable[SymIndex].StorageClass == IMAGE_SYM_CLASS_AUTOMATIC)
-      printf("Automatic         ");
+      CLog::Log(LOGDEBUG, "Automatic         ");
     if (SymTable[SymIndex].StorageClass == IMAGE_SYM_CLASS_EXTERNAL)
-      printf("External          ");
+      CLog::Log(LOGDEBUG, "External          ");
     if (SymTable[SymIndex].StorageClass == IMAGE_SYM_CLASS_STATIC)
-      printf("Static            ");
+      CLog::Log(LOGDEBUG, "Static            ");
     if (SymTable[SymIndex].StorageClass == IMAGE_SYM_CLASS_REGISTER)
-      printf("Register          ");
+      CLog::Log(LOGDEBUG, "Register          ");
     if (SymTable[SymIndex].StorageClass == IMAGE_SYM_CLASS_EXTERNAL_DEF)
-      printf("External Def      ");
+      CLog::Log(LOGDEBUG, "External Def      ");
     if (SymTable[SymIndex].StorageClass == IMAGE_SYM_CLASS_LABEL)
-      printf("Label             ");
+      CLog::Log(LOGDEBUG, "Label             ");
     if (SymTable[SymIndex].StorageClass == IMAGE_SYM_CLASS_UNDEFINED_LABEL)
-      printf("Undefined Label   ");
+      CLog::Log(LOGDEBUG, "Undefined Label   ");
     if (SymTable[SymIndex].StorageClass == IMAGE_SYM_CLASS_MEMBER_OF_STRUCT)
-      printf("Member Of Struct  ");
+      CLog::Log(LOGDEBUG, "Member Of Struct  ");
     if (SymTable[SymIndex].StorageClass == IMAGE_SYM_CLASS_ARGUMENT)
-      printf("Argument          ");
+      CLog::Log(LOGDEBUG, "Argument          ");
     if (SymTable[SymIndex].StorageClass == IMAGE_SYM_CLASS_STRUCT_TAG)
-      printf("Struct Tag        ");
+      CLog::Log(LOGDEBUG, "Struct Tag        ");
     if (SymTable[SymIndex].StorageClass == IMAGE_SYM_CLASS_MEMBER_OF_UNION)
-      printf("Member Of Union   ");
+      CLog::Log(LOGDEBUG, "Member Of Union   ");
     if (SymTable[SymIndex].StorageClass == IMAGE_SYM_CLASS_UNION_TAG)
-      printf("Union Tag         ");
+      CLog::Log(LOGDEBUG, "Union Tag         ");
     if (SymTable[SymIndex].StorageClass == IMAGE_SYM_CLASS_TYPE_DEFINITION)
-      printf("Type Definition  ");
+      CLog::Log(LOGDEBUG, "Type Definition  ");
     if (SymTable[SymIndex].StorageClass == IMAGE_SYM_CLASS_UNDEFINED_STATIC)
-      printf("Undefined Static  ");
+      CLog::Log(LOGDEBUG, "Undefined Static  ");
     if (SymTable[SymIndex].StorageClass == IMAGE_SYM_CLASS_ENUM_TAG)
-      printf("Enum Tag          ");
+      CLog::Log(LOGDEBUG, "Enum Tag          ");
     if (SymTable[SymIndex].StorageClass == IMAGE_SYM_CLASS_MEMBER_OF_ENUM)
-      printf("Member Of Enum    ");
+      CLog::Log(LOGDEBUG, "Member Of Enum    ");
     if (SymTable[SymIndex].StorageClass == IMAGE_SYM_CLASS_REGISTER_PARAM)
-      printf("Register Param    ");
+      CLog::Log(LOGDEBUG, "Register Param    ");
     if (SymTable[SymIndex].StorageClass == IMAGE_SYM_CLASS_BIT_FIELD)
-      printf("Bit Field         ");
+      CLog::Log(LOGDEBUG, "Bit Field         ");
     if (SymTable[SymIndex].StorageClass == IMAGE_SYM_CLASS_BLOCK)
-      printf("Block             ");
+      CLog::Log(LOGDEBUG, "Block             ");
     if (SymTable[SymIndex].StorageClass == IMAGE_SYM_CLASS_FUNCTION)
-      printf("Function          ");
+      CLog::Log(LOGDEBUG, "Function          ");
     if (SymTable[SymIndex].StorageClass == IMAGE_SYM_CLASS_END_OF_STRUCT)
-      printf("End Of Struct     ");
+      CLog::Log(LOGDEBUG, "End Of Struct     ");
     if (SymTable[SymIndex].StorageClass == IMAGE_SYM_CLASS_FILE)
-      printf("File              ");
+      CLog::Log(LOGDEBUG, "File              ");
     if (SymTable[SymIndex].StorageClass == IMAGE_SYM_CLASS_SECTION)
-      printf("Section           ");
+      CLog::Log(LOGDEBUG, "Section           ");
     if (SymTable[SymIndex].StorageClass == IMAGE_SYM_CLASS_WEAK_EXTERNAL)
-      printf("Weak External     ");
+      CLog::Log(LOGDEBUG, "Weak External     ");
 
-    printf("| %s", GetSymbolName(SymIndex));
+    CLog::Log(LOGDEBUG, "| {}", GetSymbolName(SymIndex));
 
     SymIndex += SymTable[SymIndex].NumberOfAuxSymbols;
-    printf("\n");
+    CLog::Log(LOGDEBUG, "\n");
   }
-  printf("\n");
+  CLog::Log(LOGDEBUG, "\n");
 
 }
 
 void CoffLoader::PrintFileHeader(COFF_FileHeader_t *FileHeader)
 {
-  printf("COFF Header\n");
-  printf("------------------------------------------\n\n");
+  CLog::Log(LOGDEBUG, "COFF Header\n");
+  CLog::Log(LOGDEBUG, "------------------------------------------\n\n");
 
-  printf("MachineType:            0x%04X\n", FileHeader->MachineType);
-  printf("NumberOfSections:       0x%04X\n", FileHeader->NumberOfSections);
-  printf("TimeDateStamp:          0x%08X\n", FileHeader->TimeDateStamp);
-  printf("PointerToSymbolTable:   0x%08X\n", FileHeader->PointerToSymbolTable);
-  printf("NumberOfSymbols:        0x%08X\n", FileHeader->NumberOfSymbols);
-  printf("SizeOfOptionHeader:     0x%04X\n", FileHeader->SizeOfOptionHeader);
-  printf("Characteristics:        0x%04X\n", FileHeader->Characteristics);
+  CLog::Log(LOGDEBUG, "MachineType:            0x{:04X}\n", FileHeader->MachineType);
+  CLog::Log(LOGDEBUG, "NumberOfSections:       0x{:04X}\n", FileHeader->NumberOfSections);
+  CLog::Log(LOGDEBUG, "TimeDateStamp:          0x{:08X}\n", FileHeader->TimeDateStamp);
+  CLog::Log(LOGDEBUG, "PointerToSymbolTable:   0x{:08X}\n", FileHeader->PointerToSymbolTable);
+  CLog::Log(LOGDEBUG, "NumberOfSymbols:        0x{:08X}\n", FileHeader->NumberOfSymbols);
+  CLog::Log(LOGDEBUG, "SizeOfOptionHeader:     0x{:04X}\n", FileHeader->SizeOfOptionHeader);
+  CLog::Log(LOGDEBUG, "Characteristics:        0x{:04X}\n", FileHeader->Characteristics);
 
   if (FileHeader->Characteristics & IMAGE_FILE_RELOCS_STRIPPED)
-    printf("                        IMAGE_FILE_RELOCS_STRIPPED\n");
+    CLog::Log(LOGDEBUG, "                        IMAGE_FILE_RELOCS_STRIPPED\n");
 
   if (FileHeader->Characteristics & IMAGE_FILE_EXECUTABLE_IMAGE)
-    printf("                        IMAGE_FILE_EXECUTABLE_IMAGE\n");
+    CLog::Log(LOGDEBUG, "                        IMAGE_FILE_EXECUTABLE_IMAGE\n");
 
   if (FileHeader->Characteristics & IMAGE_FILE_LINE_NUMS_STRIPPED)
-    printf("                        IMAGE_FILE_LINE_NUMS_STRIPPED\n");
+    CLog::Log(LOGDEBUG, "                        IMAGE_FILE_LINE_NUMS_STRIPPED\n");
 
   if (FileHeader->Characteristics & IMAGE_FILE_LOCAL_SYMS_STRIPPED)
-    printf("                        IMAGE_FILE_LOCAL_SYMS_STRIPPED\n");
+    CLog::Log(LOGDEBUG, "                        IMAGE_FILE_LOCAL_SYMS_STRIPPED\n");
 
   if (FileHeader->Characteristics & IMAGE_FILE_AGGRESSIVE_WS_TRIM)
-    printf("                        IMAGE_FILE_AGGRESSIVE_WS_TRIM\n");
+    CLog::Log(LOGDEBUG, "                        IMAGE_FILE_AGGRESSIVE_WS_TRIM\n");
 
   if (FileHeader->Characteristics & IMAGE_FILE_LARGE_ADDRESS_AWARE)
-    printf("                        IMAGE_FILE_LARGE_ADDRESS_AWARE\n");
+    CLog::Log(LOGDEBUG, "                        IMAGE_FILE_LARGE_ADDRESS_AWARE\n");
 
   if (FileHeader->Characteristics & IMAGE_FILE_16BIT_MACHINE)
-    printf("                        IMAGE_FILE_16BIT_MACHINE\n");
+    CLog::Log(LOGDEBUG, "                        IMAGE_FILE_16BIT_MACHINE\n");
 
   if (FileHeader->Characteristics & IMAGE_FILE_BYTES_REVERSED_LO)
-    printf("                        IMAGE_FILE_BYTES_REVERSED_LO\n");
+    CLog::Log(LOGDEBUG, "                        IMAGE_FILE_BYTES_REVERSED_LO\n");
 
   if (FileHeader->Characteristics & IMAGE_FILE_32BIT_MACHINE)
-    printf("                        IMAGE_FILE_32BIT_MACHINE\n");
+    CLog::Log(LOGDEBUG, "                        IMAGE_FILE_32BIT_MACHINE\n");
 
   if (FileHeader->Characteristics & IMAGE_FILE_DEBUG_STRIPPED)
-    printf("                        IMAGE_FILE_DEBUG_STRIPPED\n");
+    CLog::Log(LOGDEBUG, "                        IMAGE_FILE_DEBUG_STRIPPED\n");
 
   if (FileHeader->Characteristics & IMAGE_FILE_REMOVABLE_RUN_FROM_SWAP)
-    printf("                        IMAGE_FILE_REMOVABLE_RUN_FROM_SWAP\n");
+    CLog::Log(LOGDEBUG, "                        IMAGE_FILE_REMOVABLE_RUN_FROM_SWAP\n");
 
   if (FileHeader->Characteristics & IMAGE_FILE_SYSTEM)
-    printf("                        IMAGE_FILE_SYSTEM\n");
+    CLog::Log(LOGDEBUG, "                        IMAGE_FILE_SYSTEM\n");
 
   if (FileHeader->Characteristics & IMAGE_FILE_DLL)
-    printf("                        IMAGE_FILE_DLL\n");
+    CLog::Log(LOGDEBUG, "                        IMAGE_FILE_DLL\n");
 
   if (FileHeader->Characteristics & IMAGE_FILE_UP_SYSTEM_ONLY)
-    printf("                        IMAGE_FILE_UP_SYSTEM_ONLY\n");
+    CLog::Log(LOGDEBUG, "                        IMAGE_FILE_UP_SYSTEM_ONLY\n");
 
   if (FileHeader->Characteristics & IMAGE_FILE_BYTES_REVERSED_HI)
-    printf("                        IMAGE_FILE_BYTES_REVERSED_HI\n");
+    CLog::Log(LOGDEBUG, "                        IMAGE_FILE_BYTES_REVERSED_HI\n");
 
-  printf("\n");
+  CLog::Log(LOGDEBUG, "\n");
 }
 
 void CoffLoader::PrintOptionHeader(OptionHeader_t *OptHdr)
 {
-  printf("Option Header\n");
-  printf("------------------------------------------\n\n");
+  CLog::Log(LOGDEBUG, "Option Header\n");
+  CLog::Log(LOGDEBUG, "------------------------------------------\n\n");
 
-  printf("Magic:              0x%04X\n", OptHdr->Magic);
-  printf("Linker Major Ver:   0x%02X\n", VERSION_MAJOR(OptHdr->LinkVersion));
-  printf("Linker Minor Ver:   0x%02X\n", VERSION_MINOR(OptHdr->LinkVersion));
-  printf("Code Size:          0x%08X\n", OptHdr->CodeSize);
-  printf("Data Size:          0x%08X\n", OptHdr->DataSize);
-  printf("BSS Size:           0x%08X\n", OptHdr->BssSize);
-  printf("Entry:              0x%08X\n", OptHdr->Entry);
-  printf("Code Base:          0x%08X\n", OptHdr->CodeBase);
-  printf("Data Base:          0x%08X\n", OptHdr->DataBase);
-  printf("\n");
+  CLog::Log(LOGDEBUG, "Magic:              0x{:04X}\n", OptHdr->Magic);
+  CLog::Log(LOGDEBUG, "Linker Major Ver:   0x{:02X}\n", VERSION_MAJOR(OptHdr->LinkVersion));
+  CLog::Log(LOGDEBUG, "Linker Minor Ver:   0x{:02X}\n", VERSION_MINOR(OptHdr->LinkVersion));
+  CLog::Log(LOGDEBUG, "Code Size:          0x{:08X}\n", OptHdr->CodeSize);
+  CLog::Log(LOGDEBUG, "Data Size:          0x{:08X}\n", OptHdr->DataSize);
+  CLog::Log(LOGDEBUG, "BSS Size:           0x{:08X}\n", OptHdr->BssSize);
+  CLog::Log(LOGDEBUG, "Entry:              0x{:08X}\n", OptHdr->Entry);
+  CLog::Log(LOGDEBUG, "Code Base:          0x{:08X}\n", OptHdr->CodeBase);
+  CLog::Log(LOGDEBUG, "Data Base:          0x{:08X}\n", OptHdr->DataBase);
+  CLog::Log(LOGDEBUG, "\n");
 }
 
 void CoffLoader::PrintWindowsHeader(WindowsHeader_t *WinHdr)
 {
-  printf("Windows Specific Option Header\n");
-  printf("------------------------------------------\n\n");
+  CLog::Log(LOGDEBUG, "Windows Specific Option Header\n");
+  CLog::Log(LOGDEBUG, "------------------------------------------\n\n");
 
-  printf("Image Base:         0x%08X\n", WinHdr->ImageBase);
-  printf("Section Alignment:  0x%08X\n", WinHdr->SectionAlignment);
-  printf("File Alignment:     0x%08X\n", WinHdr->FileAlignment);
-  printf("OS Version:         %d.%08d\n", BIGVERSION_MAJOR(WinHdr->OSVer), BIGVERSION_MINOR(WinHdr->OSVer));
-  printf("Image Version:      %d.%08d\n", BIGVERSION_MAJOR(WinHdr->ImgVer), BIGVERSION_MINOR(WinHdr->ImgVer));
-  printf("SubSystem Version:  %d.%08d\n", BIGVERSION_MAJOR(WinHdr->SubSysVer), BIGVERSION_MINOR(WinHdr->SubSysVer));
-  printf("Size of Image:      0x%08X\n", WinHdr->SizeOfImage);
-  printf("Size of Headers:    0x%08X\n", WinHdr->SizeOfHeaders);
-  printf("Checksum:           0x%08X\n", WinHdr->CheckSum);
-  printf("Subsystem:          0x%04X\n", WinHdr->Subsystem);
-  printf("DLL Flags:          0x%04X\n", WinHdr->DLLFlags);
-  printf("Sizeof Stack Resv:  0x%08X\n", WinHdr->SizeOfStackReserve);
-  printf("Sizeof Stack Comm:  0x%08X\n", WinHdr->SizeOfStackCommit);
-  printf("Sizeof Heap Resv:   0x%08X\n", WinHdr->SizeOfHeapReserve);
-  printf("Sizeof Heap Comm:   0x%08X\n", WinHdr->SizeOfHeapCommit);
-  printf("Loader Flags:       0x%08X\n", WinHdr->LoaderFlags);
-  printf("Num Directories:    %d\n", WinHdr->NumDirectories);
-  printf("\n");
+  CLog::Log(LOGDEBUG, "Image Base:         0x{:08X}\n", WinHdr->ImageBase);
+  CLog::Log(LOGDEBUG, "Section Alignment:  0x{:08X}\n", WinHdr->SectionAlignment);
+  CLog::Log(LOGDEBUG, "File Alignment:     0x{:08X}\n", WinHdr->FileAlignment);
+  CLog::Log(LOGDEBUG, "OS Version:         {}.{:08}\n", BIGVERSION_MAJOR(WinHdr->OSVer), BIGVERSION_MINOR(WinHdr->OSVer));
+  CLog::Log(LOGDEBUG, "Image Version:      {}.{:08}\n", BIGVERSION_MAJOR(WinHdr->ImgVer), BIGVERSION_MINOR(WinHdr->ImgVer));
+  CLog::Log(LOGDEBUG, "SubSystem Version:  {}.{:08}\n", BIGVERSION_MAJOR(WinHdr->SubSysVer), BIGVERSION_MINOR(WinHdr->SubSysVer));
+  CLog::Log(LOGDEBUG, "Size of Image:      0x{:08X}\n", WinHdr->SizeOfImage);
+  CLog::Log(LOGDEBUG, "Size of Headers:    0x{:08X}\n", WinHdr->SizeOfHeaders);
+  CLog::Log(LOGDEBUG, "Checksum:           0x{:08X}\n", WinHdr->CheckSum);
+  CLog::Log(LOGDEBUG, "Subsystem:          0x{:04X}\n", WinHdr->Subsystem);
+  CLog::Log(LOGDEBUG, "DLL Flags:          0x{:04X}\n", WinHdr->DLLFlags);
+  CLog::Log(LOGDEBUG, "Sizeof Stack Resv:  0x{:08X}\n", WinHdr->SizeOfStackReserve);
+  CLog::Log(LOGDEBUG, "Sizeof Stack Comm:  0x{:08X}\n", WinHdr->SizeOfStackCommit);
+  CLog::Log(LOGDEBUG, "Sizeof Heap Resv:   0x{:08X}\n", WinHdr->SizeOfHeapReserve);
+  CLog::Log(LOGDEBUG, "Sizeof Heap Comm:   0x{:08X}\n", WinHdr->SizeOfHeapCommit);
+  CLog::Log(LOGDEBUG, "Loader Flags:       0x{:08X}\n", WinHdr->LoaderFlags);
+  CLog::Log(LOGDEBUG, "Num Directories:    {}\n", WinHdr->NumDirectories);
+  CLog::Log(LOGDEBUG, "\n");
 }
 
 void CoffLoader::PrintSection(SectionHeader_t *ScnHdr, char* data)
@@ -710,77 +709,77 @@ void CoffLoader::PrintSection(SectionHeader_t *ScnHdr, char* data)
 
   strncpy(SectionName, (char *)ScnHdr->Name, 8);
   SectionName[8] = 0;
-  printf("Section: %s\n", SectionName);
-  printf("------------------------------------------\n\n");
+  CLog::Log(LOGDEBUG, "Section: {}\n", SectionName);
+  CLog::Log(LOGDEBUG, "------------------------------------------\n\n");
 
-  printf("Virtual Size:       0x%08X\n", ScnHdr->VirtualSize);
-  printf("Virtual Address:    0x%08X\n", ScnHdr->VirtualAddress);
-  printf("Sizeof Raw Data:    0x%08X\n", ScnHdr->SizeOfRawData);
-  printf("Ptr To Raw Data:    0x%08X\n", ScnHdr->PtrToRawData);
-  printf("Ptr To Relocations: 0x%08X\n", ScnHdr->PtrToRelocations);
-  printf("Ptr To Line Nums:   0x%08X\n", ScnHdr->PtrToLineNums);
-  printf("Num Relocations:    0x%04X\n", ScnHdr->NumRelocations);
-  printf("Num Line Numbers:   0x%04X\n", ScnHdr->NumLineNumbers);
-  printf("Characteristics:    0x%08X\n", ScnHdr->Characteristics);
+  CLog::Log(LOGDEBUG, "Virtual Size:       0x{:08X}\n", ScnHdr->VirtualSize);
+  CLog::Log(LOGDEBUG, "Virtual Address:    0x{:08X}\n", ScnHdr->VirtualAddress);
+  CLog::Log(LOGDEBUG, "Sizeof Raw Data:    0x{:08X}\n", ScnHdr->SizeOfRawData);
+  CLog::Log(LOGDEBUG, "Ptr To Raw Data:    0x{:08X}\n", ScnHdr->PtrToRawData);
+  CLog::Log(LOGDEBUG, "Ptr To Relocations: 0x{:08X}\n", ScnHdr->PtrToRelocations);
+  CLog::Log(LOGDEBUG, "Ptr To Line Nums:   0x{:08X}\n", ScnHdr->PtrToLineNums);
+  CLog::Log(LOGDEBUG, "Num Relocations:    0x{:04X}\n", ScnHdr->NumRelocations);
+  CLog::Log(LOGDEBUG, "Num Line Numbers:   0x{:04X}\n", ScnHdr->NumLineNumbers);
+  CLog::Log(LOGDEBUG, "Characteristics:    0x{:08X}\n", ScnHdr->Characteristics);
   if (ScnHdr->Characteristics & IMAGE_SCN_CNT_CODE)
-    printf("                    IMAGE_SCN_CNT_CODE\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_CNT_CODE\n");
   if (ScnHdr->Characteristics & IMAGE_SCN_CNT_DATA)
-    printf("                    IMAGE_SCN_CNT_DATA\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_CNT_DATA\n");
   if (ScnHdr->Characteristics & IMAGE_SCN_CNT_BSS)
-    printf("                    IMAGE_SCN_CNT_BSS\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_CNT_BSS\n");
   if (ScnHdr->Characteristics & IMAGE_SCN_LNK_INFO)
-    printf("                    IMAGE_SCN_LNK_INFO\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_LNK_INFO\n");
   if (ScnHdr->Characteristics & IMAGE_SCN_LNK_REMOVE)
-    printf("                    IMAGE_SCN_LNK_REMOVE\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_LNK_REMOVE\n");
   if (ScnHdr->Characteristics & IMAGE_SCN_LNK_COMDAT)
-    printf("                    IMAGE_SCN_LNK_COMDAT\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_LNK_COMDAT\n");
 
   if ((ScnHdr->Characteristics & IMAGE_SCN_ALIGN_MASK) == IMAGE_SCN_ALIGN_1BYTES)
-    printf("                    IMAGE_SCN_ALIGN_1BYTES\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_ALIGN_1BYTES\n");
   if ((ScnHdr->Characteristics & IMAGE_SCN_ALIGN_MASK) == IMAGE_SCN_ALIGN_2BYTES)
-    printf("                    IMAGE_SCN_ALIGN_2BYTES\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_ALIGN_2BYTES\n");
   if ((ScnHdr->Characteristics & IMAGE_SCN_ALIGN_MASK) == IMAGE_SCN_ALIGN_4BYTES)
-    printf("                    IMAGE_SCN_ALIGN_4BYTES\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_ALIGN_4BYTES\n");
   if ((ScnHdr->Characteristics & IMAGE_SCN_ALIGN_MASK) == IMAGE_SCN_ALIGN_8BYTES)
-    printf("                    IMAGE_SCN_ALIGN_8BYTES\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_ALIGN_8BYTES\n");
   if ((ScnHdr->Characteristics & IMAGE_SCN_ALIGN_MASK) == IMAGE_SCN_ALIGN_16BYTES)
-    printf("                    IMAGE_SCN_ALIGN_16BYTES\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_ALIGN_16BYTES\n");
   if ((ScnHdr->Characteristics & IMAGE_SCN_ALIGN_MASK) == IMAGE_SCN_ALIGN_32BYTES)
-    printf("                    IMAGE_SCN_ALIGN_32BYTES\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_ALIGN_32BYTES\n");
   if ((ScnHdr->Characteristics & IMAGE_SCN_ALIGN_MASK) == IMAGE_SCN_ALIGN_64BYTES)
-    printf("                    IMAGE_SCN_ALIGN_64BYTES\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_ALIGN_64BYTES\n");
   if ((ScnHdr->Characteristics & IMAGE_SCN_ALIGN_MASK) == IMAGE_SCN_ALIGN_128BYTES)
-    printf("                    IMAGE_SCN_ALIGN_128BYTES\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_ALIGN_128BYTES\n");
   if ((ScnHdr->Characteristics & IMAGE_SCN_ALIGN_MASK) == IMAGE_SCN_ALIGN_256BYTES)
-    printf("                    IMAGE_SCN_ALIGN_256BYTES\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_ALIGN_256BYTES\n");
   if ((ScnHdr->Characteristics & IMAGE_SCN_ALIGN_MASK) == IMAGE_SCN_ALIGN_512BYTES)
-    printf("                    IMAGE_SCN_ALIGN_512BYTES\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_ALIGN_512BYTES\n");
   if ((ScnHdr->Characteristics & IMAGE_SCN_ALIGN_MASK) == IMAGE_SCN_ALIGN_1024BYTES)
-    printf("                    IMAGE_SCN_ALIGN_1024BYTES\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_ALIGN_1024BYTES\n");
   if ((ScnHdr->Characteristics & IMAGE_SCN_ALIGN_MASK) == IMAGE_SCN_ALIGN_2048BYTES)
-    printf("                    IMAGE_SCN_ALIGN_2048BYTES\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_ALIGN_2048BYTES\n");
   if ((ScnHdr->Characteristics & IMAGE_SCN_ALIGN_MASK) == IMAGE_SCN_ALIGN_4096BYTES)
-    printf("                    IMAGE_SCN_ALIGN_4096BYTES\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_ALIGN_4096BYTES\n");
   if ((ScnHdr->Characteristics & IMAGE_SCN_ALIGN_MASK) == IMAGE_SCN_ALIGN_8192BYTES)
-    printf("                    IMAGE_SCN_ALIGN_8192BYTES\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_ALIGN_8192BYTES\n");
 
   if (ScnHdr->Characteristics & IMAGE_SCN_LNK_NRELOC_OVFL)
-    printf("                    IMAGE_SCN_LNK_NRELOC_OVFL\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_LNK_NRELOC_OVFL\n");
   if (ScnHdr->Characteristics & IMAGE_SCN_MEM_DISCARDABLE)
-    printf("                    IMAGE_SCN_MEM_DISCARDABLE\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_MEM_DISCARDABLE\n");
   if (ScnHdr->Characteristics & IMAGE_SCN_MEM_NOT_CACHED)
-    printf("                    IMAGE_SCN_MEM_NOT_CACHED\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_MEM_NOT_CACHED\n");
   if (ScnHdr->Characteristics & IMAGE_SCN_MEM_NOT_PAGED)
-    printf("                    IMAGE_SCN_MEM_NOT_PAGED\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_MEM_NOT_PAGED\n");
   if (ScnHdr->Characteristics & IMAGE_SCN_MEM_SHARED)
-    printf("                    IMAGE_SCN_MEM_SHARED\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_MEM_SHARED\n");
   if (ScnHdr->Characteristics & IMAGE_SCN_MEM_EXECUTE)
-    printf("                    IMAGE_SCN_MEM_EXECUTE\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_MEM_EXECUTE\n");
   if (ScnHdr->Characteristics & IMAGE_SCN_MEM_READ)
-    printf("                    IMAGE_SCN_MEM_READ\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_MEM_READ\n");
   if (ScnHdr->Characteristics & IMAGE_SCN_MEM_WRITE)
-    printf("                    IMAGE_SCN_MEM_WRITE\n");
-  printf("\n");
+    CLog::Log(LOGDEBUG, "                    IMAGE_SCN_MEM_WRITE\n");
+  CLog::Log(LOGDEBUG, "\n");
 
   // Read the section Data, Relocations, & Line Nums
   //    Save the offset
@@ -791,15 +790,15 @@ void CoffLoader::PrintSection(SectionHeader_t *ScnHdr, char* data)
     char ch;
     // Print the Raw Data
 
-    printf("\nRAW DATA");
+    CLog::Log(LOGDEBUG, "\nRAW DATA");
     for (i = 0; i < ScnHdr->VirtualSize; i++)
     {
       if ((i % 16) == 0)
-        printf("\n  %08X: ", i);
+        CLog::Log(LOGDEBUG, "\n  {:08X}: ", i);
       ch = data[i];
-      printf("%02X ", (unsigned int)ch);
+      CLog::Log(LOGDEBUG, "{:02X} ", (unsigned int)ch);
     }
-    printf("\n\n");
+    CLog::Log(LOGDEBUG, "\n\n");
   }
 
   /*
@@ -810,37 +809,37 @@ void CoffLoader::PrintSection(SectionHeader_t *ScnHdr, char* data)
   ObjReloc_t ObjReloc;
 
   fseek(fp, ScnHdr->PtrToRelocations/ * + CoffBeginOffset* /, SEEK_SET);
-  printf("RELOCATIONS\n");
-  printf("                     Symbol    Symbol\n");
-  printf(" Offset    Type      Index     Name\n");
-  printf(" --------  --------  --------  ------\n");
+  CLog::Log(LOGDEBUG, "RELOCATIONS\n");
+  CLog::Log(LOGDEBUG, "                     Symbol    Symbol\n");
+  CLog::Log(LOGDEBUG, " Offset    Type      Index     Name\n");
+  CLog::Log(LOGDEBUG, " --------  --------  --------  ------\n");
   for (int i = 0; i < ScnHdr->NumRelocations; i++)
   {
   fread(&ObjReloc, 1, sizeof(ObjReloc_t), fp);
-  printf(" %08X  ", ObjReloc.VirtualAddress);
+  CLog::Log(LOGDEBUG, " {:08X}  ", ObjReloc.VirtualAddress);
 
   if (ObjReloc.Type == IMAGE_REL_I386_ABSOLUTE)
-  printf("ABSOLUTE  ");
+  CLog::Log(LOGDEBUG, "ABSOLUTE  ");
   if (ObjReloc.Type == IMAGE_REL_I386_DIR16)
-  printf("DIR16     ");
+  CLog::Log(LOGDEBUG, "DIR16     ");
   if (ObjReloc.Type == IMAGE_REL_I386_REL16)
-  printf("REL16     ");
+  CLog::Log(LOGDEBUG, "REL16     ");
   if (ObjReloc.Type == IMAGE_REL_I386_DIR32)
-  printf("DIR32     ");
+  CLog::Log(LOGDEBUG, "DIR32     ");
   if (ObjReloc.Type == IMAGE_REL_I386_DIR32NB)
-  printf("DIR32NB   ");
+  CLog::Log(LOGDEBUG, "DIR32NB   ");
   if (ObjReloc.Type == IMAGE_REL_I386_SEG12)
-  printf("SEG12     ");
+  CLog::Log(LOGDEBUG, "SEG12     ");
   if (ObjReloc.Type == IMAGE_REL_I386_SECTION)
-  printf("SECTION   ");
+  CLog::Log(LOGDEBUG, "SECTION   ");
   if (ObjReloc.Type == IMAGE_REL_I386_SECREL)
-  printf("SECREL    ");
+  CLog::Log(LOGDEBUG, "SECREL    ");
   if (ObjReloc.Type == IMAGE_REL_I386_REL32)
-  printf("REL32     ");
-  printf("%8X  ", ObjReloc.SymTableIndex);
-  printf("%s\n", GetSymbolName(ObjReloc.SymTableIndex));
+  CLog::Log(LOGDEBUG, "REL32     ");
+  CLog::Log(LOGDEBUG, "{:8X}  ", ObjReloc.SymTableIndex);
+  CLog::Log(LOGDEBUG, "{}\n", GetSymbolName(ObjReloc.SymTableIndex));
   }
-  printf("\n");
+  CLog::Log(LOGDEBUG, "\n");
   }
 
   if (ScnHdr->NumLineNumbers > 0)
@@ -851,7 +850,7 @@ void CoffLoader::PrintSection(SectionHeader_t *ScnHdr, char* data)
   int BaseLineNum = -1;
 
   fseek(fp, ScnHdr->PtrToLineNums/ * + CoffBeginOffset* /, SEEK_SET);
-  printf("LINE NUMBERS");
+  CLog::Log(LOGDEBUG, "LINE NUMBERS");
   for (int i = 0; i < ScnHdr->NumLineNumbers; i++)
   {
   int LNOffset = ftell(fp);
@@ -862,7 +861,7 @@ void CoffLoader::PrintSection(SectionHeader_t *ScnHdr, char* data)
   SymbolTable_t *Sym;
   int SymIndex;
 
-  printf("\n");
+  CLog::Log(LOGDEBUG, "\n");
   SymIndex = LineNumber.Type.SymbolTableIndex;
   Sym = &(SymTable[SymIndex]);
   if (Sym->NumberOfAuxSymbols > 0)
@@ -881,36 +880,36 @@ void CoffLoader::PrintSection(SectionHeader_t *ScnHdr, char* data)
   }
   }
   }
-  printf(" Symbol Index: %8x ", SymIndex);
-  printf(" Base line number: %8d\n", BaseLineNum);
-  printf(" Symbol name = %s", GetSymbolName(SymIndex));
+  CLog::Log(LOGDEBUG, " Symbol Index: {:8x} ", SymIndex);
+  CLog::Log(LOGDEBUG, " Base line number: {:8}\n", BaseLineNum);
+  CLog::Log(LOGDEBUG, " Symbol name = {}", GetSymbolName(SymIndex));
   LineCnt = 0;
   }
   else
   {
   if ((LineCnt%4) == 0)
   {
-  printf("\n ");
+  CLog::Log(LOGDEBUG, "\n ");
   LineCnt = 0;
   }
-  printf("%08X(%5d)  ", LineNumber.Type.VirtualAddress,
+  CLog::Log(LOGDEBUG, "{:08X}({:5})  ", LineNumber.Type.VirtualAddress,
   LineNumber.LineNum + BaseLineNum);
   LineCnt ++;
   }
   }
-  printf("\n");
+  CLog::Log(LOGDEBUG, "\n");
   }
   #endif
   */
 
-  printf("\n");
+  CLog::Log(LOGDEBUG, "\n");
 }
 
 int CoffLoader::ParseCoff(FILE *fp)
 {
   if ( !LoadCoffHModule(fp) )
   {
-    printf("Failed to load/find COFF hModule header\n");
+    CLog::Log(LOGDEBUG, "Failed to load/find COFF hModule header\n");
     return 0;
   }
   if ( !LoadSymTable(fp) ||
@@ -975,7 +974,7 @@ void CoffLoader::PerformFixups(void)
       {}
       else
       {
-        printf("Unsupported fixup type!!\n");
+        CLog::Log(LOGDEBUG, "Unsupported fixup type!!\n");
       }
     }
   }

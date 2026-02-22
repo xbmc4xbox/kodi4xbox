@@ -56,12 +56,12 @@ SOCKET GetSocketForIndex(int iIndex)
 {
   if (iIndex < 3 || iIndex >= MAX_SOCKETS)
   {
-    CLog::Log(LOGERROR, "GetSocketForIndex() invalid index: %i", iIndex);
+    CLog::Log(LOGERROR, "GetSocketForIndex() invalid index: {}", iIndex);
     return INVALID_SOCKET;
   }
 
   if (InterlockedCompareExchangePointer((PVOID*)&m_sockets[iIndex].sock, (PVOID)INVALID_SOCKET, (PVOID)INVALID_SOCKET) == (PVOID)INVALID_SOCKET)
-    CLog::Log(LOGWARNING, "GetSocketForIndex() invalid socket for index: %i", iIndex);
+    CLog::Log(LOGWARNING, "GetSocketForIndex() invalid socket for index: {}", iIndex);
 
   return m_sockets[iIndex].sock;
 }
@@ -95,7 +95,7 @@ int AddSocket(SOCKET iSocket)
       return i;
     }
   }
-  CLog::Log(LOGERROR, __FUNCTION__" - Unable to add socket to internal list, no space left");
+  CLog::Log(LOGERROR, "{} - Unable to add socket to internal list, no space left", __FUNCTION__);
   return -1;
 }
 
@@ -103,12 +103,12 @@ void ReleaseSocket(int iIndex)
 {
   if (iIndex < 3 || iIndex >= MAX_SOCKETS)
   {
-    CLog::Log(LOGERROR, "ReleaseSocket() invalid index:%i", iIndex);
+    CLog::Log(LOGERROR, "ReleaseSocket() invalid index:{}", iIndex);
     return ;
   }
 
   if (InterlockedExchangePointer((PVOID*)&m_sockets[iIndex].sock, (PVOID)INVALID_SOCKET) == (PVOID)INVALID_SOCKET)
-    CLog::Log(LOGERROR, "ReleaseSocket() invalid socket for index:%i", iIndex);
+    CLog::Log(LOGERROR, "ReleaseSocket() invalid socket for index:{}", iIndex);
 
   if(m_sockets[iIndex].data) delete m_sockets[iIndex].data;
   m_sockets[iIndex].data = NULL;
@@ -243,7 +243,7 @@ extern "C"
     {
       struct sockaddr_in* address = (struct sockaddr_in*)name;
 
-      CLog::Log(LOGDEBUG, "dllbind: family:%i port:%i ip:%i.%i.%i.%i\n",
+      CLog::Log(LOGDEBUG, "dllbind: family:{} port:{} ip:{}.{}.{}.{}\n",
             address->sin_family,
             ntohs(address->sin_port),
             address->sin_addr.S_un.S_un_b.s_b1,
@@ -267,7 +267,7 @@ extern "C"
     if(iResult == SOCKET_ERROR)
     {
       errno = WSAGetLastError();
-      CLog::Log(LOGERROR, "bind returned:%i %i\n", iResult, WSAGetLastError());
+      CLog::Log(LOGERROR, "bind returned:{} {}\n", iResult, WSAGetLastError());
     }
     return iResult;
   }
@@ -303,7 +303,7 @@ extern "C"
   {
     if (s < 3 || s >= MAX_SOCKETS)
     {
-      CLog::Log(LOGERROR, "dllioctlsocket invalid index:%i", s);
+      CLog::Log(LOGERROR, "dllioctlsocket invalid index:{}", s);
       return SOCKET_ERROR;
     }
     SSocketData& socket = m_sockets[s];
@@ -319,7 +319,7 @@ extern "C"
   {
     if (s < 3 || s >= MAX_SOCKETS)
     {
-      CLog::Log(LOGERROR, "dllrecv invalid index:%i", s);
+      CLog::Log(LOGERROR, "dllrecv invalid index:{}", s);
       return SOCKET_ERROR;
     }
     SSocketData& socket = m_sockets[s];
@@ -327,7 +327,7 @@ extern "C"
 
     if(flags & MSG_PEEK)
     {
-//      CLog::Log(LOGDEBUG, __FUNCTION__" - called with MSG_PEEK set, attempting workaround");
+//      CLog::Log(LOGDEBUG, "{} - called with MSG_PEEK set, attempting workaround", __FUNCTION__);
       // work around for peek, it will give garbage as data
 
       if(socket.data == NULL)
@@ -348,7 +348,7 @@ extern "C"
     }
 
     if(flags)
-      CLog::Log(LOGWARNING, __FUNCTION__" - called with flags %d that will be ignored", flags);
+      CLog::Log(LOGWARNING, "{} - called with flags {} that will be ignored", __FUNCTION__, flags);
     flags = 0;
 
     len2 = 0;

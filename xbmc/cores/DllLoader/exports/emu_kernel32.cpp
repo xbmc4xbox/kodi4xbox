@@ -142,7 +142,7 @@ unsigned int __stdcall dllThreadWrapper(LPVOID lpThreadParameter)
   }
   __except (EXCEPTION_EXECUTE_HANDLER)
   {
-    CLog::Log(LOGERROR, "DLL:%s - Unhandled exception in thread created by dll", param->lpDLL );
+    CLog::Log(LOGERROR, "DLL:{} - Unhandled exception in thread created by dll", param->lpDLL );
     result = 0;
   }
 
@@ -219,7 +219,7 @@ extern "C" int WINAPI dllDuplicateHandle(HANDLE hSourceProcessHandle,   // handl
                                           )
 {
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "DuplicateHandle(%p, %p, %p, %p, 0x%x, %d, %d) called\n",
+  CLog::Log(LOGDEBUG, "DuplicateHandle({:p}, {:p}, {:p}, {:p}, 0x{:x}, {}, {}) called\n",
             hSourceProcessHandle, hSourceHandle, hTargetProcessHandle,
             lpTargetHandle, dwDesiredAccess, bInheritHandle, dwOptions);
 #endif
@@ -239,22 +239,22 @@ extern "C" BOOL WINAPI dllDisableThreadLibraryCalls(HANDLE h)
 
 static void DumpSystemInfo(const SYSTEM_INFO* si)
 {
-  CLog::Log(LOGDEBUG, "  Processor architecture %d\n", si->wProcessorArchitecture);
-  CLog::Log(LOGDEBUG, "  Page size: %d\n", si->dwPageSize);
-  CLog::Log(LOGDEBUG, "  Minimum app address: %d\n", si->lpMinimumApplicationAddress);
-  CLog::Log(LOGDEBUG, "  Maximum app address: %d\n", si->lpMaximumApplicationAddress);
-  CLog::Log(LOGDEBUG, "  Active processor mask: 0x%x\n", si->dwActiveProcessorMask);
-  CLog::Log(LOGDEBUG, "  Number of processors: %d\n", si->dwNumberOfProcessors);
-  CLog::Log(LOGDEBUG, "  Processor type: 0x%x\n", si->dwProcessorType);
-  CLog::Log(LOGDEBUG, "  Allocation granularity: 0x%x\n", si->dwAllocationGranularity);
-  CLog::Log(LOGDEBUG, "  Processor level: 0x%x\n", si->wProcessorLevel);
-  CLog::Log(LOGDEBUG, "  Processor revision: 0x%x\n", si->wProcessorRevision);
+  CLog::Log(LOGDEBUG, "  Processor architecture {}\n", si->wProcessorArchitecture);
+  CLog::Log(LOGDEBUG, "  Page size: {}\n", si->dwPageSize);
+  CLog::Log(LOGDEBUG, "  Minimum app address: {}\n", si->lpMinimumApplicationAddress);
+  CLog::Log(LOGDEBUG, "  Maximum app address: {}\n", si->lpMaximumApplicationAddress);
+  CLog::Log(LOGDEBUG, "  Active processor mask: 0x{:x}\n", si->dwActiveProcessorMask);
+  CLog::Log(LOGDEBUG, "  Number of processors: {}\n", si->dwNumberOfProcessors);
+  CLog::Log(LOGDEBUG, "  Processor type: 0x{:x}\n", si->dwProcessorType);
+  CLog::Log(LOGDEBUG, "  Allocation granularity: 0x{:x}\n", si->dwAllocationGranularity);
+  CLog::Log(LOGDEBUG, "  Processor level: 0x{:x}\n", si->wProcessorLevel);
+  CLog::Log(LOGDEBUG, "  Processor revision: 0x{:x}\n", si->wProcessorRevision);
 }
 
 extern "C" void WINAPI dllGetSystemInfo(LPSYSTEM_INFO lpSystemInfo)
 {
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "GetSystemInfo(0x%x) =>", lpSystemInfo);
+  CLog::Log(LOGDEBUG, "GetSystemInfo(0x{:x}) =>", lpSystemInfo);
 #endif
   lpSystemInfo->wProcessorArchitecture = 0; //#define PROCESSOR_ARCHITECTURE_INTEL 0
   lpSystemInfo->dwPageSize = 4096;   //Xbox page size
@@ -290,7 +290,7 @@ std::map<LPCRITICAL_SECTION, LPCRITICAL_SECTION> g_mapCriticalSection;
 extern "C" void WINAPI dllDeleteCriticalSection(LPCRITICAL_SECTION cs)
 {
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "DeleteCriticalSection(0x%x)", cs);
+  CLog::Log(LOGDEBUG, "DeleteCriticalSection(0x{:x})", cs);
 #endif
   if (g_mapCriticalSection.find(cs) != g_mapCriticalSection.end())
   {
@@ -304,7 +304,7 @@ extern "C" void WINAPI dllDeleteCriticalSection(LPCRITICAL_SECTION cs)
 extern "C" void WINAPI dllInitializeCriticalSection(LPCRITICAL_SECTION cs)
 {
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "InitializeCriticalSection(0x%x)", cs);
+  CLog::Log(LOGDEBUG, "InitializeCriticalSection(0x{:x})", cs);
 #endif
   LPCRITICAL_SECTION cs_new = new CRITICAL_SECTION;
   memset(cs_new, 0, sizeof(CRITICAL_SECTION));
@@ -319,7 +319,7 @@ extern "C" void WINAPI dllInitializeCriticalSection(LPCRITICAL_SECTION cs)
 extern "C" void WINAPI dllLeaveCriticalSection(LPCRITICAL_SECTION cs)
 {
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "LeaveCriticalSection(0x%x) %p\n", ((LPCRITICAL_SECTION*)cs)[0]);
+  CLog::Log(LOGDEBUG, "LeaveCriticalSection(0x{:x}) {:p}\n", ((LPCRITICAL_SECTION*)cs)[0]);
 #endif
   LeaveCriticalSection(((LPCRITICAL_SECTION*)cs)[0]);
 }
@@ -327,7 +327,7 @@ extern "C" void WINAPI dllLeaveCriticalSection(LPCRITICAL_SECTION cs)
 extern "C" void WINAPI dllEnterCriticalSection(LPCRITICAL_SECTION cs)
 {
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "EnterCriticalSection(0x%x) %p\n", cs, ((LPCRITICAL_SECTION*)cs)[0]);
+  CLog::Log(LOGDEBUG, "EnterCriticalSection(0x{:x}) {:p}\n", cs, ((LPCRITICAL_SECTION*)cs)[0]);
 #endif
   if (!(LPCRITICAL_SECTION)cs->OwningThread)
   {
@@ -361,8 +361,8 @@ extern "C" BOOL WINAPI dllGetVersionExA(LPOSVERSIONINFO lpVersionInfo)
   lpVersionInfo->dwPlatformId = 1; //VER_PLATFORM_WIN32_WINDOWS
   lpVersionInfo->szCSDVersion[0] = 0;
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "  Major version: %d\n  Minor version: %d\n  Build number: %x\n"
-            "  Platform Id: %d\n Version string: '%s'\n",
+  CLog::Log(LOGDEBUG, "  Major version: {}\n  Minor version: {}\n  Build number: {:x}\n"
+            "  Platform Id: {}\n Version string: '{}'\n",
             lpVersionInfo->dwMajorVersion, lpVersionInfo->dwMinorVersion,
             lpVersionInfo->dwBuildNumber, lpVersionInfo->dwPlatformId, lpVersionInfo->szCSDVersion);
 #endif
@@ -384,7 +384,7 @@ extern "C" BOOL WINAPI dllGetVersionExW(LPOSVERSIONINFOW lpVersionInfo)
 
 extern "C" UINT WINAPI dllGetProfileIntA(LPCTSTR lpAppName, LPCTSTR lpKeyName, INT nDefault)
 {
-  //  CLog::Log(LOGDEBUG,"GetProfileIntA:%s %s %i", lpAppName,lpKeyName,nDefault);
+  //  CLog::Log(LOGDEBUG,"GetProfileIntA:{} {} {}", lpAppName,lpKeyName,nDefault);
   not_implement("kernel32.dll fake function GetProfileIntA called\n"); //warning
   return nDefault;
 }
@@ -393,7 +393,7 @@ extern "C" BOOL WINAPI dllFreeEnvironmentStringsW(LPWSTR lpString)
 {
   // we don't have anything to clean up here, just return.
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "FreeEnvironmentStringsA(0x%x) => 1", lpString);
+  CLog::Log(LOGDEBUG, "FreeEnvironmentStringsA(0x{:x}) => 1", lpString);
 #endif
   return true;
 }
@@ -452,7 +452,7 @@ extern "C" UINT WINAPI dllSetHandleCount(UINT uNumber)
   //Under Windows NT and Windows 95, this function simply returns the value specified in the uNumber parameter.
   //return uNumber;
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "SetHandleCount(0x%x) => 1\n", uNumber);
+  CLog::Log(LOGDEBUG, "SetHandleCount(0x{:x}) => 1\n", uNumber);
 #endif
   return uNumber;
 }
@@ -478,7 +478,7 @@ extern "C" HANDLE WINAPI dllGetStdHandle(DWORD nStdHandle)
 extern "C" DWORD WINAPI dllGetFileType(HANDLE hFile)
 {
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "GetFileType(0x%x) => 0x3 = pipe", hFile);
+  CLog::Log(LOGDEBUG, "GetFileType(0x{:x}) => 0x3 = pipe", hFile);
 #endif
   return 3;
 }
@@ -486,7 +486,7 @@ extern "C" DWORD WINAPI dllGetFileType(HANDLE hFile)
 extern "C" int WINAPI dllGetStartupInfoA(LPSTARTUPINFOA lpStartupInfo)
 {
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "GetStartupInfoA(0x%x) => 1\n");
+  CLog::Log(LOGDEBUG, "GetStartupInfoA(0x{:x}) => 1\n");
 #endif
   lpStartupInfo->cb = sizeof(_STARTUPINFOA);
   lpStartupInfo->cbReserved2 = 0;
@@ -522,7 +522,7 @@ static const char ch_envs[] =
 extern "C" LPVOID WINAPI dllGetEnvironmentStrings()
 {
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "GetEnvironmentStrings() => 0x%x = %p", ch_envs, ch_envs);
+  CLog::Log(LOGDEBUG, "GetEnvironmentStrings() => 0x{:x} = {:p}", ch_envs, ch_envs);
 #endif
   return (LPVOID)ch_envs;
 }
@@ -539,7 +539,7 @@ extern "C" int WINAPI dllGetEnvironmentVariableA(LPCSTR lpName, LPSTR lpBuffer, 
   if (strcmp(lpName, "__MSVCRT_HEAP_SELECT") == 0)
     strcpy(lpBuffer, "__GLOBAL_HEAP_SELECTED,1");
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "GetEnvironmentVariableA('%s', 0x%x, %d) => %d", lpName, lpBuffer, nSize, strlen(lpBuffer));
+  CLog::Log(LOGDEBUG, "GetEnvironmentVariableA('{}', 0x{:x}, {}) => {}", lpName, lpBuffer, nSize, strlen(lpBuffer));
 #endif
   return strlen(lpBuffer);
 }
@@ -602,7 +602,7 @@ extern "C" DWORD WINAPI dllGetFullPathNameA(LPCTSTR lpFileName, DWORD nBufferLen
 {
   if (!lpFileName) return 0;
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "GetFullPathNameA('%s',%d,%p,%p)\n", lpFileName, nBufferLength, lpBuffer, lpFilePart);
+  CLog::Log(LOGDEBUG, "GetFullPathNameA('{}',{},{:p},{:p})\n", lpFileName, nBufferLength, lpBuffer, lpFilePart);
 #endif
   if (strrchr(lpFileName, '\\'))
     lpFilePart = (LPSTR*)strrchr((const char *)lpFileName, '\\');
@@ -638,10 +638,10 @@ extern "C" UINT WINAPI dllGetSystemDirectoryA(LPTSTR lpBuffer, UINT uSize)
   //if (len > uSize) return 0;
   //strcpy(lpBuffer, systemdir);
   //not_implement("kernel32.dll incompete function dllGetSystemDirectory called\n"); //warning
-  //CLog::Log(LOGDEBUG,"KERNEL32!GetSystemDirectoryA(0x%x, %d) => %s", lpBuffer, uSize, systemdir);
+  //CLog::Log(LOGDEBUG,"KERNEL32!GetSystemDirectoryA(0x{:x}, {}) => {}", lpBuffer, uSize, systemdir);
   //return len;
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "GetSystemDirectoryA(%p,%d)\n", lpBuffer, uSize);
+  CLog::Log(LOGDEBUG, "GetSystemDirectoryA({:p},{})\n", lpBuffer, uSize);
 #endif
   if (!lpBuffer) strcpy(lpBuffer, ".");
   return 1;
@@ -656,7 +656,7 @@ extern "C" UINT WINAPI dllGetShortPathName(LPTSTR lpszLongPath, LPTSTR lpszShort
     //strcpy(lpszLongPath, "special://xbmc/system/mplayer/codecs/QuickTime.qts");
   }
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "KERNEL32!GetShortPathNameA('%s',%p,%d)\n", lpszLongPath, lpszShortPath, cchBuffer);
+  CLog::Log(LOGDEBUG, "KERNEL32!GetShortPathNameA('{}',{:p},{})\n", lpszLongPath, lpszShortPath, cchBuffer);
 #endif
   strcpy(lpszShortPath, lpszLongPath);
   return strlen(lpszShortPath);
@@ -667,7 +667,7 @@ extern "C" HANDLE WINAPI dllGetProcessHeap()
   HANDLE hHeap;
   hHeap = GetProcessHeap();
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "KERNEL32!GetProcessHeap() => 0x%x", hHeap);
+  CLog::Log(LOGDEBUG, "KERNEL32!GetProcessHeap() => 0x{:x}", hHeap);
 #endif
   return hHeap;
 }
@@ -675,7 +675,7 @@ extern "C" HANDLE WINAPI dllGetProcessHeap()
 extern "C" UINT WINAPI dllSetErrorMode(UINT i)
 {
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "SetErrorMode(%d) => 0\n", i);
+  CLog::Log(LOGDEBUG, "SetErrorMode({}) => 0\n", i);
 #endif
   return 0;
 }
@@ -715,7 +715,7 @@ extern "C" BOOL WINAPI dllIsProcessorFeaturePresent(DWORD ProcessorFeature)
   }
 
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "IsProcessorFeaturePresent(0x%x) => 0x%x\n", ProcessorFeature, result);
+  CLog::Log(LOGDEBUG, "IsProcessorFeaturePresent(0x{:x}) => 0x{:x}\n", ProcessorFeature, result);
 #endif
   return result;
 }
@@ -724,7 +724,7 @@ extern "C" DWORD WINAPI dllTlsAlloc()
 {
   DWORD retval = TlsAlloc();
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "TlsAlloc() => %d\n", retval);
+  CLog::Log(LOGDEBUG, "TlsAlloc() => {}\n", retval);
 #endif
   return retval;
 }
@@ -733,7 +733,7 @@ extern "C" BOOL WINAPI dllTlsFree(DWORD dwTlsIndex)
 {
   BOOL retval = TlsFree(dwTlsIndex);
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "KERNEL32!TlsFree(%d) => %d", dwTlsIndex, retval);
+  CLog::Log(LOGDEBUG, "KERNEL32!TlsFree({}) => {}", dwTlsIndex, retval);
 #endif
   return retval;
 }
@@ -745,7 +745,7 @@ extern "C" BOOL WINAPI dllTlsSetValue(int dwTlsIndex, LPVOID lpTlsValue)
   BOOL retval = TlsSetValue(dwTlsIndex, lpTlsValue);
 
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "KERNEL32!TlsSetValue(%d, 0x%x) => %d", dwTlsIndex, lpTlsValue, retval);
+  CLog::Log(LOGDEBUG, "KERNEL32!TlsSetValue({}, 0x{:x}) => {}", dwTlsIndex, lpTlsValue, retval);
 #endif
   return retval;
 }
@@ -757,7 +757,7 @@ extern "C" LPVOID WINAPI dllTlsGetValue(DWORD dwTlsIndex)
   LPVOID retval = TlsGetValue(dwTlsIndex);
 
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "KERNEL32!TlsGetValue(%d) => 0x%x", dwTlsIndex, retval);
+  CLog::Log(LOGDEBUG, "KERNEL32!TlsGetValue({}) => 0x{:x}", dwTlsIndex, retval);
 #endif
   return retval;
 }
@@ -769,7 +769,7 @@ extern "C" UINT WINAPI dllGetCurrentDirectoryA(UINT c, LPSTR s)
   strncpy(s, curdir, c);
   result = 1 + ((c < strlen(curdir)) ? c : strlen(curdir));
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "GetCurrentDirectoryA(0x%x, %d) => %d\n", s, c, result);
+  CLog::Log(LOGDEBUG, "GetCurrentDirectoryA(0x{:x}, {}) => {}\n", s, c, result);
 #endif
   return result;
 }
@@ -777,7 +777,7 @@ extern "C" UINT WINAPI dllGetCurrentDirectoryA(UINT c, LPSTR s)
 extern "C" UINT WINAPI dllSetCurrentDirectoryA(const char *pathname)
 {
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "SetCurrentDirectoryA(0x%x = %s) => 1\n", pathname, pathname);
+  CLog::Log(LOGDEBUG, "SetCurrentDirectoryA(0x{:x} = {}) => 1\n", pathname, pathname);
 #endif
   return 1;
 }
@@ -785,7 +785,7 @@ extern "C" UINT WINAPI dllSetCurrentDirectoryA(const char *pathname)
 extern "C" int WINAPI dllSetUnhandledExceptionFilter(void* filter)
 {
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "SetUnhandledExceptionFilter(0x%x) => 1\n", filter);
+  CLog::Log(LOGDEBUG, "SetUnhandledExceptionFilter(0x{:x}) => 1\n", filter);
 #endif
   return 1; //unsupported and probably won't ever be supported
 }
@@ -793,7 +793,7 @@ extern "C" int WINAPI dllSetUnhandledExceptionFilter(void* filter)
 extern "C" int WINAPI dllSetEnvironmentVariableA(const char *name, const char *value)
 {
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "SetEnvironmentVariableA(%s, %s)\n", name, value);
+  CLog::Log(LOGDEBUG, "SetEnvironmentVariableA({}, {})\n", name, value);
 #endif
   return 0;
 }
@@ -801,7 +801,7 @@ extern "C" int WINAPI dllSetEnvironmentVariableA(const char *name, const char *v
 extern "C" int WINAPI dllCreateDirectoryA(const char *pathname, void *sa)
 {
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "CreateDirectory(0x%x = %s, 0x%x) => 1\n", pathname, pathname, sa);
+  CLog::Log(LOGDEBUG, "CreateDirectory(0x{:x} = {}, 0x{:x}) => 1\n", pathname, pathname, sa);
 #endif
   return 1;
 }
@@ -809,7 +809,7 @@ extern "C" int WINAPI dllCreateDirectoryA(const char *pathname, void *sa)
 extern "C" DWORD WINAPI dllWaitForSingleObject(HANDLE hHandle, DWORD dwMiliseconds)
 {
 #ifdef API_DEBUG
-  CLog::Log(LOGDEBUG, "WaitForSingleObject(0x%x, %d)", hHandle, dwMiliseconds);
+  CLog::Log(LOGDEBUG, "WaitForSingleObject(0x{:x}, {})", hHandle, dwMiliseconds);
 #endif
   return WaitForSingleObject(hHandle, dwMiliseconds);
 }
@@ -825,7 +825,7 @@ extern "C" DWORD WINAPI dllWaitForMultipleObjects(DWORD nCount, CONST HANDLE *lp
 
 extern "C" BOOL WINAPI dllGetProcessAffinityMask(HANDLE hProcess, LPDWORD lpProcessAffinityMask, LPDWORD lpSystemAffinityMask)
 {
-  CLog::Log(LOGDEBUG, "GetProcessAffinityMask(%p, %p, %p) => 1\n",
+  CLog::Log(LOGDEBUG, "GetProcessAffinityMask({:p}, {:p}, {:p}) => 1\n",
             (void*)hProcess, (void*)lpProcessAffinityMask, (void*)lpSystemAffinityMask);
   if (lpProcessAffinityMask)*lpProcessAffinityMask = 1;
   if (lpSystemAffinityMask)*lpSystemAffinityMask = 1;
@@ -1068,7 +1068,7 @@ extern "C" BOOL WINAPI dllDVDReadFileLayerChangeHack(HANDLE hFile, LPVOID lpBuff
       LONG low = 0;
       LONG high = 0;
       low = SetFilePointer(hFile, low, &high, FILE_CURRENT);
-      CLog::Log(LOGWARNING, "DVDReadFile() warning - invalid data read from block at %li (%li) - rereading", low, high);
+      CLog::Log(LOGWARNING, "DVDReadFile() warning - invalid data read from block at {} ({}) - rereading", low, high);
       SetFilePointer(hFile, (int)numChecked - (int)*lpNumberOfBytesRead - DVD_CHUNK_SIZE, NULL, FILE_CURRENT);
       DWORD numRead;
       ret = ReadFile(hFile, (BYTE *)lpBuffer + numChecked - DVD_CHUNK_SIZE, DVD_CHUNK_SIZE, &numRead, lpOverlapped);

@@ -51,11 +51,11 @@ extern "C" void tracker_socket_free_all(DllTrackInfo* pInfo)
   {
     CSingleLock lock(g_trackerLock);
     SOCKET socket;
-    CLog::Log(LOGDEBUG,"%s: Detected open sockets: %d", pInfo->pDll->GetFileName(), pInfo->socketList.size());
+    CLog::Log(LOGDEBUG,"{}: Detected open sockets: {}", pInfo->pDll->GetFileName(), pInfo->socketList.size());
     for (SocketListIter it = pInfo->socketList.begin(); it != pInfo->socketList.end(); ++it)
     {
       socket = *it;
-      CLog::Log(LOGDEBUG,"socket des. : %x", socket);
+      CLog::Log(LOGDEBUG,"socket des. : {:x}", socket);
       dllclosesocket(socket);
     }
   }

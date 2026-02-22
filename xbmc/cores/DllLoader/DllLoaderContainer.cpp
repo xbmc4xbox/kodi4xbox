@@ -146,7 +146,7 @@ LibraryLoader* DllLoaderContainer::LoadModule(const char* sName, const char* sCu
     pDll->IncrRef();
 
 #ifdef LOGALL
-    CLog::Log(LOGDEBUG, "Already loaded Dll %s at 0x%x", pDll->GetFileName(), pDll);
+    CLog::Log(LOGDEBUG, "Already loaded Dll {} at 0x{:x}", pDll->GetFileName(), pDll);
 #endif
 
   }
@@ -187,7 +187,7 @@ LibraryLoader* DllLoaderContainer::FindModule(const char* sName, const char* sCu
     CStdString strPath=vecEnv[i];
 
 #ifdef LOGALL
-    CLog::Log(LOGDEBUG, "Searching for the dll %s in directory %s", sName, strPath.c_str());
+    CLog::Log(LOGDEBUG, "Searching for the dll {} in directory {}", sName, strPath.c_str());
 #endif
 
     strPath+=sName;
@@ -205,7 +205,7 @@ LibraryLoader* DllLoaderContainer::FindModule(const char* sName, const char* sCu
   // can't find it in any of our paths - could be a system dll
   return LoadDll(sName, bLoadSymbols);
 #endif
-  CLog::Log(LOGDEBUG, "Dll %s was not found in path", sName);
+  CLog::Log(LOGDEBUG, "Dll {} was not found in path", sName);
 
   return NULL;
 }
@@ -216,7 +216,7 @@ void DllLoaderContainer::ReleaseModule(LibraryLoader*& pDll)
     return;
   if (pDll->IsSystemDll())
   {
-    CLog::Log(LOGFATAL, "%s is a system dll and should never be released", pDll->GetName());
+    CLog::Log(LOGFATAL, "{} is a system dll and should never be released", pDll->GetName());
     return;
   }
 
@@ -225,7 +225,7 @@ void DllLoaderContainer::ReleaseModule(LibraryLoader*& pDll)
   {
 
 #ifdef LOGALL
-    CLog::Log(LOGDEBUG, "Releasing Dll %s", pDll->GetFileName());
+    CLog::Log(LOGDEBUG, "Releasing Dll {}", pDll->GetFileName());
 #endif
 
     if (!pDll->HasSymbols())
@@ -235,12 +235,12 @@ void DllLoaderContainer::ReleaseModule(LibraryLoader*& pDll)
       pDll=NULL;
     }
     else
-      CLog::Log(LOGINFO, "%s has symbols loaded and can never be unloaded", pDll->GetName());
+      CLog::Log(LOGINFO, "{} has symbols loaded and can never be unloaded", pDll->GetName());
   }
 #ifdef LOGALL
   else
   {
-    CLog::Log(LOGDEBUG, "Dll %s is still referenced with a count of %d", pDll->GetFileName(), iRefCount);
+    CLog::Log(LOGDEBUG, "Dll {} is still referenced with a count of {}", pDll->GetFileName(), iRefCount);
   }
 #endif
 }
@@ -249,7 +249,7 @@ LibraryLoader* DllLoaderContainer::LoadDll(const char* sName, bool bLoadSymbols)
 {
 
 #ifdef LOGALL
-  CLog::Log(LOGDEBUG, "Loading dll %s", sName);
+  CLog::Log(LOGDEBUG, "Loading dll {}", sName);
 #endif
 
   LibraryLoader* pLoader;
@@ -257,7 +257,7 @@ LibraryLoader* DllLoaderContainer::LoadDll(const char* sName, bool bLoadSymbols)
 
   if (!pLoader)
   {
-    CLog::Log(LOGERROR, "Unable to create dll %s", sName);
+    CLog::Log(LOGERROR, "Unable to create dll {}", sName);
     return NULL;
   }
 
@@ -310,7 +310,7 @@ void DllLoaderContainer::UnRegisterDll(LibraryLoader* pDll)
   {
     if (pDll->IsSystemDll())
     {
-      CLog::Log(LOGFATAL, "%s is a system dll and should never be removed", pDll->GetName());
+      CLog::Log(LOGFATAL, "{} is a system dll and should never be removed", pDll->GetName());
     }
     else
     {
