@@ -18,8 +18,9 @@
  *
  */
 
-#include "utils/log.h"
 #include "emu_dummy.h"
+
+#include "utils/log.h"
 
 extern "C" void not_implement( LPCSTR debuginfo)
 {
@@ -28,4 +29,3 @@ extern "C" void not_implement( LPCSTR debuginfo)
     CLog::Log(LOGDEBUG, "{}", debuginfo);
   }
 }
-

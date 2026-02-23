@@ -66,33 +66,6 @@ COFF_FileHeader_t;
  *              (only i386 relevant for us)
  */
 
-#if 1
-
-#ifndef IMAGE_FILE_MACHINE_I386
-#define IMAGE_FILE_MACHINE_I386     0x14c
-#endif
-
-
-
-#define IMAGE_FILE_RELOCS_STRIPPED                  0x0001
-#define IMAGE_FILE_EXECUTABLE_IMAGE                 0x0002
-#define IMAGE_FILE_LINE_NUMS_STRIPPED               0x0004
-#define IMAGE_FILE_LOCAL_SYMS_STRIPPED              0x0008
-#define IMAGE_FILE_AGGRESSIVE_WS_TRIM               0x0010
-#define IMAGE_FILE_LARGE_ADDRESS_AWARE              0x0020
-#define IMAGE_FILE_16BIT_MACHINE                    0x0040
-#define IMAGE_FILE_BYTES_REVERSED_LO                0x0080
-#define IMAGE_FILE_32BIT_MACHINE                    0x0100
-#define IMAGE_FILE_DEBUG_STRIPPED                   0x0200
-#define IMAGE_FILE_REMOVABLE_RUN_FROM_SWAP          0x0400
-#define IMAGE_FILE_SYSTEM                           0x1000
-#define IMAGE_FILE_DLL                              0x2000
-#define IMAGE_FILE_UP_SYSTEM_ONLY                   0x4000
-#define IMAGE_FILE_BYTES_REVERSED_HI                0x8000
-
-#endif
-
-
 
 #define OPTMAGIC_PE32   0x010b
 #define OPTMAGIC_PE32P  0x020b
@@ -350,8 +323,7 @@ typedef struct
 }
 SymbolTable_t;
 
-#if !defined (_XBOX)
-/*
+#if !defined (_XBOX) || defined(NXDK)
 #define IMAGE_SYM_UNDEFINED     0
 #define IMAGE_SYM_ABSOLUTE      0xFFFF
 #define IMAGE_SYM_DEBUG         0xFFFE
@@ -405,7 +377,7 @@ SymbolTable_t;
 #define IMAGE_SYM_CLASS_END_OF_STRUCT           102
 #define IMAGE_SYM_CLASS_FILE                    103
 #define IMAGE_SYM_CLASS_SECTION                 104
-#define IMAGE_SYM_CLASS_WEAK_EXTERNAL           105*/
+#define IMAGE_SYM_CLASS_WEAK_EXTERNAL           105
 #endif
 
 typedef struct

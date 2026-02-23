@@ -23,9 +23,16 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <stdarg.h>
+#include <windows.h>
+#include <sys/stat.h>
 
 typedef void ( *PFV)(void);
 
+typedef int (__cdecl *_onexit_t)(void);
+#define onexit_t _onexit_t
+
+#if 0
 #define __IS_STDIN_STREAM(stream)   (stream == stdin  || stream->_file == 0)
 #define __IS_STDOUT_STREAM(stream)  (stream == stdout || stream->_file == 1)
 #define __IS_STDERR_STREAM(stream)  (stream == stderr || stream->_file == 2)
@@ -34,6 +41,7 @@ typedef void ( *PFV)(void);
 #define IS_STDERR_STREAM(stream)    (stream != NULL && __IS_STDERR_STREAM(stream))
 
 #define IS_STD_STREAM(stream)       (stream != NULL && (__IS_STDIN_STREAM(stream) || __IS_STDOUT_STREAM(stream) || __IS_STDERR_STREAM(stream)))
+#endif
 
 #define IS_STDIN_DESCRIPTOR(fd)  (fd == 0)
 #define IS_STDOUT_DESCRIPTOR(fd) (fd == 1)
@@ -48,6 +56,17 @@ typedef long    __off_t;
 
 #define ftello64 _ftelli64
 #define fseeko64 _fseeki64
+
+typedef unsigned long _fsize_t;
+typedef
+struct _finddata_t {
+  unsigned attrib;
+  time_t time_create;
+  time_t time_access;
+  time_t time_write;
+  _fsize_t size;
+  char name[260];
+} _finddata_t;
 
 extern "C"
 {
@@ -131,6 +150,35 @@ extern "C"
   int dll_fscanf(FILE *stream, const char *format , ...);
   int dll_setvbuf(FILE *stream, char *buf, int type, size_t size);
 
+  // NXDK fucntions with more then one declare type
+  double dll_floor(double x);
+  double dll_ldexp(double value, int exp);
+  double dll_frexp(double value, int *exp);
+  double dll_cos(double x);
+  double dll_cosh(double x);
+  double dll_exp(double x);
+  double dll_log(double x);
+  double dll_log10(double x);
+  double dll_sin(double x);
+  double dll_sinh(double x);
+  double dll_sqrt(double x);
+  char* dll_strchr(char *s, int c);
+  char* dll_strrchr(char *s, int c);
+  double dll_tan(double x);
+  double dll_tanh(double x);
+  double dll_ceil(double x);
+  const char* dll_strpbrk(const char *s1, const char *s2);
+  char* dll_strstr(char *s1, const char *s2);
+  double dll_acos(double x);
+  double dll_atan(double x);
+  void* dll_memchr(void *s, int c, size_t n);
+  double dll_pow(double x, double y);
+  double dll_fabs(double x);
+  double dll_asin(double x);
+  int dll_abs(int x);
+  double dll_modf(double value, double *iptr);
+  double dll_atan2(double y, double x);
+  double dll_fmod(double x, double y);
 }
 
 

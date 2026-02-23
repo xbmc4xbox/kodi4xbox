@@ -21,8 +21,21 @@
  *
  */
 
+#include <windows.h>
+#include <stdarg.h>
+
 #define MAX_LEADBYTES             12
 #define MAX_DEFAULTCHAR           2
+
+#define PF_FLOATING_POINT_PRECISION_ERRATA          0
+#define PF_FLOATING_POINT_EMULATED                  1
+#define PF_COMPARE_EXCHANGE_DOUBLE                  2
+#define PF_MMX_INSTRUCTIONS_AVAILABLE               3
+#define PF_XMMI_INSTRUCTIONS_AVAILABLE              6
+#define PF_3DNOW_INSTRUCTIONS_AVAILABLE             7
+#define PF_RDTSC_INSTRUCTION_AVAILABLE              8
+#define PF_PAE_ENABLED                              9
+#define PF_XMMI64_INSTRUCTIONS_AVAILABLE            10
 
 #ifdef _XBOX
 typedef struct _STARTUPINFOA
@@ -59,29 +72,6 @@ CPINFO, *LPCPINFO;
 #define STD_INPUT_HANDLE        ((DWORD) -10)
 #define STD_OUTPUT_HANDLE       ((DWORD) -11)
 #define STD_ERROR_HANDLE        ((DWORD) -12)
-
-//SYSTEM_INFO definition take from Winnt headers.
-typedef struct _SYSTEM_INFO
-{
-  union {
-    DWORD dwOemId;          // Obsolete field...do not use
-    struct
-    {
-      WORD wProcessorArchitecture;
-      WORD wReserved;
-    };
-  };
-  DWORD dwPageSize;
-  LPVOID lpMinimumApplicationAddress;
-  LPVOID lpMaximumApplicationAddress;
-  DWORD_PTR dwActiveProcessorMask;
-  DWORD dwNumberOfProcessors;
-  DWORD dwProcessorType;
-  DWORD dwAllocationGranularity;
-  WORD wProcessorLevel;
-  WORD wProcessorRevision;
-}
-SYSTEM_INFO, *LPSYSTEM_INFO;
 #endif
 
 typedef DWORD LCTYPE;

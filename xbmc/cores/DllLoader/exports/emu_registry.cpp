@@ -18,21 +18,20 @@
  *
  */
 
-#include "system.h"
-#ifdef _XBOX
-#include <xtl.h>
-#else
-#include <windows.h>
-#endif
-#include <stdio.h>
-#include <stdlib.h>
-#include <fcntl.h>
-#include <io.h>
+#include "emu_registry.h"
+
+#include "emu_dummy.h"
 #include "utils/XBMCTinyXML.h"
 #include "utils/log.h"
 
-#include "emu_registry.h"
-#include "emu_dummy.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <windows.h>
+
+extern INT _WideCharToMultiByte(UINT page, DWORD flags, LPCWSTR src, INT srclen, LPSTR dst, INT dstlen, LPCSTR defchar, BOOL *used );
+extern INT _MultiByteToWideChar(UINT page, DWORD flags, LPCSTR src, INT srclen, LPWSTR dst, INT dstlen );
+#define WideCharToMultiByte _WideCharToMultiByte
+#define MultiByteToWideChar _MultiByteToWideChar
 
 //can use this global overide default path name
 char* regpathname = NULL;
@@ -121,26 +120,26 @@ static int open_registry(char* filename)
     OutputDebugString("Multiple open_registry()\n");
     return 0;
   }
-  fd = open(filename, O_RDONLY|O_BINARY);
-  if (fd == -1)
+  HANDLE hFile = CreateFileA(filename, GENERIC_READ, 0, NULL, CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL, NULL);
+  if (hFile == INVALID_HANDLE_VALUE)
     return 0;
 
-  read(fd, &reg_size, 4);
+  ReadFile(hFile, &reg_size, 4, NULL, NULL);
   regs=(struct reg_value*)malloc(reg_size*sizeof(struct reg_value));
   head = 0;
   for(i=0; i<reg_size; i++)
   {
-    read(fd,&regs[i].type,4);
-    read(fd,&len,4);
+    ReadFile(hFile,&regs[i].type,4,NULL,NULL);
+    ReadFile(hFile,&len,4,NULL,NULL);
     regs[i].name=(char*)malloc(len+1);
     if(regs[i].name==0)
     {
       reg_size=i+1;
       goto error;
     }
-    read(fd, regs[i].name, len);
+    ReadFile(hFile, regs[i].name, len, NULL, NULL);
     regs[i].name[len]=0;
-    read(fd,&regs[i].len,4);
+    ReadFile(hFile,&regs[i].len,4,NULL,NULL);
     regs[i].value=(char*)malloc(regs[i].len+1);
     if(regs[i].value==0)
     {
@@ -148,13 +147,13 @@ static int open_registry(char* filename)
       reg_size=i+1;
       goto error;
     }
-    read(fd, regs[i].value, regs[i].len);
+    ReadFile(hFile, regs[i].value, regs[i].len, NULL, NULL);
     regs[i].value[regs[i].len]=0;
   }
-  close(fd);
+  CloseHandle(hFile);
   return 1;
 error:
-  close(fd);
+  CloseHandle(hFile);
   return 0;
 }
 
@@ -164,23 +163,23 @@ int save_registry(char* filename)
   if (!regs)
     return 0;
 
-  fd = open(filename, O_WRONLY | O_CREAT|O_BINARY, 00666);
-  if (fd == -1)
+  HANDLE hFile = CreateFileA(filename, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL, NULL);
+  if (hFile == INVALID_HANDLE_VALUE)
   {
     OutputDebugString("Failed to open registry file for writing.\n");
     return 0;
   }
-  write(fd, &reg_size, 4);
+  WriteFile(hFile, &reg_size, 4, NULL, NULL);
   for(i=0; i<reg_size; i++)
   {
     unsigned len=strlen(regs[i].name);
-    write(fd, &regs[i].type, 4);
-    write(fd, &len, 4);
-    write(fd, regs[i].name, len);
-    write(fd, &regs[i].len, 4);
-    write(fd, regs[i].value, regs[i].len);
+    WriteFile(hFile, &regs[i].type, 4, NULL, NULL);
+    WriteFile(hFile, &len, 4, NULL, NULL);
+    WriteFile(hFile, regs[i].name, len, NULL, NULL);
+    WriteFile(hFile, &regs[i].len, 4, NULL, NULL);
+    WriteFile(hFile, regs[i].value, regs[i].len, NULL, NULL);
   }
-  close(fd);
+  CloseHandle(hFile);
   return 1;
 }
 
@@ -465,7 +464,7 @@ LONG WINAPI dllRegQueryValueExA (HKEY key, LPCSTR value, LPDWORD reserved,
 LONG WINAPI dllRegQueryValueExW (HKEY key, LPCWSTR value, LPDWORD reserved,
                                  LPDWORD type, LPBYTE data, LPDWORD count)
 {
-  SIZE_T count2;
+  DWORD count2;
   PCHAR value2;
   DWORD type2;
   DWORD ret;

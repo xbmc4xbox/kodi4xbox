@@ -234,6 +234,7 @@ extern "C" char* __cdecl track_strdup(const char* str)
 
 extern "C" void tracker_heapobjects_free_all(DllTrackInfo* pInfo)
 {
+#if 0
   if (!pInfo->heapobjectList.empty())
   {
     CLog::Log(LOGDEBUG,"{}: Detected heapobject leaks: {} leaks", pInfo->pDll->GetFileName(), pInfo->heapobjectList.size());
@@ -252,6 +253,8 @@ extern "C" void tracker_heapobjects_free_all(DllTrackInfo* pInfo)
     }
     pInfo->heapobjectList.erase(pInfo->heapobjectList.begin(), pInfo->heapobjectList.end());
   }
+#endif
+  assert(0);
 }
 
 HANDLE
@@ -262,6 +265,7 @@ track_HeapCreate(
     IN SIZE_T dwMaximumSize
     )
 {
+#if 0
   uintptr_t loc = (uintptr_t)_ReturnAddress();
 
   DllTrackInfo* pInfo = tracker_get_dlltrackinfo(loc);
@@ -274,6 +278,10 @@ track_HeapCreate(
   }
 
   return hHeap;
+#else
+  assert(0);
+  return NULL;
+#endif
 }
 
 BOOL
@@ -282,6 +290,7 @@ track_HeapDestroy(
     IN OUT HANDLE hHeap
     )
 {
+#if 0
   uintptr_t loc = (uintptr_t)_ReturnAddress();
 
 
@@ -300,6 +309,10 @@ track_HeapDestroy(
   }
 
   return HeapDestroy(hHeap);
+#else
+  assert(0);
+  return NULL;
+#endif
 }
 
 

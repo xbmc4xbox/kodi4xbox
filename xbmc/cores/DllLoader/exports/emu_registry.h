@@ -3,6 +3,8 @@
 
 #include "emu_registry.h"
 
+#include <windows.h>
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -27,6 +29,7 @@ extern "C"
 
 #define REG_DWORD                   ( 4 )   // 32-bit number
 #define REG_SZ                      ( 1 )   // null terminated string
+#define REG_MULTI_SZ		            ( 7	)   // multiple strings, delimited by \0, terminated by \0\0 (ASCII)
 #define REG_CREATED_NEW_KEY 0x00000001
 #endif
   /*

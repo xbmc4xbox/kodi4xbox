@@ -31,7 +31,9 @@ CEmuFileWrapper::CEmuFileWrapper()
   {
     memset(&m_files[i], 0, sizeof(EmuFileObject));
     m_files[i].used = false;
+#if 0
     m_files[i].file_emu._file = -1;
+#endif
   }
 }
 
@@ -51,7 +53,9 @@ void CEmuFileWrapper::CleanUp()
 
       memset(&m_files[i], 0, sizeof(EmuFileObject));
       m_files[i].used = false;
+#if 0
       m_files[i].file_emu._file = -1;
+#endif
     }
   }
 }
@@ -70,7 +74,9 @@ EmuFileObject* CEmuFileWrapper::RegisterFileObject(XFILE::CFile* pFile)
       object = &m_files[i];
       object->used = true;
       object->file_xbmc = pFile;
+#if 0
       object->file_emu._file = (i + FILE_WRAPPER_OFFSET);
+#endif
       break;
     }
   }
@@ -92,7 +98,9 @@ void CEmuFileWrapper::UnRegisterFileObjectByDescriptor(int fd)
       {
         memset(&m_files[i], 0, sizeof(EmuFileObject));
         m_files[i].used = false;
+#if 0
         m_files[i].file_emu._file = -1;
+#endif
       }
     }
   }
@@ -102,7 +110,9 @@ void CEmuFileWrapper::UnRegisterFileObjectByStream(FILE* stream)
 {
   if (stream != NULL)
   {
+#if 0
     return UnRegisterFileObjectByDescriptor(stream->_file);
+#endif
   }
 }
 
@@ -123,7 +133,9 @@ EmuFileObject* CEmuFileWrapper::GetFileObjectByStream(FILE* stream)
 {
   if (stream != NULL)
   {
+#if 0
     return GetFileObjectByDescriptor(stream->_file);
+#endif
   }
 
   return NULL;
@@ -143,11 +155,13 @@ XFILE::CFile* CEmuFileWrapper::GetFileXbmcByStream(FILE* stream)
 {
   if (stream != NULL)
   {
+#if 0
     EmuFileObject* object = GetFileObjectByDescriptor(stream->_file);
     if (object != NULL && object->used)
     {
       return object->file_xbmc;
     }
+#endif
   }
   return NULL;
 }
@@ -156,11 +170,13 @@ int CEmuFileWrapper::GetDescriptorByStream(FILE* stream)
 {
   if (stream != NULL)
   {
+#if 0
     int i = stream->_file - FILE_WRAPPER_OFFSET;
     if (i >= 0 && i < MAX_EMULATED_FILES)
     {
       return stream->_file;
     }
+#endif
   }
   return -1;
 }
@@ -189,7 +205,9 @@ bool CEmuFileWrapper::StreamIsEmulatedFile(FILE* stream)
 {
   if (stream != NULL)
   {
+#if 0
     return DescriptorIsEmulatedFile(stream->_file);
+#endif
   }
   return false;
 }

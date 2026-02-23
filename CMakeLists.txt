@@ -144,19 +144,19 @@ add_executable(xbmc
   xbmc/cores/DllLoader/dll_tracker_file.cpp
   xbmc/cores/DllLoader/dll_tracker_library.cpp
   xbmc/cores/DllLoader/dll_tracker_memory.cpp
-  xbmc/cores/DllLoader/dll_tracker_socket.cpp
+  # xbmc/cores/DllLoader/dll_tracker_socket.cpp
   xbmc/cores/DllLoader/dll_util.cpp
   xbmc/cores/DllLoader/DllLoader.cpp
   xbmc/cores/DllLoader/DllLoaderContainer.cpp
   xbmc/cores/DllLoader/LibraryLoader.cpp
   xbmc/cores/DllLoader/exports/emu_dummy.cpp
-  xbmc/cores/DllLoader/exports/emu_dx8.cpp
+  # xbmc/cores/DllLoader/exports/emu_dx8.cpp
   xbmc/cores/DllLoader/exports/emu_kernel32.cpp
   xbmc/cores/DllLoader/exports/emu_misc.cpp
   xbmc/cores/DllLoader/exports/emu_msvcrt.cpp
   xbmc/cores/DllLoader/exports/emu_ole32.cpp
   xbmc/cores/DllLoader/exports/emu_registry.cpp
-  xbmc/cores/DllLoader/exports/emu_socket.cpp
+  # xbmc/cores/DllLoader/exports/emu_socket.cpp
   xbmc/cores/DllLoader/exports/exports_kernel32.cpp
   xbmc/cores/DllLoader/exports/exports_misc.cpp
   xbmc/cores/DllLoader/exports/exports_msvcrt.cpp
@@ -165,12 +165,12 @@ add_executable(xbmc
   xbmc/cores/DllLoader/exports/exports_reg.cpp
   xbmc/cores/DllLoader/exports/exports_socket.cpp
   xbmc/cores/DllLoader/exports/exports_xbox_dx8.cpp
-  xbmc/cores/DllLoader/exports/stubs_nxdk.cpp
-  xbmc/cores/DllLoader/exports/emu_socket/getaddrinfo.c
-  xbmc/cores/DllLoader/exports/emu_socket/getnameinfo.c
-  xbmc/cores/DllLoader/exports/emu_socket/inet_aton.c
-  xbmc/cores/DllLoader/exports/emu_socket/inet_ntop.c
-  xbmc/cores/DllLoader/exports/emu_socket/inet_pton.c
+  xbmc/cores/DllLoader/exports/nxdk_stubs.cpp
+  # xbmc/cores/DllLoader/exports/emu_socket/getaddrinfo.c
+  # xbmc/cores/DllLoader/exports/emu_socket/getnameinfo.c
+  # xbmc/cores/DllLoader/exports/emu_socket/inet_aton.c
+  # xbmc/cores/DllLoader/exports/emu_socket/inet_ntop.c
+  # xbmc/cores/DllLoader/exports/emu_socket/inet_pton.c
   xbmc/cores/DllLoader/exports/util/EmuFileWrapper.cpp
   xbmc/cores/DataCacheCore.cpp
   xbmc/cores/VideoSettings.cpp

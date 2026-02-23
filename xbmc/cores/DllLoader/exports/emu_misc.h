@@ -21,6 +21,16 @@
  *
  */
 
+#include <windows.h>
+
+#include "guiddef.h"
+
+typedef UINT_PTR WPARAM;
+typedef LONG_PTR LPARAM;
+typedef LONG_PTR LRESULT;
+
+typedef	UINT	MMRESULT;
+
 typedef void ( *PFV)(void);
 
 #ifdef _XBOX
@@ -44,7 +54,11 @@ typedef struct _DMOMediaType
   BOOL bTemporalCompression;
   ULONG lSampleSize;
   GUID formattype;
+#if 0
   IUnknown *pUnk;
+#else
+  void *pUnk;
+#endif
   ULONG cbFormat;
   BYTE *pbFormat;
 }
@@ -60,6 +74,23 @@ typedef struct _COSERVERINFO
   DWORD dwReserved2;
 }
 COSERVERINFO;
+
+typedef struct tagRECT {
+  LONG left;
+  LONG top;
+  LONG right;
+  LONG bottom;
+} RECT, *PRECT, *NPRECT, *LPRECT;
+
+typedef struct tagPOINT {
+  LONG x;
+  LONG y;
+} POINT, *PPOINT, *NPPOINT, *LPPOINT;
+
+typedef struct tagPALETTEENTRY
+{
+	BYTE peRed, peGreen, peBlue, peFlags;
+} PALETTEENTRY, *PPALETTEENTRY, *LPPALETTEENTRY;
 #endif
 
 extern "C" HRESULT WINAPI dllMoFreeMediaType(DMO_MEDIA_TYPE* pmedia);  //msdmo.dll

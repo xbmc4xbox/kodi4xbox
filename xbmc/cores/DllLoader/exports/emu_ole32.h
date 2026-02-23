@@ -21,6 +21,18 @@
  *
  */
 
+#include <windows.h>
+
+#include "guiddef.h"
+
+#ifndef LPUNKNOWN
+typedef void* LPUNKNOWN;
+#endif
+
+#ifndef LPOLESTR
+typedef wchar_t* LPOLESTR;
+#endif
+
 extern "C" HRESULT  WINAPI dllCoInitialize();
 extern "C" void     WINAPI dllCoUninitialize();
 extern "C" HRESULT  WINAPI dllCoCreateInstance( REFCLSID rclsid, LPUNKNOWN pUnkOuter, DWORD dwClsContext, REFIID riid, LPVOID * ppv);

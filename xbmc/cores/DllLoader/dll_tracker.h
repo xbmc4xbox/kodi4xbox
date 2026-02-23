@@ -40,9 +40,8 @@ struct AllocLenCaller
 
 enum TrackedFileType
 {
-  FILE_XBMC_OPEN,
+  FILE_XBMC_OPEN = 2,
   FILE_XBMC_FOPEN,
-  FILE_OPEN,
   FILE_FOPEN
 };
 
@@ -68,8 +67,10 @@ typedef std::list<uintptr_t>::iterator DummyListIter;
 typedef std::list<LPCRITICAL_SECTION> CriticalSectionList;
 typedef std::list<LPCRITICAL_SECTION>::iterator CriticalSectionListIter;
 
+#if 0
 typedef std::list<SOCKET> SocketList;
 typedef std::list<SOCKET>::iterator SocketListIter;
+#endif
 
 typedef std::list<HANDLE> HeapObjectList;
 typedef std::list<HANDLE>::iterator HeapObjectListIter;
@@ -92,7 +93,9 @@ typedef struct _DllTrackInfo
   DummyList dummyList;
 
   FileList fileList;
+#if 0
   SocketList socketList;
+#endif
   CriticalSectionList criticalSectionList;
 
   HeapObjectList heapobjectList;

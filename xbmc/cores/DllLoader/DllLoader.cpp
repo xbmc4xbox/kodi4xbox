@@ -32,16 +32,6 @@ extern "C" FILE *fopen_utf8(const char *_Filename, const char *_Mode);
 #define fopen_utf8 fopen
 #endif
 
-#ifdef _XBOX
-#include "xbox/undocumented.h"
-#include "XbDm.h"
-#else
-typedef struct _UNICODE_STRING {
-  USHORT  Length;
-  USHORT  MaximumLength;
-  PWSTR  Buffer;
-} UNICODE_STRING, *PUNICODE_STRING;
-#endif
 #include "commons/Exception.h"
 
 #ifdef min
@@ -925,7 +915,7 @@ void DllLoader::UnloadSymbols()
 
       try
       {
-        CStdStringW strNameW;
+        std::wstring strNameW;
         g_charsetConverter.utf8ToW(GetName(), strNameW, false, false, false);
 
         // Get the address of the global struct g_dmi
@@ -938,7 +928,7 @@ void DllLoader::UnloadSymbols()
         //  Search for the dll we are unloading...
         while (entry)
         {
-          CStdStringW baseName=(wchar_t*)((LDR_DATA_TABLE_ENTRY*)entry)->BaseDllName.Buffer;
+          std::wstring baseName=(wchar_t*)((LDR_DATA_TABLE_ENTRY*)entry)->BaseDllName.Buffer;
           if (baseName.Equals(strNameW))
           {
             // ...and remove it from the LoadedModuleList and free its memory.

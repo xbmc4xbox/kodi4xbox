@@ -23,7 +23,9 @@
 #include "dll_tracker_memory.h"
 #include "dll_tracker_file.h"
 #include "dll_tracker_critical_section.h"
+#if 0
 #include "dll_tracker_socket.h"
+#endif
 #include "DllLoader.h"
 #include "threads/SingleLock.h"
 #include "utils/log.h"
@@ -63,7 +65,9 @@ void tracker_dll_free(DllLoader* pDll)
         tracker_memory_free_all(*it);
         tracker_heapobjects_free_all(*it);
         tracker_file_free_all(*it);
+#if 0
         tracker_socket_free_all(*it);
+#endif
         tracker_critical_section_free_all(*it);
       }
       catch (...)

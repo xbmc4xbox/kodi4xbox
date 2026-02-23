@@ -19,13 +19,13 @@
  */
 
 #include "dll_tracker_file.h"
+
 #include "dll_tracker.h"
 #include "DllLoader.h"
 #include "threads/SingleLock.h"
 #include "utils/log.h"
 
 #include "exports/emu_msvcrt.h"
-#include <io.h>
 
 extern "C" void tracker_file_track(uintptr_t caller, unsigned handle, TrackedFileType type, const char* sFile)
 {
@@ -78,7 +78,7 @@ extern "C" void tracker_file_free_all(DllTrackInfo* pInfo)
 
       if (file->type == FILE_XBMC_OPEN) dll_close(file->handle);
       else if (file->type == FILE_XBMC_FOPEN) dll_fclose((FILE*)file->handle);
-      else if (file->type == FILE_OPEN) close(file->handle);
+      else if (file->type == FILE_OPEN) CloseHandle((FILE*)file->handle);
       else if (file->type == FILE_FOPEN) fclose((FILE*)file->handle);
 
       delete file;

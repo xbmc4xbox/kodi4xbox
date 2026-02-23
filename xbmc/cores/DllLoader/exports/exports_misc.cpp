@@ -18,128 +18,132 @@
  *
  */
 
-#include "system.h"
-#include "../DllLoader.h"
 #include "emu_misc.h"
+
+#include "../DllLoader.h"
 #include "emu_msvcrt.h"
 
 Export export_winmm[] =
 {
-  { "timeGetTime",                -1, timeGetTime,                   NULL },
-  { "DefDriverProc",              -1, dllDefDriverProc,              NULL },
-  { "timeGetDevCaps",             -1, dlltimeGetDevCaps,             NULL },
-  { "timeBeginPeriod",            -1, dlltimeBeginPeriod,            NULL },
-  { "timeEndPeriod",              -1, dlltimeEndPeriod,              NULL },
-  { "waveOutGetNumDevs",          -1, dllwaveOutGetNumDevs,          NULL },
+#ifndef NXDK
+  { "timeGetTime",                static_cast<unsigned long>(-1), timeGetTime,                   NULL },
+#else
+  { "timeGetTime",                static_cast<unsigned long>(-1), GetTickCount,                  NULL },
+#endif
+  { "DefDriverProc",              static_cast<unsigned long>(-1), dllDefDriverProc,              NULL },
+  { "timeGetDevCaps",             static_cast<unsigned long>(-1), dlltimeGetDevCaps,             NULL },
+  { "timeBeginPeriod",            static_cast<unsigned long>(-1), dlltimeBeginPeriod,            NULL },
+  { "timeEndPeriod",              static_cast<unsigned long>(-1), dlltimeEndPeriod,              NULL },
+  { "waveOutGetNumDevs",          static_cast<unsigned long>(-1), dllwaveOutGetNumDevs,          NULL },
   { NULL, NULL, NULL, NULL }
 };
 
 Export export_msdmo[] =
 {
-  { "MoFreeMediaType",            -1, dllMoFreeMediaType,            NULL },
-  { "MoCopyMediaType",            -1, dllMoCopyMediaType,            NULL },
-  { "MoInitMediaType",            -1, dllMoInitMediaType,            NULL },
+  { "MoFreeMediaType",            static_cast<unsigned long>(-1), dllMoFreeMediaType,            NULL },
+  { "MoCopyMediaType",            static_cast<unsigned long>(-1), dllMoCopyMediaType,            NULL },
+  { "MoInitMediaType",            static_cast<unsigned long>(-1), dllMoInitMediaType,            NULL },
   { NULL, NULL, NULL, NULL }
 };
 
 Export export_user32[] =
 {
-  { "IsRectEmpty",                -1, dllIsRectEmpty,                NULL },
-  { "EnableWindow",               -1, dllEnableWindow,               NULL },
-  { "GetDlgItemInt",              -1, dllGetDlgItemInt,              NULL },
-  { "SendDlgItemMessageA",        -1, dllSendDlgItemMessageA,        NULL },
-  { "DialogBoxParamA",            -1, dllDialogBoxParamA,            NULL },
-  { "GetDlgItemTextA",            -1, dllGetDlgItemTextA,            NULL },
-  { "MessageBoxA",                -1, dllMessageBoxA,                NULL },
-  { "GetWindowLongA",             -1, dllGetWindowLongA,             NULL },
-  { "GetDlgItem",                 -1, dllGetDlgItem,                 NULL },
-  { "CheckDlgButton",             -1, dllCheckDlgButton,             NULL },
-  { "SetDlgItemInt",              -1, dllSetDlgItemInt,              NULL },
-  { "ShowWindow",                 -1, dllShowWindow,                 NULL },
-  { "EndDialog",                  -1, dllEndDialog,                  NULL },
-  { "SetDlgItemTextA",            -1, dllSetDlgItemTextA,            NULL },
-  { "SetWindowLongA",             -1, dllSetWindowLongA,             NULL },
-  { "DestroyWindow",              -1, dllDestroyWindow,              NULL },
-  { "CreateDialogParamA",         -1, dllCreateDialogParamA,         NULL },
-  { "PostMessageA",               -1, dllPostMessageA,               NULL },
-  { "SendMessageA",               -1, dllSendMessageA,               NULL },
-  { "SetFocus",                   -1, dllSetFocus,                   NULL },
-  { "wsprintfA",                  -1, dllwsprintfA,                  NULL },
+  { "IsRectEmpty",                static_cast<unsigned long>(-1), dllIsRectEmpty,                NULL },
+  { "EnableWindow",               static_cast<unsigned long>(-1), dllEnableWindow,               NULL },
+  { "GetDlgItemInt",              static_cast<unsigned long>(-1), dllGetDlgItemInt,              NULL },
+  { "SendDlgItemMessageA",        static_cast<unsigned long>(-1), dllSendDlgItemMessageA,        NULL },
+  { "DialogBoxParamA",            static_cast<unsigned long>(-1), dllDialogBoxParamA,            NULL },
+  { "GetDlgItemTextA",            static_cast<unsigned long>(-1), dllGetDlgItemTextA,            NULL },
+  { "MessageBoxA",                static_cast<unsigned long>(-1), dllMessageBoxA,                NULL },
+  { "GetWindowLongA",             static_cast<unsigned long>(-1), dllGetWindowLongA,             NULL },
+  { "GetDlgItem",                 static_cast<unsigned long>(-1), dllGetDlgItem,                 NULL },
+  { "CheckDlgButton",             static_cast<unsigned long>(-1), dllCheckDlgButton,             NULL },
+  { "SetDlgItemInt",              static_cast<unsigned long>(-1), dllSetDlgItemInt,              NULL },
+  { "ShowWindow",                 static_cast<unsigned long>(-1), dllShowWindow,                 NULL },
+  { "EndDialog",                  static_cast<unsigned long>(-1), dllEndDialog,                  NULL },
+  { "SetDlgItemTextA",            static_cast<unsigned long>(-1), dllSetDlgItemTextA,            NULL },
+  { "SetWindowLongA",             static_cast<unsigned long>(-1), dllSetWindowLongA,             NULL },
+  { "DestroyWindow",              static_cast<unsigned long>(-1), dllDestroyWindow,              NULL },
+  { "CreateDialogParamA",         static_cast<unsigned long>(-1), dllCreateDialogParamA,         NULL },
+  { "PostMessageA",               static_cast<unsigned long>(-1), dllPostMessageA,               NULL },
+  { "SendMessageA",               static_cast<unsigned long>(-1), dllSendMessageA,               NULL },
+  { "SetFocus",                   static_cast<unsigned long>(-1), dllSetFocus,                   NULL },
+  { "wsprintfA",                  static_cast<unsigned long>(-1), dllwsprintfA,                  NULL },
 
-  { "GetDesktopWindow",           -1, dllGetDesktopWindow,           NULL },
-  { "GetDC",                      -1, dllGetDC,                      NULL },
-  { "ReleaseDC",                  -1, dllReleaseDC,                  NULL },
-  { "GetWindowRect",              -1, dllGetWindowRect,              NULL },
-  { "ShowCursor",                 -1, dllShowCursor,                 NULL },
-  { "GetSystemMetrics",           -1, dllGetSystemMetrics,           NULL },
-  { "MonitorFromWindow",          -1, dllMonitorFromWindow,          NULL },
-  { "MonitorFromRect",            -1, dllMonitorFromRect,            NULL },
-  { "MonitorFromPoint",           -1, dllMonitorFromPoint,           NULL },
-  { "EnumDisplayMonitors",        -1, dllEnumDisplayMonitors,        NULL },
-  { "GetMonitorInfoA",            -1, dllGetMonitorInfoA,            NULL },
+  { "GetDesktopWindow",           static_cast<unsigned long>(-1), dllGetDesktopWindow,           NULL },
+  { "GetDC",                      static_cast<unsigned long>(-1), dllGetDC,                      NULL },
+  { "ReleaseDC",                  static_cast<unsigned long>(-1), dllReleaseDC,                  NULL },
+  { "GetWindowRect",              static_cast<unsigned long>(-1), dllGetWindowRect,              NULL },
+  { "ShowCursor",                 static_cast<unsigned long>(-1), dllShowCursor,                 NULL },
+  { "GetSystemMetrics",           static_cast<unsigned long>(-1), dllGetSystemMetrics,           NULL },
+  { "MonitorFromWindow",          static_cast<unsigned long>(-1), dllMonitorFromWindow,          NULL },
+  { "MonitorFromRect",            static_cast<unsigned long>(-1), dllMonitorFromRect,            NULL },
+  { "MonitorFromPoint",           static_cast<unsigned long>(-1), dllMonitorFromPoint,           NULL },
+  { "EnumDisplayMonitors",        static_cast<unsigned long>(-1), dllEnumDisplayMonitors,        NULL },
+  { "GetMonitorInfoA",            static_cast<unsigned long>(-1), dllGetMonitorInfoA,            NULL },
 
-  { "EnumDisplayDevicesA",        -1, dllEnumDisplayDevicesA,        NULL },
-  { "IsWindowVisible",            -1, dllIsWindowVisible,            NULL },
-  { "GetActiveWindow",            -1, dllGetActiveWindow,            NULL },
-  { "LoadStringA",                -1, dllLoadStringA,                NULL },
-  { "GetCursorPos",               -1, dllGetCursorPos,               NULL },
-  { "LoadCursorA",                -1, dllLoadCursorA,                NULL },
-  { "SetCursor",                  -1, dllSetCursor,                  NULL },
-  { "RegisterWindowMessageA",     -1, dllRegisterWindowMessageA,     NULL },
-  { "GetSysColorBrush",           -1, dllGetSysColorBrush,           NULL },
-  { "GetSysColor",                -1, dllGetSysColor,                NULL },
-  { "RegisterClipboardFormatA",   -1, dllRegisterClipboardFormatA,   NULL },
+  { "EnumDisplayDevicesA",        static_cast<unsigned long>(-1), dllEnumDisplayDevicesA,        NULL },
+  { "IsWindowVisible",            static_cast<unsigned long>(-1), dllIsWindowVisible,            NULL },
+  { "GetActiveWindow",            static_cast<unsigned long>(-1), dllGetActiveWindow,            NULL },
+  { "LoadStringA",                static_cast<unsigned long>(-1), dllLoadStringA,                NULL },
+  { "GetCursorPos",               static_cast<unsigned long>(-1), dllGetCursorPos,               NULL },
+  { "LoadCursorA",                static_cast<unsigned long>(-1), dllLoadCursorA,                NULL },
+  { "SetCursor",                  static_cast<unsigned long>(-1), dllSetCursor,                  NULL },
+  { "RegisterWindowMessageA",     static_cast<unsigned long>(-1), dllRegisterWindowMessageA,     NULL },
+  { "GetSysColorBrush",           static_cast<unsigned long>(-1), dllGetSysColorBrush,           NULL },
+  { "GetSysColor",                static_cast<unsigned long>(-1), dllGetSysColor,                NULL },
+  { "RegisterClipboardFormatA",   static_cast<unsigned long>(-1), dllRegisterClipboardFormatA,   NULL },
   { NULL, NULL, NULL, NULL }
 };
 
 Export export_xbmc_vobsub[] =
 {
-  { "pf_seek",                    -1, VobSubPFSeek,                  NULL },
-  { "pf_write",                   -1, VobSubPFWrite,                 NULL },
-  { "pf_read",                    -1, VobSubPFRead,                  NULL },
-  { "pf_open",                    -1, VobSubPFOpen,                  NULL },
-  { "pf_close",                   -1, VobSubPFClose,                 NULL },
-  { "pf_reserve",                 -1, VobSubPFReserve,               NULL },
+  { "pf_seek",                    static_cast<unsigned long>(-1), VobSubPFSeek,                  NULL },
+  { "pf_write",                   static_cast<unsigned long>(-1), VobSubPFWrite,                 NULL },
+  { "pf_read",                    static_cast<unsigned long>(-1), VobSubPFRead,                  NULL },
+  { "pf_open",                    static_cast<unsigned long>(-1), VobSubPFOpen,                  NULL },
+  { "pf_close",                   static_cast<unsigned long>(-1), VobSubPFClose,                 NULL },
+  { "pf_reserve",                 static_cast<unsigned long>(-1), VobSubPFReserve,               NULL },
   { NULL, NULL, NULL, NULL }
 };
 
 Export export_version[] =
 {
-  { "GetFileVersionInfoSizeA",    -1, dllGetFileVersionInfoSizeA,    NULL },
-  { "VerQueryValueA",             -1, dllVerQueryValueA,             NULL },
-  { "GetFileVersionInfoA",        -1, dllGetFileVersionInfoA,        NULL },
+  { "GetFileVersionInfoSizeA",    static_cast<unsigned long>(-1), dllGetFileVersionInfoSizeA,    NULL },
+  { "VerQueryValueA",             static_cast<unsigned long>(-1), dllVerQueryValueA,             NULL },
+  { "GetFileVersionInfoA",        static_cast<unsigned long>(-1), dllGetFileVersionInfoA,        NULL },
   { NULL, NULL, NULL, NULL }
 };
 
 Export export_comdlg32[] =
 {
-  { "GetOpenFileNameA",-1, dllGetOpenFileNameA, NULL },
+  { "GetOpenFileNameA",static_cast<unsigned long>(-1), dllGetOpenFileNameA, NULL },
   { NULL, NULL, NULL, NULL }
 };
 
 Export export_gdi32[] =
 {
-  { "SetTextColor",               -1, dllSetTextColor,               NULL },
-  { "BitBlt",                     -1, dllBitBlt,                     NULL },
-  { "ExtTextOutA",                -1, dllExtTextOutA,                NULL },
-  { "GetStockObject",             -1, dllGetStockObject,             NULL },
-  { "SetBkColor",                 -1, dllSetBkColor,                 NULL },
-  { "CreateCompatibleDC",         -1, dllCreateCompatibleDC,         NULL },
-  { "CreateBitmap",               -1, dllCreateBitmap,               NULL },
-  { "SelectObject",               -1, dllSelectObject,               NULL },
-  { "CreateFontA",                -1, dllCreateFontA,                NULL },
-  { "DeleteDC",                   -1, dllDeleteDC,                   NULL },
-  { "SetBkMode",                  -1, dllSetBkMode,                  NULL },
-  { "GetPixel",                   -1, dllGetPixel,                   NULL },
-  { "DeleteObject",               -1, dllDeleteObject,               NULL },
-  { "GetDeviceCaps",              -1, dllGetDeviceCaps,              NULL },
-  { "CreatePalette",              -1, dllCreatePalette,              NULL },
+  { "SetTextColor",               static_cast<unsigned long>(-1), dllSetTextColor,               NULL },
+  { "BitBlt",                     static_cast<unsigned long>(-1), dllBitBlt,                     NULL },
+  { "ExtTextOutA",                static_cast<unsigned long>(-1), dllExtTextOutA,                NULL },
+  { "GetStockObject",             static_cast<unsigned long>(-1), dllGetStockObject,             NULL },
+  { "SetBkColor",                 static_cast<unsigned long>(-1), dllSetBkColor,                 NULL },
+  { "CreateCompatibleDC",         static_cast<unsigned long>(-1), dllCreateCompatibleDC,         NULL },
+  { "CreateBitmap",               static_cast<unsigned long>(-1), dllCreateBitmap,               NULL },
+  { "SelectObject",               static_cast<unsigned long>(-1), dllSelectObject,               NULL },
+  { "CreateFontA",                static_cast<unsigned long>(-1), dllCreateFontA,                NULL },
+  { "DeleteDC",                   static_cast<unsigned long>(-1), dllDeleteDC,                   NULL },
+  { "SetBkMode",                  static_cast<unsigned long>(-1), dllSetBkMode,                  NULL },
+  { "GetPixel",                   static_cast<unsigned long>(-1), dllGetPixel,                   NULL },
+  { "DeleteObject",               static_cast<unsigned long>(-1), dllDeleteObject,               NULL },
+  { "GetDeviceCaps",              static_cast<unsigned long>(-1), dllGetDeviceCaps,              NULL },
+  { "CreatePalette",              static_cast<unsigned long>(-1), dllCreatePalette,              NULL },
   { NULL, NULL, NULL, NULL }
 };
 
 Export export_ddraw[] =
 {
-  { "DirectDrawCreate",-1, dllDirectDrawCreate, NULL },
+  { "DirectDrawCreate",static_cast<unsigned long>(-1), dllDirectDrawCreate, NULL },
   { NULL, NULL, NULL, NULL }
 };
 
@@ -153,22 +157,27 @@ Export export_comctl32[] =
 extern "C" void* libiconv();
 extern "C" void* libiconv_close();
 extern "C" void* libiconv_open();
+#if 0
 extern "C" void* libiconv_set_relocation_prefix();
+#endif
 extern "C" void* libiconvctl();
 extern "C" void* libiconvlist();
 
 Export export_iconvx[] =
 {
-  //{ "_libiconv_version",-1, &_libiconv_version, NULL },  // seems to be missing in our version
-  { "libiconv",                   -1, libiconv,                      NULL },
-  { "libiconv_close",             -1, libiconv_close,                NULL },
-  { "libiconv_open",              -1, libiconv_open,                 NULL },
-  { "libiconv_set_relocation_prefix",-1, libiconv_set_relocation_prefix, NULL },
-  { "libiconvctl",                -1, libiconvctl,                   NULL },
-  { "libiconvlist",               -1, libiconvlist,                  NULL },
+  //{ "_libiconv_version",static_cast<unsigned long>(-1), &_libiconv_version, NULL },  // seems to be missing in our version
+  { "libiconv",                   static_cast<unsigned long>(-1), libiconv,                      NULL },
+  { "libiconv_close",             static_cast<unsigned long>(-1), libiconv_close,                NULL },
+  { "libiconv_open",              static_cast<unsigned long>(-1), libiconv_open,                 NULL },
+#if 0
+  { "libiconv_set_relocation_prefix",static_cast<unsigned long>(-1), libiconv_set_relocation_prefix, NULL },
+#endif
+  { "libiconvctl",                static_cast<unsigned long>(-1), libiconvctl,                   NULL },
+  { "libiconvlist",               static_cast<unsigned long>(-1), libiconvlist,                  NULL },
   { NULL, NULL, NULL, NULL }
 };
 
+#if 0
 extern "C" void* inflate();
 extern "C" void* inflateEnd();
 extern "C" void* inflateInit2_();
@@ -176,15 +185,18 @@ extern "C" void* inflateInit_();
 extern "C" void* inflateSync();
 extern "C" void* inflateReset();
 extern "C" void* uncompress();
+#endif
 
 Export export_zlib[] =
 {
-  { "inflate",       -1, inflate,        NULL },
-  { "inflateEnd",    -1, inflateEnd,     NULL },
-  { "inflateInit2_", -1, inflateInit2_,  NULL },
-  { "inflateInit_",  -1, inflateInit_,   NULL },
-  { "inflateSync",   -1, inflateSync,    NULL },
-  { "uncompress",    -1, uncompress,     NULL },
-  { "inflateReset",  -1, inflateReset,   NULL },
+#if 0
+  { "inflate",       static_cast<unsigned long>(-1), inflate,        NULL },
+  { "inflateEnd",    static_cast<unsigned long>(-1), inflateEnd,     NULL },
+  { "inflateInit2_", static_cast<unsigned long>(-1), inflateInit2_,  NULL },
+  { "inflateInit_",  static_cast<unsigned long>(-1), inflateInit_,   NULL },
+  { "inflateSync",   static_cast<unsigned long>(-1), inflateSync,    NULL },
+  { "uncompress",    static_cast<unsigned long>(-1), uncompress,     NULL },
+  { "inflateReset",  static_cast<unsigned long>(-1), inflateReset,   NULL },
+#endif
   { NULL, NULL, NULL, NULL }
 };

@@ -18,19 +18,21 @@
  *
  */
 
-#include "system.h"
-#include "utils/log.h"
 #include "emu_kernel32.h"
-#include "emu_dummy.h"
 
-#include "xbox/IoSupport.h"
+#include "emu_dummy.h"
+#include "filesystem/SpecialProtocol.h"
+#include "utils/log.h"
+#include "../dll_tracker.h"
 
 #include <process.h>
 
-#include "../dll_tracker.h"
-#include "filesystem/SpecialProtocol.h"
-
 using namespace std;
+
+extern INT _WideCharToMultiByte(UINT page, DWORD flags, LPCWSTR src, INT srclen, LPSTR dst, INT dstlen, LPCSTR defchar, BOOL *used );
+extern INT _MultiByteToWideChar(UINT page, DWORD flags, LPCSTR src, INT srclen, LPWSTR dst, INT dstlen );
+#define WideCharToMultiByte _WideCharToMultiByte
+#define MultiByteToWideChar _MultiByteToWideChar
 
 vector<string> m_vecAtoms;
 
@@ -38,7 +40,12 @@ vector<string> m_vecAtoms;
 
 extern "C" HANDLE xboxopendvdrom()
 {
+#if 0
   return CIoSupport::OpenCDROM();
+#else
+  assert(0);
+  return INVALID_HANDLE_VALUE;
+#endif
 }
 
 extern "C" UINT WINAPI dllGetAtomNameA( ATOM nAtom, LPTSTR lpBuffer, int nSize)
@@ -78,7 +85,7 @@ extern "C" BOOL WINAPI dllFindClose(HANDLE hFile)
 // should be moved to CFile! or use CFile::stat
 extern "C" DWORD WINAPI dllGetFileAttributesA(LPCSTR lpFileName)
 {
-  char str[XBMC_MAX_PATH];
+  char str[1024];
   char* p;
 
   if (!strcmp(lpFileName, "\\Device\\Cdrom0")) return (FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_DIRECTORY);
@@ -202,11 +209,39 @@ extern "C" DWORD WINAPI dllGetCurrentProcessId(void)
 
 extern "C" BOOL WINAPI dllGetProcessTimes(HANDLE hProcess, LPFILETIME lpCreationTime, LPFILETIME lpExitTime, LPFILETIME lpKernelTime, LPFILETIME lpUserTime)
 {
+#if 0
   // since the xbox has only one process, we just take the current thread
   HANDLE h = GetCurrentThread();
   BOOL res = GetThreadTimes(h, lpCreationTime, lpExitTime, lpKernelTime, lpUserTime);
 
   return res;
+#else
+  assert(0);
+  if (lpCreationTime)
+  {
+    lpCreationTime->dwLowDateTime  = 0;
+    lpCreationTime->dwHighDateTime = 0;
+  }
+
+  if (lpExitTime)
+  {
+    lpExitTime->dwLowDateTime  = 0;
+    lpExitTime->dwHighDateTime = 0;
+  }
+
+  if (lpKernelTime)
+  {
+    lpKernelTime->dwLowDateTime  = 0;
+    lpKernelTime->dwHighDateTime = 0;
+  }
+
+  if (lpUserTime)
+  {
+    lpUserTime->dwLowDateTime  = 0;
+    lpUserTime->dwHighDateTime = 0;
+  }
+  return TRUE;
+#endif
 }
 
 extern "C" int WINAPI dllDuplicateHandle(HANDLE hSourceProcessHandle,   // handle to source process
@@ -239,7 +274,7 @@ extern "C" BOOL WINAPI dllDisableThreadLibraryCalls(HANDLE h)
 
 static void DumpSystemInfo(const SYSTEM_INFO* si)
 {
-  CLog::Log(LOGDEBUG, "  Processor architecture {}\n", si->wProcessorArchitecture);
+  CLog::Log(LOGDEBUG, "  Processor architecture {}\n", si->DUMMYUNIONNAME.DUMMYSTRUCTNAME.wProcessorArchitecture);
   CLog::Log(LOGDEBUG, "  Page size: {}\n", si->dwPageSize);
   CLog::Log(LOGDEBUG, "  Minimum app address: {}\n", si->lpMinimumApplicationAddress);
   CLog::Log(LOGDEBUG, "  Maximum app address: {}\n", si->lpMaximumApplicationAddress);
@@ -256,7 +291,7 @@ extern "C" void WINAPI dllGetSystemInfo(LPSYSTEM_INFO lpSystemInfo)
 #ifdef API_DEBUG
   CLog::Log(LOGDEBUG, "GetSystemInfo(0x{:x}) =>", lpSystemInfo);
 #endif
-  lpSystemInfo->wProcessorArchitecture = 0; //#define PROCESSOR_ARCHITECTURE_INTEL 0
+  lpSystemInfo->DUMMYUNIONNAME.DUMMYSTRUCTNAME.wProcessorArchitecture = 0; //#define PROCESSOR_ARCHITECTURE_INTEL 0
   lpSystemInfo->dwPageSize = 4096;   //Xbox page size
   lpSystemInfo->lpMinimumApplicationAddress = (void *)0x00000000;
   lpSystemInfo->lpMaximumApplicationAddress = (void *)0x7fffffff;
@@ -582,8 +617,13 @@ extern "C" HMODULE WINAPI dllGetCPInfo(UINT CodePage, LPCPINFO lpCPInfo)
 
 extern "C" LCID WINAPI dllGetThreadLocale(void)
 {
+#if 0
   // primary language identifier, sublanguage identifier, sorting identifier
   return MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT);
+#else
+  assert(0);
+  return NULL;
+#endif
 }
 
 extern "C" BOOL WINAPI dllSetPriorityClass(HANDLE hProcess, DWORD dwPriorityClass)
@@ -664,12 +704,17 @@ extern "C" UINT WINAPI dllGetShortPathName(LPTSTR lpszLongPath, LPTSTR lpszShort
 
 extern "C" HANDLE WINAPI dllGetProcessHeap()
 {
+#if 0
   HANDLE hHeap;
   hHeap = GetProcessHeap();
 #ifdef API_DEBUG
   CLog::Log(LOGDEBUG, "KERNEL32!GetProcessHeap() => 0x{:x}", hHeap);
 #endif
   return hHeap;
+#else
+  assert(0);
+  return NULL;
+#endif
 }
 
 extern "C" UINT WINAPI dllSetErrorMode(UINT i)
@@ -834,6 +879,7 @@ extern "C" BOOL WINAPI dllGetProcessAffinityMask(HANDLE hProcess, LPDWORD lpProc
 
 extern "C" int WINAPI dllGetLocaleInfoA(LCID Locale, LCTYPE LCType, LPTSTR lpLCData, int cchData)
 {
+#if 0
   if (Locale == LOCALE_SYSTEM_DEFAULT || Locale == LOCALE_USER_DEFAULT)
   {
     if (LCType == LOCALE_SISO639LANGNAME)
@@ -861,7 +907,9 @@ extern "C" int WINAPI dllGetLocaleInfoA(LCID Locale, LCTYPE LCType, LPTSTR lpLCD
       }
     }
   }
+#endif
 
+  assert(0);
   not_implement("kernel32.dll incomplete function GetLocaleInfoA called\n");  //warning
   SetLastError(ERROR_INVALID_FUNCTION);
   return 0;
@@ -984,7 +1032,7 @@ extern "C" HANDLE WINAPI dllCreateFileA(
     IN HANDLE hTemplateFile
     )
 {
-  return CreateFileA(CSpecialProtocol::TranslatePath(lpFileName), dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
+  return CreateFileA(CSpecialProtocol::TranslatePath(lpFileName).c_str(), dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
 }
 
 extern "C" BOOL WINAPI dllLockFile(HANDLE hFile, DWORD dwFileOffsetLow, DWORD dwFileOffsetHigh, DWORD nNumberOffBytesToLockLow, DWORD nNumberOffBytesToLockHigh)

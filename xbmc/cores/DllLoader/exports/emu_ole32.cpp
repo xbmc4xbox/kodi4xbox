@@ -18,13 +18,13 @@
  *
  */
 
-#include "system.h"
-#include "utils/log.h"
-#include "emu_dummy.h"
 #include "emu_ole32.h"
+
+#include "emu_dummy.h"
 #if defined(HAS_VIDEO_PLAYBACK) && defined(HAS_XBOX_HARDWARE)
 #include "cores/mplayer/mplayer.h"
 #endif
+#include "utils/log.h"
 
 static const CLSID CLSID_MemoryAllocator =  {0x1e651cc0, 0xb199, 0x11d0, {0x82, 0x12, 0x00, 0xc0, 0x4f, 0xc3, 0x2c, 0x45}};
 
@@ -38,6 +38,7 @@ extern "C" void WINAPI dllCoUninitialize()
 
 extern "C" HRESULT WINAPI dllCoCreateInstance( REFCLSID rclsid, LPUNKNOWN pUnkOuter, DWORD dwClsContext, REFIID riid, LPVOID * ppv)
 {
+#if 0
   if( IsEqualCLSID(rclsid, CLSID_MemoryAllocator) )
   {
     CLog::Log(LOGDEBUG, "{} - CLSID_MemoryAllocator", __FUNCTION__);
@@ -57,6 +58,8 @@ extern "C" HRESULT WINAPI dllCoCreateInstance( REFCLSID rclsid, LPUNKNOWN pUnkOu
     obj->Release();
     return result;
   }
+#endif
+  assert(0);
   not_implement("ol32.dll fake function CoCreateInstance called\n"); //warning
   return REGDB_E_CLASSNOTREG;
 }

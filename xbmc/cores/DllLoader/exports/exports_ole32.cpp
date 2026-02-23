@@ -18,19 +18,17 @@
  *
  */
 
-#include "system.h"
 #include "../DllLoader.h"
 #include "emu_ole32.h"
 
 Export export_ole32[] =
 {
-  { "CoInitialize",               -1, dllCoInitialize,               NULL },
-  { "CoUninitialize",             -1, dllCoUninitialize,             NULL },
-  { "CoCreateInstance",           -1, dllCoCreateInstance,           NULL },
-  { "CoFreeUnusedLibraries",      -1, dllCoFreeUnusedLibraries,      NULL },
-  { "StringFromGUID2",            -1, dllStringFromGUID2,            NULL },
-  { "CoTaskMemFree",              -1, dllCoTaskMemFree,              NULL },
-  { "CoTaskMemAlloc",             -1, dllCoTaskMemAlloc,             NULL },
-  { NULL,                         -1, NULL,                          NULL }
+  { "CoInitialize",               static_cast<unsigned long>(-1), dllCoInitialize,               NULL },
+  { "CoUninitialize",             static_cast<unsigned long>(-1), dllCoUninitialize,             NULL },
+  { "CoCreateInstance",           static_cast<unsigned long>(-1), dllCoCreateInstance,           NULL },
+  { "CoFreeUnusedLibraries",      static_cast<unsigned long>(-1), dllCoFreeUnusedLibraries,      NULL },
+  { "StringFromGUID2",            static_cast<unsigned long>(-1), dllStringFromGUID2,            NULL },
+  { "CoTaskMemFree",              static_cast<unsigned long>(-1), dllCoTaskMemFree,              NULL },
+  { "CoTaskMemAlloc",             static_cast<unsigned long>(-1), dllCoTaskMemAlloc,             NULL },
+  { NULL,                         static_cast<unsigned long>(-1), NULL,                          NULL }
 };
-

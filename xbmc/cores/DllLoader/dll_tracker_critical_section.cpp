@@ -24,7 +24,6 @@
 #include "DllLoader.h"
 #include "threads/SingleLock.h"
 #include "utils/log.h"
-#include "xbox/PlatformDefs.h"
 
 #include "exports/emu_kernel32.h"
 

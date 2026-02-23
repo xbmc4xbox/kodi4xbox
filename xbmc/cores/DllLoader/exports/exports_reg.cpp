@@ -18,28 +18,27 @@
  *
  */
 
-#include "system.h"
 #include "../DllLoader.h"
 #include "emu_registry.h"
 
 Export export_advapi32[] =
 {
-  { "RegCloseKey",                -1, dllRegCloseKey,                NULL },
-  { "RegOpenKeyExA",              -1, dllRegOpenKeyExA,              NULL },
-  { "RegOpenKeyA",                -1, dllRegOpenKeyA,                NULL },
-  { "RegSetValueA",               -1, dllRegSetValueA,               NULL },
-  { "RegEnumKeyExA",              -1, dllRegEnumKeyExA,              NULL },
-  { "RegDeleteKeyA",              -1, dllRegDeleteKeyA,              NULL },
-  { "RegQueryValueExA",           -1, dllRegQueryValueExA,           NULL },
-  { "RegQueryValueExW",           -1, dllRegQueryValueExW,           NULL },
-  { "RegCreateKeyA",              -1, dllRegCreateKeyA,              NULL },
-  { "RegSetValueExA",             -1, dllRegSetValueExA,             NULL },
-  { "RegCreateKeyExA",            -1, dllRegCreateKeyExA,            NULL },
-  { "RegEnumValueA",              -1, dllRegEnumValueA,              NULL },
-  { "RegQueryInfoKeyA",           -1, dllRegQueryInfoKeyA,           NULL },
-  { "CryptAcquireContextA",       -1, dllCryptAcquireContextA,       NULL },
-  { "CryptGenRandom",             -1, dllCryptGenRandom,             NULL },
-  { "CryptReleaseContext",        -1, dllCryptReleaseContext,        NULL },
-  { "RegQueryValueA",             -1, dllRegQueryValueA,             NULL },
-  { NULL,                         -1, NULL,                          NULL }
+  { "RegCloseKey",                static_cast<unsigned long>(-1), dllRegCloseKey,                NULL },
+  { "RegOpenKeyExA",              static_cast<unsigned long>(-1), dllRegOpenKeyExA,              NULL },
+  { "RegOpenKeyA",                static_cast<unsigned long>(-1), dllRegOpenKeyA,                NULL },
+  { "RegSetValueA",               static_cast<unsigned long>(-1), dllRegSetValueA,               NULL },
+  { "RegEnumKeyExA",              static_cast<unsigned long>(-1), dllRegEnumKeyExA,              NULL },
+  { "RegDeleteKeyA",              static_cast<unsigned long>(-1), dllRegDeleteKeyA,              NULL },
+  { "RegQueryValueExA",           static_cast<unsigned long>(-1), dllRegQueryValueExA,           NULL },
+  { "RegQueryValueExW",           static_cast<unsigned long>(-1), dllRegQueryValueExW,           NULL },
+  { "RegCreateKeyA",              static_cast<unsigned long>(-1), dllRegCreateKeyA,              NULL },
+  { "RegSetValueExA",             static_cast<unsigned long>(-1), dllRegSetValueExA,             NULL },
+  { "RegCreateKeyExA",            static_cast<unsigned long>(-1), dllRegCreateKeyExA,            NULL },
+  { "RegEnumValueA",              static_cast<unsigned long>(-1), dllRegEnumValueA,              NULL },
+  { "RegQueryInfoKeyA",           static_cast<unsigned long>(-1), dllRegQueryInfoKeyA,           NULL },
+  { "CryptAcquireContextA",       static_cast<unsigned long>(-1), dllCryptAcquireContextA,       NULL },
+  { "CryptGenRandom",             static_cast<unsigned long>(-1), dllCryptGenRandom,             NULL },
+  { "CryptReleaseContext",        static_cast<unsigned long>(-1), dllCryptReleaseContext,        NULL },
+  { "RegQueryValueA",             static_cast<unsigned long>(-1), dllRegQueryValueA,             NULL },
+  { NULL,                         static_cast<unsigned long>(-1), NULL,                          NULL }
 };

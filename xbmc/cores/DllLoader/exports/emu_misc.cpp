@@ -18,19 +18,14 @@
  *
  */
 
-#include "system.h"
-#include "utils/log.h"
-#include <stdio.h>
-//#include <xobjbase.h>
-#ifndef _XBOX
-#include <objbase.h>
-#endif
-
 #include "emu_misc.h"
+
 #include "emu_dummy.h"
 #include "emu_ole32.h"
-
 #include "filesystem/SpecialProtocol.h"
+#include "utils/log.h"
+
+#include <stdio.h>
 
 /*extern HRESULT WINAPI CoGetClassObject(
     REFCLSID rclsid, DWORD dwClsContext, COSERVERINFO *pServerInfo,
@@ -47,7 +42,10 @@ HRESULT WINAPI dllMoFreeMediaType(DMO_MEDIA_TYPE* pmedia)
 
   if (pmedia->pUnk != NULL)
   {
+    assert(0);
+#if 0
     IUnknown_Release(pmedia->pUnk);
+#endif
     pmedia->pUnk = NULL;
   }
 
@@ -90,7 +88,10 @@ HRESULT WINAPI dllMoCopyMediaType(DMO_MEDIA_TYPE* pdst,
   if (psrc->pUnk != NULL)
   {
     pdst->pUnk = psrc->pUnk;
+    assert(0);
+#if 0
     IUnknown_AddRef(pdst->pUnk);
+#endif
   }
   else
     pdst->pUnk = NULL;
@@ -294,7 +295,7 @@ extern "C" UINT WINAPI dllGetWindowRect(HWND win, RECT *r)
 
 {
 
-  CLog::Log(LOGDEBUG, "GetWindowRect(0x{:x}, 0x{:x}) => 1\n", win, r);
+  // CLog::Log(LOGDEBUG, "GetWindowRect(0x{:x}, 0x{:x}) => 1\n", win, r);
 
 #define PSEUDO_SCREEN_WIDTH /*640*/800
 
@@ -388,12 +389,12 @@ unsigned long VobSubPFOpen(int id)
   if (id >= 256)
   {
     sprintf(filename + 16, "hdr%d", id - 256);
-    hFile = CreateFile(CSpecialProtocol::TranslatePath(filename), GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_FLAG_SEQUENTIAL_SCAN, 0);
+    hFile = CreateFile(CSpecialProtocol::TranslatePath(filename).c_str(), GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_FLAG_SEQUENTIAL_SCAN, 0);
   }
   else
   {
     sprintf(filename + 16, "data%d", id);
-    hFile = CreateFile(CSpecialProtocol::TranslatePath(filename), GENERIC_WRITE | GENERIC_READ, 0, 0, OPEN_ALWAYS, FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_FLAG_NO_BUFFERING, 0);
+    hFile = CreateFile(CSpecialProtocol::TranslatePath(filename).c_str(), GENERIC_WRITE | GENERIC_READ, 0, 0, OPEN_ALWAYS, FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_FLAG_NO_BUFFERING, 0);
   }
   if (hFile != INVALID_HANDLE_VALUE)
   {
@@ -608,7 +609,7 @@ extern "C" HPALETTE WINAPI dllCreatePalette(CONST LOGPALETTE *lpgpl)
 
 {
 
-  CLog::Log(LOGDEBUG, "CreatePalette({:x}) => NULL\n", lpgpl);
+  // CLog::Log(LOGDEBUG, "CreatePalette({:x}) => NULL\n", lpgpl);
 
   return NULL;
 
@@ -672,7 +673,7 @@ extern "C" int WINAPI dllMonitorFromWindow(HWND win, int flags)
 
 extern "C" int WINAPI dllMonitorFromRect(RECT *r, int flags)
 {
-  CLog::Log(LOGDEBUG, "MonitorFromRect(0x{:x}, 0x{:x}) => 0\n", r, flags);
+  // CLog::Log(LOGDEBUG, "MonitorFromRect(0x{:x}, 0x{:x}) => 0\n", r, flags);
   return 0;
 }
 
@@ -691,9 +692,9 @@ extern "C" int WINAPI dllEnumDisplayMonitors(HDC hdc, LPRECT lprcClip, MONITOREN
 
 {
 
-  CLog::Log(LOGDEBUG, "EnumDisplayMonitors(0x{:x}, 0x{:x}, 0x{:x}, 0x{:x}) => ?\n",
+  // CLog::Log(LOGDEBUG, "EnumDisplayMonitors(0x{:x}, 0x{:x}, 0x{:x}, 0x{:x}) => ?\n",
 
-            hdc, lprcClip, lpfnEnum, dwData);
+  //           hdc, lprcClip, lpfnEnum, dwData);
 
   if (lpfnEnum != NULL)
 
@@ -711,7 +712,7 @@ extern "C" int WINAPI dllGetMonitorInfoA(void *mon, LPMONITORINFO lpmi)
 
 {
 
-  CLog::Log(LOGDEBUG, "GetMonitorInfoA(0x{:x}, 0x{:x}) => 1\n", mon, lpmi);
+  // CLog::Log(LOGDEBUG, "GetMonitorInfoA(0x{:x}, 0x{:x}) => 1\n", mon, lpmi);
 
 
 
@@ -804,7 +805,7 @@ extern "C" HWND WINAPI dllCreateUpDownControl (DWORD style, INT x, INT y, INT cx
 
 extern "C" MMRESULT WINAPI dlltimeGetDevCaps(LPTIMECAPS lpCaps, UINT wSize)
 {
-  CLog::Log(LOGDEBUG, "timeGetDevCaps({:p}, {}) !\n", lpCaps, wSize);
+  // CLog::Log(LOGDEBUG, "timeGetDevCaps({:p}, {}) !\n", lpCaps, wSize);
   lpCaps->wPeriodMin = 1;
   lpCaps->wPeriodMax = 65535;
   return 0;

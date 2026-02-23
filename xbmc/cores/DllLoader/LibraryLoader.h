@@ -21,13 +21,7 @@
  *
  */
 
-#ifndef _WINDEF_
-typedef unsigned long HMODULE;
-#endif // _WINDEF_
-
-#ifndef NULL
-#define NULL 0
-#endif
+#include <windows.h>
 
 class LibraryLoader
 {
