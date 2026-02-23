@@ -44,6 +44,10 @@ add_compile_options(
 
 add_definitions(-D_CRT_RAND_S -D_XBOX -DNXDK -DMEMP_NUM_NETBUF=6 -DMEMP_NUM_NETCONN=6 -DHAS_GL)
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  add_definitions(-D_DEBUG)
+endif()
+
 add_executable(xbmc
   xbmc/AutoSwitch.cpp
   xbmc/BackgroundInfoLoader.cpp

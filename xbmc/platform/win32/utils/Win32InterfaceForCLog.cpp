@@ -117,6 +117,10 @@ bool CWin32InterfaceForCLog::WriteStringToLog(const std::string& logString)
 void CWin32InterfaceForCLog::PrintDebugString(const std::string& debugString)
 {
 #ifdef _DEBUG
+#ifdef NXDK
+  ::OutputDebugStringA(debugString.c_str());
+  ::OutputDebugStringA("\n");
+#else
   ::OutputDebugStringW(L"Debug Print: ");
   int bufSize = MultiByteToWideChar(CP_UTF8, 0, debugString.c_str(), debugString.length(), NULL, 0);
   XUTILS::auto_buffer buf(sizeof(wchar_t) * (bufSize + 1)); // '+1' for extra safety
@@ -125,6 +129,7 @@ void CWin32InterfaceForCLog::PrintDebugString(const std::string& debugString)
   else
     ::OutputDebugStringA(debugString.c_str());
   ::OutputDebugStringW(L"\n");
+#endif
 #endif // _DEBUG
 }
 
