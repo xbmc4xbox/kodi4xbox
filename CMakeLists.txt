@@ -290,6 +290,7 @@ add_executable(xbmc
   xbmc/filesystem/VirtualDirectory.cpp
   xbmc/filesystem/ZipDirectory.cpp
   xbmc/filesystem/ZipFile.cpp
+  xbmc/guilib/cximage.cpp
   xbmc/guilib/DirtyRegionSolvers.cpp
   xbmc/guilib/DirtyRegionTracker.cpp
   xbmc/guilib/GUIAction.cpp
@@ -340,7 +341,6 @@ add_executable(xbmc
   xbmc/guilib/GUITextLayout.cpp
   xbmc/guilib/GUITexture.cpp
   xbmc/guilib/GUITextureGL.cpp
-  xbmc/guilib/GUITexturePBKIT.cpp
   xbmc/guilib/GUIToggleButtonControl.cpp
   xbmc/guilib/GUIVideoControl.cpp
   xbmc/guilib/GUIWindow.cpp
@@ -351,7 +351,6 @@ add_executable(xbmc
   xbmc/guilib/JpegIO.cpp
   xbmc/guilib/LocalizeStrings.cpp
   xbmc/guilib/MatrixGLES.cpp
-  xbmc/guilib/PngIO.cpp
   xbmc/guilib/Resolution.cpp
   xbmc/guilib/Texture.cpp
   xbmc/guilib/TextureGL.cpp
@@ -685,14 +684,6 @@ target_link_libraries(xbmc PUBLIC ${NXDK_DIR}/lib/libpbkit.lib)
 # Bring in libjpeg-turbo support
 target_link_libraries(xbmc PUBLIC ${NXDK_DIR}/lib/libjpeg.lib)
 target_include_directories(xbmc PRIVATE ${NXDK_DIR}/lib/libjpeg ${NXDK_DIR}/lib/libjpeg/libjpeg-turbo)
-
-# Bring in libpng support
-target_link_libraries(xbmc PUBLIC ${NXDK_DIR}/lib/libpng.lib)
-target_include_directories(xbmc PRIVATE ${NXDK_DIR}/lib/libpng ${NXDK_DIR}/lib/libpng/libpng)
-
-# Bring in zlib support
-target_link_libraries(xbmc PUBLIC ${NXDK_DIR}/lib/libzlib.lib)
-target_include_directories(xbmc PRIVATE ${NXDK_DIR}/lib/zlib/zlib)
 
 # Bring in fribidi library
 add_subdirectory(lib/fribidi)
