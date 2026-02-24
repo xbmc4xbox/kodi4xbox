@@ -31,6 +31,8 @@
 #include "filesystem/File.h"
 
 #include <math.h>
+#include <memory>
+#include <queue>
 
 // stuff for freetype
 #include <ft2build.h>
@@ -39,21 +41,19 @@
 #include FT_OUTLINE_H
 #include FT_STROKER_H
 
-#define USE_RELEASE_LIBS
-
 #ifdef TARGET_WINDOWS
-#pragma comment(lib, "freetype246MT.lib")
+#ifdef NDEBUG
+#pragma comment(lib, "freetype.lib")
+#else
+#pragma comment(lib, "freetyped.lib")
 #endif
-
-using namespace std;
-
+#endif
 
 #define CHARS_PER_TEXTURE_LINE 20 // number of characters to cache per texture line
 #define CHAR_CHUNK    64      // 64 chars allocated at a time (1024 bytes)
+#define GLYPH_STRENGTH_BOLD 24
+#define GLYPH_STRENGTH_LIGHT -48
 
-int CGUIFontTTFBase::justification_word_weight = 6;   // weight of word spacing over letter spacing when justifying.
-                                                  // A larger number means more of the "dead space" is placed between
-                                                  // words rather than between letters.
 
 class CFreeTypeLibrary
 {
@@ -153,15 +153,14 @@ private:
 XBMC_GLOBAL_REF(CFreeTypeLibrary, g_freeTypeLibrary); // our freetype library
 #define g_freeTypeLibrary XBMC_GLOBAL_USE(CFreeTypeLibrary)
 
-CGUIFontTTFBase::CGUIFontTTFBase(const std::string& strFileName)
+CGUIFontTTFBase::CGUIFontTTFBase(const std::string& strFileName) : m_staticCache(*this), m_dynamicCache(*this)
 {
   m_texture = NULL;
   m_char = NULL;
   m_maxChars = 0;
   m_nestedBeginCount = 0;
 
-  m_vertex_size   = 4*1024;
-  m_vertex        = (SVertex*)malloc(m_vertex_size * sizeof(SVertex));
+  m_vertex.reserve(4*1024);
 
   m_face = NULL;
   m_stroker = NULL;
@@ -176,7 +175,6 @@ CGUIFontTTFBase::CGUIFontTTFBase(const std::string& strFileName)
   m_textureScaleX = m_textureScaleY = 0.0;
   m_ellipsesWidth = m_height = 0.0f;
   m_color = 0;
-  m_vertex_count = 0;
   m_nTexture = 0;
 }
 
@@ -237,9 +235,8 @@ void CGUIFontTTFBase::Clear()
     g_freeTypeLibrary.ReleaseStroker(m_stroker);
   m_stroker = NULL;
 
-  free(m_vertex);
-  m_vertex = NULL;
-  m_vertex_count = 0;
+  m_vertexTrans.clear();
+  m_vertex.clear();
 
   m_strFileName.clear();
   m_fontFileInMemory.clear();
@@ -333,109 +330,225 @@ bool CGUIFontTTFBase::Load(const std::string& strFilename, float height, float a
   return true;
 }
 
+void CGUIFontTTFBase::Begin()
+{
+  if (m_nestedBeginCount == 0 && m_texture != NULL && FirstBegin())
+  {
+    m_vertexTrans.clear();
+    m_vertex.clear();
+  }
+  // Keep track of the nested begin/end calls.
+  m_nestedBeginCount++;
+}
+
+void CGUIFontTTFBase::End()
+{
+  if (m_nestedBeginCount == 0)
+    return;
+
+  if (--m_nestedBeginCount > 0)
+    return;
+
+  LastEnd();
+}
+
 void CGUIFontTTFBase::DrawTextInternal(float x, float y, const vecColors &colors, const vecText &text, uint32_t alignment, float maxPixelWidth, bool scrolling)
 {
   Begin();
 
-  // save the origin, which is scaled separately
-  m_originX = x;
-  m_originY = y;
-
-  // Check if we will really need to truncate or justify the text
-  if ( alignment & XBFONT_TRUNCATED )
+  uint32_t rawAlignment = alignment;
+  bool dirtyCache(false);
+  bool hardwareClipping = g_Windowing.ScissorsCanEffectClipping();
+  CGUIFontCacheStaticPosition staticPos(x, y);
+  CGUIFontCacheDynamicPosition dynamicPos;
+  if (hardwareClipping)
   {
-    if ( maxPixelWidth <= 0.0f || GetTextWidthInternal(text.begin(), text.end()) <= maxPixelWidth)
-      alignment &= ~XBFONT_TRUNCATED;
+    dynamicPos = CGUIFontCacheDynamicPosition(g_graphicsContext.ScaleFinalXCoord(x, y),
+                                              g_graphicsContext.ScaleFinalYCoord(x, y),
+                                              g_graphicsContext.ScaleFinalZCoord(x, y));
   }
-  else if ( alignment & XBFONT_JUSTIFIED )
+  CVertexBuffer unusedVertexBuffer;
+  CVertexBuffer &vertexBuffer = hardwareClipping ?
+      m_dynamicCache.Lookup(dynamicPos,
+                            colors, text,
+                            alignment, maxPixelWidth,
+                            scrolling,
+                            std::chrono::steady_clock::now(),
+                            dirtyCache) :
+      unusedVertexBuffer;
+  std::shared_ptr<std::vector<SVertex> > tempVertices = std::make_shared<std::vector<SVertex> >();
+  std::shared_ptr<std::vector<SVertex> > &vertices = hardwareClipping ?
+      tempVertices :
+      static_cast<std::shared_ptr<std::vector<SVertex> >&>(m_staticCache.Lookup(staticPos,
+                           colors, text,
+                           alignment, maxPixelWidth,
+                           scrolling,
+                           std::chrono::steady_clock::now(),
+                           dirtyCache));
+  if (dirtyCache)
   {
-    if ( maxPixelWidth <= 0.0f )
-      alignment &= ~XBFONT_JUSTIFIED;
-  }
+    // save the origin, which is scaled separately
+    m_originX = x;
+    m_originY = y;
 
-  // calculate sizing information
-  float startX = 0;
-  float startY = (alignment & XBFONT_CENTER_Y) ? -0.5f*m_cellHeight : 0;  // vertical centering
+    // Check if we will really need to truncate or justify the text
+    if ( alignment & XBFONT_TRUNCATED )
+    {
+      if ( maxPixelWidth <= 0.0f || GetTextWidthInternal(text.begin(), text.end()) <= maxPixelWidth)
+        alignment &= ~XBFONT_TRUNCATED;
+    }
+    else if ( alignment & XBFONT_JUSTIFIED )
+    {
+      if ( maxPixelWidth <= 0.0f )
+        alignment &= ~XBFONT_JUSTIFIED;
+    }
 
-  if ( alignment & (XBFONT_RIGHT | XBFONT_CENTER_X) )
-  {
-    // Get the extent of this line
-    float w = GetTextWidthInternal( text.begin(), text.end() );
+    // calculate sizing information
+    float startX = 0;
+    float startY = (alignment & XBFONT_CENTER_Y) ? -0.5f*m_cellHeight : 0;  // vertical centering
 
-    if ( alignment & XBFONT_TRUNCATED && w > maxPixelWidth + 0.5f ) // + 0.5f due to rounding issues
-      w = maxPixelWidth;
+    if ( alignment & (XBFONT_RIGHT | XBFONT_CENTER_X) )
+    {
+      // Get the extent of this line
+      float w = GetTextWidthInternal( text.begin(), text.end() );
 
-    if ( alignment & XBFONT_CENTER_X)
-      w *= 0.5f;
-    // Offset this line's starting position
-    startX -= w;
-  }
+      if ( alignment & XBFONT_TRUNCATED && w > maxPixelWidth + 0.5f ) // + 0.5f due to rounding issues
+        w = maxPixelWidth;
 
-  float spacePerLetter = 0; // for justification effects
-  if ( alignment & XBFONT_JUSTIFIED )
-  {
-    // first compute the size of the text to render in both characters and pixels
-    unsigned int lineChars = 0;
-    float linePixels = 0;
+      if ( alignment & XBFONT_CENTER_X)
+        w *= 0.5f;
+      // Offset this line's starting position
+      startX -= w;
+    }
+
+    float spacePerSpaceCharacter = 0; // for justification effects
+    if ( alignment & XBFONT_JUSTIFIED )
+    {
+      // first compute the size of the text to render in both characters and pixels
+      unsigned int numSpaces = 0;
+      float linePixels = 0;
+      for (vecText::const_iterator pos = text.begin(); pos != text.end(); ++pos)
+      {
+        Character *ch = GetCharacter(*pos);
+        if (ch)
+        {
+          if ((*pos & 0xffff) == L' ')
+            numSpaces +=  1;
+          linePixels += ch->advance;
+        }
+      }
+      if (numSpaces > 0)
+        spacePerSpaceCharacter = (maxPixelWidth - linePixels) / numSpaces;
+    }
+
+    float cursorX = 0; // current position along the line
+
+    // Collect all the Character info in a first pass, in case any of them
+    // are not currently cached and cause the texture to be enlarged, which
+    // would invalidate the texture coordinates.
+    std::queue<Character> characters;
+    if (alignment & XBFONT_TRUNCATED)
+      GetCharacter(L'.');
     for (vecText::const_iterator pos = text.begin(); pos != text.end(); ++pos)
     {
       Character *ch = GetCharacter(*pos);
-      if (ch)
-      { // spaces have multiple times the justification spacing of normal letters
-        lineChars += ((*pos & 0xffff) == L' ') ? justification_word_weight : 1;
-        linePixels += ch->advance;
-      }
-    }
-    if (lineChars > 1)
-      spacePerLetter = (maxPixelWidth - linePixels) / (lineChars - 1);
-  }
-  float cursorX = 0; // current position along the line
-
-  for (vecText::const_iterator pos = text.begin(); pos != text.end(); ++pos)
-  {
-    // If starting text on a new line, determine justification effects
-    // Get the current letter in the std::string
-    color_t color = (*pos & 0xff0000) >> 16;
-    if (color >= colors.size())
-      color = 0;
-    color = colors[color];
-
-    // grab the next character
-    Character *ch = GetCharacter(*pos);
-    if (!ch) continue;
-
-    if ( alignment & XBFONT_TRUNCATED )
-    {
-      // Check if we will be exceeded the max allowed width
-      if ( cursorX + ch->advance + 3 * m_ellipsesWidth > maxPixelWidth )
+      if (!ch)
       {
-        // Yup. Let's draw the ellipses, then bail
-        // Perhaps we should really bail to the next line in this case??
-        Character *period = GetCharacter(L'.');
-        if (!period)
-          break;
-
-        for (int i = 0; i < 3; i++)
-        {
-          RenderCharacter(startX + cursorX, startY, period, color, !scrolling);
-          cursorX += period->advance;
-        }
-        break;
+        Character null = { 0 };
+        characters.push(null);
+        continue;
       }
-    }
-    else if (maxPixelWidth > 0 && cursorX > maxPixelWidth)
-      break;  // exceeded max allowed width - stop rendering
+      characters.push(*ch);
 
-    RenderCharacter(startX + cursorX, startY, ch, color, !scrolling);
-    if ( alignment & XBFONT_JUSTIFIED )
+      if (maxPixelWidth > 0 &&
+          cursorX + ((alignment & XBFONT_TRUNCATED) ? ch->advance + 3 * m_ellipsesWidth : 0) > maxPixelWidth)
+        break;
+      cursorX += ch->advance;
+    }
+    cursorX = 0;
+
+    for (vecText::const_iterator pos = text.begin(); pos != text.end(); ++pos)
     {
-      if ((*pos & 0xffff) == L' ')
-        cursorX += ch->advance + spacePerLetter * justification_word_weight;
+      // If starting text on a new line, determine justification effects
+      // Get the current letter in the std::string
+      color_t color = (*pos & 0xff0000) >> 16;
+      if (color >= colors.size())
+        color = 0;
+      color = colors[color];
+
+      // grab the next character
+      Character *ch = &characters.front();
+      if (ch->letterAndStyle == 0)
+      {
+        characters.pop();
+        continue;
+      }
+
+      if ( alignment & XBFONT_TRUNCATED )
+      {
+        // Check if we will be exceeded the max allowed width
+        if ( cursorX + ch->advance + 3 * m_ellipsesWidth > maxPixelWidth )
+        {
+          // Yup. Let's draw the ellipses, then bail
+          // Perhaps we should really bail to the next line in this case??
+          Character *period = GetCharacter(L'.');
+          if (!period)
+            break;
+
+          for (int i = 0; i < 3; i++)
+          {
+            RenderCharacter(startX + cursorX, startY, period, color, !scrolling, *tempVertices);
+            cursorX += period->advance;
+          }
+          break;
+        }
+      }
+      else if (maxPixelWidth > 0 && cursorX > maxPixelWidth)
+        break;  // exceeded max allowed width - stop rendering
+
+      RenderCharacter(startX + cursorX, startY, ch, color, !scrolling, *tempVertices);
+      if ( alignment & XBFONT_JUSTIFIED )
+      {
+        if ((*pos & 0xffff) == L' ')
+          cursorX += ch->advance + spacePerSpaceCharacter;
+        else
+          cursorX += ch->advance;
+      }
       else
-        cursorX += ch->advance + spacePerLetter;
+        cursorX += ch->advance;
+      characters.pop();
+    }
+    if (hardwareClipping)
+    {
+      CVertexBuffer &vertexBuffer = m_dynamicCache.Lookup(dynamicPos,
+                                                          colors, text,
+                                                          rawAlignment, maxPixelWidth,
+                                                          scrolling,
+                                                          std::chrono::steady_clock::now(),
+                                                          dirtyCache);
+      CVertexBuffer newVertexBuffer = CreateVertexBuffer(*tempVertices);
+      vertexBuffer = newVertexBuffer;
+      m_vertexTrans.push_back(CTranslatedVertices(0, 0, 0, &vertexBuffer, g_graphicsContext.GetClipRegion()));
     }
     else
-      cursorX += ch->advance;
+    {
+      m_staticCache.Lookup(staticPos,
+                           colors, text,
+                           rawAlignment, maxPixelWidth,
+                           scrolling,
+                           std::chrono::steady_clock::now(),
+                           dirtyCache) = *static_cast<CGUIFontCacheStaticValue *>(&tempVertices);
+      /* Append the new vertices to the set collected since the first Begin() call */
+      m_vertex.insert(m_vertex.end(), tempVertices->begin(), tempVertices->end());
+    }
+  }
+  else
+  {
+    if (hardwareClipping)
+      m_vertexTrans.push_back(CTranslatedVertices(dynamicPos.m_x, dynamicPos.m_y, dynamicPos.m_z, &vertexBuffer, g_graphicsContext.GetClipRegion()));
+    else
+      /* Append the vertices from the cache to the set collected since the first Begin() call */
+      m_vertex.insert(m_vertex.end(), vertices->begin(), vertices->end());
   }
 
   End();
@@ -454,7 +567,7 @@ float CGUIFontTTFBase::GetTextWidthInternal(vecText::const_iterator start, vecTe
       // and not advance distance - this makes sure that italic text isn't
       // choped on the end (as render width is larger than advance then).
       if (start == end)
-        width += max(c->right - c->left + c->offsetX, c->advance);
+        width += std::max(c->right - c->left + c->offsetX, c->advance);
       else
         width += c->advance;
     }
@@ -491,7 +604,7 @@ unsigned int CGUIFontTTFBase::GetTextureLineHeight() const
 CGUIFontTTFBase::Character* CGUIFontTTFBase::GetCharacter(character_t chr)
 {
   wchar_t letter = (wchar_t)(chr & 0xffff);
-  character_t style = (chr & 0x3000000) >> 24;
+  character_t style = (chr & 0x7000000) >> 24;
 
   // ignore linebreaks
   if (letter == L'\r')
@@ -501,7 +614,7 @@ CGUIFontTTFBase::Character* CGUIFontTTFBase::GetCharacter(character_t chr)
   if (letter < 255)
   {
     character_t ch = (style << 8) | letter;
-    if (m_charquick[ch])
+    if (ch < LOOKUPTABLE_SIZE && m_charquick[ch])
       return m_charquick[ch];
   }
 
@@ -587,10 +700,13 @@ bool CGUIFontTTFBase::CacheCharacter(wchar_t letter, uint32_t style, Character *
   }
   // make bold if applicable
   if (style & FONT_STYLE_BOLD)
-    EmboldenGlyph(m_face->glyph);
+    SetGlyphStrength(m_face->glyph, GLYPH_STRENGTH_BOLD);
   // and italics if applicable
   if (style & FONT_STYLE_ITALICS)
     ObliqueGlyph(m_face->glyph);
+  // and light if applicable
+  if (style & FONT_STYLE_LIGHT)
+    SetGlyphStrength(m_face->glyph, GLYPH_STRENGTH_LIGHT);
   // grab the glyph
   if (FT_Get_Glyph(m_face->glyph, &glyph))
   {
@@ -615,7 +731,7 @@ bool CGUIFontTTFBase::CacheCharacter(wchar_t letter, uint32_t style, Character *
       m_posX += -bitGlyph->left;
 
     // check we have enough room for the character
-    if (m_posX + bitGlyph->left + bitmap.width > (int)m_textureWidth)
+    if ((m_posX + bitGlyph->left + bitmap.width) > static_cast<int>(m_textureWidth))
     { // no space - gotta drop to the next line (which means creating a new texture and copying it across)
       m_posX = 0;
       m_posY += GetTextureLineHeight();
@@ -666,13 +782,13 @@ bool CGUIFontTTFBase::CacheCharacter(wchar_t letter, uint32_t style, Character *
   if (!isEmptyGlyph)
   {
     // ensure our rect will stay inside the texture (it *should* but we need to be certain)
-    unsigned int x1 = max(m_posX + ch->offsetX, 0);
-    unsigned int y1 = max(m_posY + ch->offsetY, 0);
-    unsigned int x2 = min(x1 + bitmap.width, m_textureWidth);
-    unsigned int y2 = min(y1 + bitmap.rows, m_textureHeight);
+    unsigned int x1 = std::max(m_posX + ch->offsetX, 0);
+    unsigned int y1 = std::max(m_posY + ch->offsetY, 0);
+    unsigned int x2 = std::min(x1 + bitmap.width, m_textureWidth);
+    unsigned int y2 = std::min(y1 + bitmap.rows, m_textureHeight);
     CopyCharToTexture(bitGlyph, x1, y1, x2, y2);
 
-    m_posX += spacing_between_characters_in_texture + (unsigned short)max(ch->right - ch->left + ch->offsetX, ch->advance);
+    m_posX += spacing_between_characters_in_texture + (unsigned short)std::max(ch->right - ch->left + ch->offsetX, ch->advance);
   }
   m_numChars++;
 
@@ -682,7 +798,7 @@ bool CGUIFontTTFBase::CacheCharacter(wchar_t letter, uint32_t style, Character *
   return true;
 }
 
-void CGUIFontTTFBase::RenderCharacter(float posX, float posY, const Character *ch, color_t color, bool roundX)
+void CGUIFontTTFBase::RenderCharacter(float posX, float posY, const Character *ch, color_t color, bool roundX, std::vector<SVertex> &vertices)
 {
   // actual image width isn't same as the character width as that is
   // just baseline width and height should include the descent
@@ -701,7 +817,8 @@ void CGUIFontTTFBase::RenderCharacter(float posX, float posY, const Character *c
                (posY + ch->offsetY + height) * g_graphicsContext.GetGUIScaleY());
   vertex += CPoint(m_originX, m_originY);
   CRect texture(ch->left, ch->top, ch->right, ch->bottom);
-  g_graphicsContext.ClipRect(vertex, texture);
+  if (!g_Windowing.ScissorsCanEffectClipping())
+    g_graphicsContext.ClipRect(vertex, texture);
 
   // transform our positions - note, no scaling due to GUI calibration/resolution occurs
   float x[4], y[4], z[4];
@@ -724,10 +841,14 @@ void CGUIFontTTFBase::RenderCharacter(float posX, float posY, const Character *c
     float rx3 = (float)MathUtils::round_int(x[3]);
     x[1] = (float)MathUtils::truncate_int(x[1]);
     x[2] = (float)MathUtils::truncate_int(x[2]);
-    if (rx0 > x[0])
+    if (x[0] > 0.0f && rx0 > x[0])
       x[1] += 1;
-    if (rx3 > x[3])
+    else if (x[0] < 0.0f && rx0 < x[0])
+      x[1] -= 1;
+    if (x[3] > 0.0f && rx3 > x[3])
       x[2] += 1;
+    else if (x[3] < 0.0f && rx3 < x[3])
+      x[2] -= 1;
     x[0] = rx0;
     x[3] = rx3;
   }
@@ -748,23 +869,11 @@ void CGUIFontTTFBase::RenderCharacter(float posX, float posY, const Character *c
   float tt = texture.y1 * m_textureScaleY;
   float tb = texture.y2 * m_textureScaleY;
 
-  // grow the vertex buffer if required
-  if(m_vertex_count >= m_vertex_size)
-  {
-    m_vertex_size *= 2;
-    void* old      = m_vertex;
-    m_vertex       = (SVertex*)realloc(m_vertex, m_vertex_size * sizeof(SVertex));
-    if (!m_vertex)
-    {
-      free(old);
-      CLog::Log(LOGSEVERE, "{}: can't allocate {} bytes for texture", __FUNCTION__ , m_vertex_size * sizeof(SVertex));
-      return;
-    }
-  }
-
+  vertices.resize(vertices.size() + 4);
+  SVertex* v = &vertices[vertices.size() - 4];
   m_color = color;
-  SVertex* v = m_vertex + m_vertex_count;
 
+#ifndef HAS_DX
   unsigned char r = GET_R(color)
               , g = GET_G(color)
               , b = GET_B(color)
@@ -776,13 +885,18 @@ void CGUIFontTTFBase::RenderCharacter(float posX, float posY, const Character *c
     g = (235 - 16) * g / 255;
     b = (235 - 16) * b / 255;
   }
+#endif
 
   for(int i = 0; i < 4; i++)
   {
+#ifdef HAS_DX
+    CD3DHelper::XMStoreColor(&v[i].col, color);
+#else
     v[i].r = r;
     v[i].g = g;
     v[i].b = b;
     v[i].a = a;
+#endif
   }
 
 #if defined(HAS_GL) || defined(HAS_DX)
@@ -830,8 +944,6 @@ void CGUIFontTTFBase::RenderCharacter(float posX, float posY, const Character *c
   v[3].y = y[2];
   v[3].z = z[2];
 #endif
-
-  m_vertex_count+=4;
 }
 
 // Oblique code - original taken from freetype2 (ftsynth.c)
@@ -858,14 +970,14 @@ void CGUIFontTTFBase::ObliqueGlyph(FT_GlyphSlot slot)
 
 
 // Embolden code - original taken from freetype2 (ftsynth.c)
-void CGUIFontTTFBase::EmboldenGlyph(FT_GlyphSlot slot)
+void CGUIFontTTFBase::SetGlyphStrength(FT_GlyphSlot slot, int glyphStrength)
 {
   if ( slot->format != FT_GLYPH_FORMAT_OUTLINE )
     return;
 
   /* some reasonable strength */
   FT_Pos strength = FT_MulFix( m_face->units_per_EM,
-                    m_face->size->metrics.y_scale ) / 24;
+                    m_face->size->metrics.y_scale ) / glyphStrength;
 
   FT_BBox bbox_before, bbox_after;
   FT_Outline_Get_CBox( &slot->outline, &bbox_before );
@@ -889,5 +1001,3 @@ void CGUIFontTTFBase::EmboldenGlyph(FT_GlyphSlot slot)
   slot->metrics.vertBearingY += dy;
   slot->metrics.vertAdvance  += dy;
 }
-
-
