@@ -99,7 +99,11 @@ bool CGUIFontTTFGL::FirstBegin()
   }
 
   // Turn Blending On
+#ifndef _XBOX
   glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_ONE);
+#else
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+#endif
   glEnable(GL_BLEND);
 #ifdef HAS_GL
   glEnable(GL_TEXTURE_2D);
@@ -145,7 +149,9 @@ bool CGUIFontTTFGL::FirstBegin()
 void CGUIFontTTFGL::LastEnd()
 {
 #ifdef HAS_GL
+#ifndef _XBOX
   glPushClientAttrib(GL_CLIENT_VERTEX_ARRAY_BIT);
+#endif
 
   glColorPointer   (4, GL_UNSIGNED_BYTE, sizeof(SVertex), (char*)&m_vertex[0] + offsetof(SVertex, r));
   glVertexPointer  (3, GL_FLOAT        , sizeof(SVertex), (char*)&m_vertex[0] + offsetof(SVertex, x));
@@ -154,7 +160,13 @@ void CGUIFontTTFGL::LastEnd()
   glEnableClientState(GL_VERTEX_ARRAY);
   glEnableClientState(GL_TEXTURE_COORD_ARRAY);
   glDrawArrays(GL_QUADS, 0, m_vertex.size());
+#ifndef _XBOX
   glPopClientAttrib();
+#else
+  glDisableClientState(GL_COLOR_ARRAY);
+  glDisableClientState(GL_VERTEX_ARRAY);
+  glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+#endif
 
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_2D, 0);
