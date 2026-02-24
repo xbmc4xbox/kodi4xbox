@@ -60,4 +60,4 @@
 #define WORDS_LITTLEENDIAN 1
 
 /* Define to the value of ${prefix}, as a string. */
-
+#undef INSTALLPREFIX

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
 project(libiconv LANGUAGES C)
 
-add_library(libiconv libcharset/lib/localcharset.c lib/iconv.c)
+add_library(libiconv libcharset/lib/localcharset.c lib/iconv.c lib/relocatable.c)
 
 target_include_directories(libiconv
   PUBLIC
