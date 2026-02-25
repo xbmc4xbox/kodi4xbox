@@ -995,7 +995,5 @@ void CSlideShowPic::Render(float* x, float* y, CTexture* pTexture, UTILS::COLOR:
   glDisableVertexAttribArray(tex0Loc);
 
   renderSystem->DisableGUIShader();
-#elif NXDK
-  // TODO: implement this render method using PBKIT - Look in XBMC4Xbox how it's implemented using DX8
 #endif
 }

@@ -184,9 +184,6 @@ protected:
 #elif defined(HAS_DX)
 #include "GUITextureD3D.h"
 #define CGUITexture CGUITextureD3D
-#elif defined(NXDK)
-#include "GUITexturePBKIT.h"
-#define CGUITexture CGUITexturePBKIT
 #endif
 
 #endif
