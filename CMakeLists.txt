@@ -685,6 +685,10 @@ target_link_libraries(xbmc PUBLIC ${NXDK_DIR}/lib/libpbkit.lib)
 target_link_libraries(xbmc PUBLIC ${NXDK_DIR}/lib/libjpeg.lib)
 target_include_directories(xbmc PRIVATE ${NXDK_DIR}/lib/libjpeg ${NXDK_DIR}/lib/libjpeg/libjpeg-turbo)
 
+# Bring in zlib support
+target_link_libraries(xbmc PUBLIC ${NXDK_DIR}/lib/libzlib.lib)
+target_include_directories(xbmc PRIVATE ${NXDK_DIR}/lib/zlib/zlib)
+
 # Bring in fribidi library
 add_subdirectory(lib/fribidi)
 target_link_libraries(xbmc PUBLIC fribidi)
@@ -801,7 +805,7 @@ FetchContent_Declare(
   GIT_TAG        VER-2-14-1
   GIT_PROGRESS TRUE
 )
-set(FT_DISABLE_ZLIB TRUE CACHE BOOL "" FORCE)
+set(FT_DISABLE_ZLIB FALSE CACHE BOOL "" FORCE)
 set(FT_DISABLE_BZIP2 TRUE CACHE BOOL "" FORCE)
 set(FT_DISABLE_PNG TRUE CACHE BOOL "" FORCE)
 set(FT_DISABLE_HARFBUZZ TRUE CACHE BOOL "" FORCE)

@@ -177,7 +177,6 @@ Export export_iconvx[] =
   { NULL, NULL, NULL, NULL }
 };
 
-#if 0
 extern "C" void* inflate();
 extern "C" void* inflateEnd();
 extern "C" void* inflateInit2_();
@@ -185,11 +184,9 @@ extern "C" void* inflateInit_();
 extern "C" void* inflateSync();
 extern "C" void* inflateReset();
 extern "C" void* uncompress();
-#endif
 
 Export export_zlib[] =
 {
-#if 0
   { "inflate",       static_cast<unsigned long>(-1), inflate,        NULL },
   { "inflateEnd",    static_cast<unsigned long>(-1), inflateEnd,     NULL },
   { "inflateInit2_", static_cast<unsigned long>(-1), inflateInit2_,  NULL },
@@ -197,6 +194,5 @@ Export export_zlib[] =
   { "inflateSync",   static_cast<unsigned long>(-1), inflateSync,    NULL },
   { "uncompress",    static_cast<unsigned long>(-1), uncompress,     NULL },
   { "inflateReset",  static_cast<unsigned long>(-1), inflateReset,   NULL },
-#endif
   { NULL, NULL, NULL, NULL }
 };
