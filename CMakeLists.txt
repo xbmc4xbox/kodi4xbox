@@ -412,7 +412,10 @@ add_executable(xbmc
   xbmc/interfaces/info/InfoBool.cpp
   xbmc/interfaces/info/InfoExpression.cpp
   xbmc/interfaces/info/SkinVariable.cpp
+  xbmc/listproviders/DirectoryProvider.cpp
   xbmc/listproviders/IListProvider.cpp
+  xbmc/listproviders/MultiProvider.cpp
+  xbmc/listproviders/StaticProvider.cpp
   xbmc/media/MediaType.cpp
   xbmc/messaging/ApplicationMessenger.cpp
   xbmc/messaging/helpers/DialogHelper.cpp
