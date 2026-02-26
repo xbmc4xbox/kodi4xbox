@@ -35,7 +35,7 @@
 #include FT_GLYPH_H
 #include FT_OUTLINE_H
 
-#if defined(HAS_GL) || defined(HAS_GLES)
+#if defined(_XBOX) && defined(HAS_GL)
 
 CGUIFontTTFXbox::CGUIFontTTFXbox(const std::string& strFileName)
 : CGUIFontTTFBase(strFileName)
@@ -69,6 +69,7 @@ bool CGUIFontTTFXbox::FirstBegin()
     glBindTexture(GL_TEXTURE_2D, m_nTexture);
 
     glEnable(GL_TEXTURE_2D);
+
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
