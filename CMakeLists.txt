@@ -40,6 +40,7 @@ add_compile_options(
   -Wno-deprecated-declarations
   -Wno-inconsistent-missing-override
   -Wno-invalid-offsetof
+  -Wno-uninitialized-const-pointer
 )
 
 # Set pre-compile variables
@@ -769,6 +770,10 @@ target_link_libraries(xbmc PUBLIC libiconv)
 add_subdirectory(lib/sqlite)
 target_link_libraries(xbmc PUBLIC sqlite)
 
+# Bring in crpyto functions to support SHA1 and RC4
+add_subdirectory(lib/xbox_eeprom)
+target_link_libraries(xbmc PUBLIC xbox-eeprom)
+
 # Bring in FMT library
 message(STATUS "Downloading fmtlib")
 FetchContent_Declare(
@@ -883,7 +888,37 @@ add_definitions(-DZ_SOLO)
 FetchContent_MakeAvailable(freetype)
 target_link_libraries(xbmc PRIVATE freetype)
 
+# Bring in mbed TLS support
+message(STATUS "Downloading Mbed TLS")
+FetchContent_Declare(
+  mbedtls
+  GIT_REPOSITORY https://github.com/Mbed-TLS/mbedtls.git
+  GIT_TAG        v3.6.4
+  GIT_PROGRESS TRUE
+)
+set(CMAKE_C_SIMULATE_ID FALSE CACHE INTERNAL "Clang" FORCE)
+set(ENABLE_PROGRAMS OFF CACHE BOOL "Disable mbedtls programs")
+set(ENABLE_TESTING OFF CACHE BOOL "Disable Mbed TLS tests")
+set(UNSAFE_BUILD OFF CACHE BOOL "Disable unsafe build options")
+set(DISABLE_PACKAGE_CONFIG_AND_INSTALL OFF CACHE BOOL "Disable package config and install targets")
+add_definitions(
+  -DMBEDTLS_CHECK_RETURN=
+  -DMBEDTLS_CONFIG_FILE=\"${CMAKE_CURRENT_SOURCE_DIR}/lib/mbedtls/my_mbedtls_config.h\"
+)
+FetchContent_MakeAvailable(mbedtls)
+target_include_directories(mbedx509 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/lib/mbedtls)
+target_link_libraries(xbmc PUBLIC mbedtls ${CMAKE_SOURCE_DIR}/lib/mbedtls/ws2_32.lib)
+
 #Pre-build commands
+
+#Let's download the latest CA certificates
+message(STATUS "Downloading CA certificates...")
+file(DOWNLOAD
+    https://curl.se/ca/cacert.pem
+    ${CMAKE_SOURCE_DIR}/assets/cacert.pem
+    SHOW_PROGRESS
+    STATUS download_status
+)
 
 #Post-build commands
 add_xbox_build_steps(xbmc ${XBE_TITLE} ${XBOX_ISO_DIR})
