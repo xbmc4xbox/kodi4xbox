@@ -909,6 +909,56 @@ FetchContent_MakeAvailable(mbedtls)
 target_include_directories(mbedx509 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/lib/mbedtls)
 target_link_libraries(xbmc PUBLIC mbedtls ${CMAKE_SOURCE_DIR}/lib/mbedtls/ws2_32.lib)
 
+# Bring in curl support
+message(STATUS "Downloading curl")
+FetchContent_Declare(
+  curl
+  GIT_REPOSITORY https://github.com/curl/curl.git
+  GIT_TAG        curl-8_18_0
+  GIT_PROGRESS TRUE
+)
+# general
+set(BUILD_CURL_EXE OFF CACHE BOOL "" FORCE)
+set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(BUILD_LIBCURL_DOCS OFF CACHE BOOL "" FORCE)
+set(BUILD_MISC_DOCS OFF CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+set(CURL_DEFAULT_SSL_BACKEND "mbedtls" CACHE STRING "" FORCE)
+set(ENABLE_CURL_MANUAL OFF CACHE BOOL "" FORCE)
+# enabling features
+set(ENABLE_IPV6 OFF CACHE BOOL "" FORCE)
+set(ENABLE_THREADED_RESOLVER OFF CACHE BOOL "" FORCE)
+set(ENABLE_UNIX_SOCKETS OFF CACHE BOOL "" FORCE)
+# disabling features
+set(HTTP_ONLY ON CACHE BOOL "" FORCE)
+# dependencies
+set(CURL_BROTLI OFF CACHE BOOL "" FORCE)
+set(CURL_USE_LIBPSL OFF CACHE BOOL "" FORCE)
+set(CURL_USE_LIBSSH2 OFF CACHE BOOL "" FORCE)
+set(CURL_USE_MBEDTLS ON CACHE BOOL "" FORCE)
+set(CURL_USE_OPENSSL OFF CACHE BOOL "" FORCE)
+set(USE_LIBIDN2 OFF CACHE BOOL "" FORCE)
+set(USE_NGHTTP2 OFF CACHE BOOL "" FORCE)
+# external libs
+set(MBEDTLS_INCLUDE_DIR ${mbedtls_SOURCE_DIR}/include CACHE PATH "" FORCE)
+set(MBEDTLS_LIBRARY ${mbedtls_BINARY_DIR}/library/libmbedtls.lib CACHE STRING "" FORCE)
+set(MBEDX509_LIBRARY ${mbedtls_BINARY_DIR}/library/libmbedx509.lib CACHE STRING "" FORCE)
+set(MBEDCRYPTO_LIBRARY ${mbedtls_BINARY_DIR}/library/libmbedcrypto.lib CACHE STRING "" FORCE)
+
+add_definitions(
+  -DUSE_LWIPSOCK=1
+)
+FetchContent_MakeAvailable(curl)
+target_include_directories(libcurl_static PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/lib/mbedtls
+  ${NXDK_DIR}/lib/net/lwip/src/include
+  ${NXDK_DIR}/lib/net/nforceif/include
+  ${NXDK_DIR}/lib/net/nvnetdrv
+  ${CMAKE_CURRENT_SOURCE_DIR}/xbmc/platform/xbox # <sys/*>
+)
+target_link_libraries(xbmc PRIVATE libcurl)
+
 #Pre-build commands
 
 #Let's download the latest CA certificates
