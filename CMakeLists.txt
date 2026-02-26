@@ -313,6 +313,7 @@ add_executable(xbmc
   xbmc/guilib/GUIFontManager.cpp
   xbmc/guilib/GUIFontTTF.cpp
   xbmc/guilib/GUIFontTTFGL.cpp
+  xbmc/guilib/GUIFontTTFXbox.cpp
   xbmc/guilib/GUIImage.cpp
   xbmc/guilib/GUIIncludes.cpp
   xbmc/guilib/GUIKeyboardFactory.cpp

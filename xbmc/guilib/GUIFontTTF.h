@@ -207,9 +207,12 @@ private:
   int m_referenceCount;
 };
 
-#if defined(HAS_GL) || defined(HAS_GLES)
+#if !defined(_XBOX) && (defined(HAS_GL) || defined(HAS_GLES))
 #include "GUIFontTTFGL.h"
 #define CGUIFontTTF CGUIFontTTFGL
+#elif defined(_XBOX)
+#include "GUIFontTTFXbox.h"
+#define CGUIFontTTF CGUIFontTTFXbox
 #elif defined(HAS_DX)
 #include "GUIFontTTFDX.h"
 #define CGUIFontTTF CGUIFontTTFDX
