@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <window>
-	<defaultcontrol>9000</defaultcontrol>
 	<backgroundcolor>background</backgroundcolor>
 	<controls>
 		<include>DefaultBackground</include>
 		<control type="group">
-			<control type="label">
+			<control type="label" id="9000">
 				<left>0</left>
 				<bottom>0</bottom>
 				<width>100%</width>
