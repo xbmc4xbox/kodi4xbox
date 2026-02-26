@@ -23,8 +23,8 @@
 \brief
 */
 
-#ifndef CGUILIB_GUIFONTTTF_GL_H
-#define CGUILIB_GUIFONTTTF_GL_H
+#ifndef CGUILIB_GUIFONTTTF_XBOX_H
+#define CGUILIB_GUIFONTTTF_XBOX_H
 #pragma once
 
 
@@ -40,31 +40,19 @@
  \ingroup textures
  \brief
  */
-class CGUIFontTTFGL : public CGUIFontTTFBase
+class CGUIFontTTFXbox : public CGUIFontTTFBase
 {
 public:
-  CGUIFontTTFGL(const std::string& strFileName);
-  virtual ~CGUIFontTTFGL(void);
+  CGUIFontTTFXbox(const std::string& strFileName);
+  virtual ~CGUIFontTTFXbox(void);
 
   virtual bool FirstBegin();
   virtual void LastEnd();
-#if HAS_GLES
-  virtual CVertexBuffer CreateVertexBuffer(const std::vector<SVertex> &vertices) const;
-  virtual void DestroyVertexBuffer(CVertexBuffer &bufferHandle) const;
-  static void CreateStaticVertexBuffers(void);
-  static void DestroyStaticVertexBuffers(void);
-#endif
 
 protected:
   virtual std::unique_ptr<CTexture> ReallocTexture(unsigned int& newHeight);
   virtual bool CopyCharToTexture(FT_BitmapGlyph bitGlyph, unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2);
   virtual void DeleteHardwareTexture();
-
-#if HAS_GLES
-#define ELEMENT_ARRAY_MAX_CHAR_INDEX (1000)
-
-  static GLuint m_elementArrayHandle;
-#endif
 
 private:
   unsigned int m_updateY1;
@@ -79,10 +67,6 @@ private:
   };
 
   TextureStatus m_textureStatus;
-
-#if HAS_GLES
-  static bool m_staticVertexBufferCreated;
-#endif
 };
 
 #endif
