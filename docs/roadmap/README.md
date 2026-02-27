@@ -25,8 +25,8 @@ Milestone 1 (one) is dealing with GUILIB and everything related to it. That incl
 * [x] Properly initialize GPU device and everything related to it -> That's implementation of CGraphicContext
 * [x] Properly create and initialize application -> Implement CApplication::Create(...), CApplication::Initialize(...), CApplication::Render(...), CApplication::Process(...) etc.
 * [x] Font rendering - implementation of CGUIFontTTF, CGUIFont and CGUIFontManager. `freetype` lib is required for this - added with [0a5a7e22](https://github.com/antonic901/xbmc4xbox-nxdk/commit/0a5a7e22b19a2c2f970e0af39909b800dd9706e9)
-* [ ] Get splash screen properly rendering on screen
-* [ ] Get Home window properly rendering 
+* [x] Get splash screen properly rendering on screen
+* [x] Get Home window properly rendering 
 
 **IMPORTANT:** Texture loading and rendering was added with https://github.com/antonic901/xbmc4xbox-nxdk/pull/17. Read description of that PR to learn more!
 
@@ -56,7 +56,7 @@ Milestone 5 (five) should add missing libraries which are required by XBMC but t
 * [ ] [libcurl](https://github.com/antonic901/xbmc4xbox-redux/tree/master/lib/libcurl) - support for HTTP and other network protocols in Kodi VFS
 * [x] [freetype](https://github.com/antonic901/xbmc4xbox-redux/tree/master/lib/freetype) - support for fonts (CGUIFontTTF, CGUIFont and CGUIFontManager) - added with [0a5a7e22](https://github.com/antonic901/xbmc4xbox-nxdk/commit/0a5a7e22b19a2c2f970e0af39909b800dd9706e9)
 * [ ] [libcdio](https://github.com/antonic901/xbmc4xbox-redux/blob/master/docs/libcdio.rar) - used for reading DVD information
-* [ ] [DllLoader](https://github.com/antonic901/xbmc4xbox-redux/tree/master/xbmc/cores/DllLoader) - use for loading custom DLLs which were build using MinGW and Make. This version only support Windows 2K/XP compatible DLLs
+* [x] [DllLoader](https://github.com/antonic901/xbmc4xbox-redux/tree/master/xbmc/cores/DllLoader) - use for loading custom DLLs which were build using MinGW and Make. This version only support Windows 2K/XP compatible DLLs - adde with [779f7111](https://github.com/antonic901/xbmc4xbox-nxdk/commit/779f7111817896555bfb8d4cf3e0592e42d38b28)
 
 ### Milestone 6
 At Milestone 6 (six) XBMC should be stable so we should start utilizing DllLoader and backporting Python and binary addons.

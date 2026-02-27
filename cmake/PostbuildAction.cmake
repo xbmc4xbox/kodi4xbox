@@ -10,7 +10,7 @@ function(add_xbox_build_steps TARGET_NAME XBE_TITLE XBOX_ISO_DIR)
                 ${NXDK_DIR}/tools/cxbe/cxbe
                 -OUT:${CMAKE_CURRENT_BINARY_DIR}/default.xbe
                 -TITLE:${XBE_TITLE}
-                ${CMAKE_CURRENT_BINARY_DIR}/${XBE_TITLE}.exe > NUL 2>&1
+                ${CMAKE_CURRENT_BINARY_DIR}/xbmc.exe > NUL 2>&1
     )
     add_dependencies(${TARGET_NAME}_cxbe_convert ${TARGET_NAME})
 

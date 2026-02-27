@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-set(XBE_TITLE xbmc)
+set(XBE_TITLE Kodi)
 set(XBOX_ISO_DIR ${CMAKE_CURRENT_BINARY_DIR}/xiso)
 
 set(CMAKE_C_STANDARD 23)
