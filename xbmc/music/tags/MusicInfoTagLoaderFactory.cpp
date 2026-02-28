@@ -15,6 +15,7 @@
 #include "MusicInfoTagLoaderShn.h"
 #include "ServiceBroker.h"
 #include "TagLoaderTagLib.h"
+#include "addons/AudioDecoder.h"
 #include "addons/ExtsMimeSupportList.h"
 #include "addons/addoninfo/AddonType.h"
 #include "utils/StringUtils.h"
@@ -43,7 +44,6 @@ IMusicInfoTagLoader* CMusicInfoTagLoaderFactory::CreateLoader(const CFileItem& i
   if (strExtension.empty())
     return NULL;
 
-#if 0
   const auto addonInfos = CServiceBroker::GetExtsMimeSupportList().GetExtensionSupportedAddonInfos(
       "." + strExtension, CExtsMimeSupportList::FilterSelect::hasTags);
   for (const auto& addonInfo : addonInfos)
@@ -57,7 +57,6 @@ IMusicInfoTagLoader* CMusicInfoTagLoaderFactory::CreateLoader(const CFileItem& i
       return result.release();
     }
   }
-#endif
 
   if (strExtension == "aac" || strExtension == "ape" || strExtension == "mac" ||
       strExtension == "mp3" || strExtension == "wma" || strExtension == "flac" ||
@@ -71,7 +70,7 @@ IMusicInfoTagLoader* CMusicInfoTagLoaderFactory::CreateLoader(const CFileItem& i
     CTagLoaderTagLib *pTagLoader = new CTagLoaderTagLib();
     return pTagLoader;
   }
-#ifdef HAS_DVD_DRIVE
+#ifdef HAS_OPTICAL_DRIVE
   else if (strExtension == "cdda")
   {
     CMusicInfoTagLoaderCDDA *pTagLoader = new CMusicInfoTagLoaderCDDA();

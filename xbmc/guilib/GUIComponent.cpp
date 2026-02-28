@@ -14,18 +14,22 @@
 #include "GUILargeTextureManager.h"
 #include "GUIWindowManager.h"
 #include "ServiceBroker.h"
+#include "StereoscopicsManager.h"
 #include "TextureManager.h"
 #include "URL.h"
 #include "dialogs/GUIDialogYesNo.h"
 
+#include <memory>
+
 CGUIComponent::CGUIComponent()
+  : m_pWindowManager(std::make_unique<CGUIWindowManager>()),
+    m_pTextureManager(std::make_unique<CGUITextureManager>()),
+    m_pLargeTextureManager(std::make_unique<CGUILargeTextureManager>()),
+    m_stereoscopicsManager(std::make_unique<CStereoscopicsManager>()),
+    m_guiInfoManager(std::make_unique<CGUIInfoManager>()),
+    m_guiColorManager(std::make_unique<CGUIColorManager>()),
+    m_guiAudioManager(std::make_unique<CGUIAudioManager>())
 {
-  m_pWindowManager.reset(new CGUIWindowManager());
-  m_pTextureManager.reset(new CGUITextureManager());
-  m_pLargeTextureManager.reset(new CGUILargeTextureManager());
-  m_guiInfoManager.reset(new CGUIInfoManager());
-  m_guiColorManager.reset(new CGUIColorManager());
-  m_guiAudioManager.reset(new CGUIAudioManager());
 }
 
 CGUIComponent::~CGUIComponent()
@@ -36,6 +40,7 @@ CGUIComponent::~CGUIComponent()
 void CGUIComponent::Init()
 {
   m_pWindowManager->Initialize();
+  m_stereoscopicsManager->Initialize();
   m_guiInfoManager->Initialize();
 
   CServiceBroker::RegisterGUI(this);
@@ -63,6 +68,11 @@ CGUILargeTextureManager& CGUIComponent::GetLargeTextureManager()
   return *m_pLargeTextureManager;
 }
 
+CStereoscopicsManager &CGUIComponent::GetStereoscopicsManager()
+{
+  return *m_stereoscopicsManager;
+}
+
 CGUIInfoManager &CGUIComponent::GetInfoManager()
 {
   return *m_guiInfoManager;
@@ -80,7 +90,7 @@ CGUIAudioManager &CGUIComponent::GetAudioManager()
 
 bool CGUIComponent::ConfirmDelete(const std::string& path)
 {
-  CGUIDialogYesNo* pDialog = dynamic_cast<CGUIDialogYesNo*>(GetWindowManager().GetWindow(WINDOW_DIALOG_YES_NO));
+  CGUIDialogYesNo* pDialog = GetWindowManager().GetWindow<CGUIDialogYesNo>(WINDOW_DIALOG_YES_NO);
   if (pDialog)
   {
     pDialog->SetHeading(CVariant{122});

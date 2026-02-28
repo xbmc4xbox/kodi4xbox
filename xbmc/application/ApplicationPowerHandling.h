@@ -10,7 +10,11 @@
 
 #include "application/IApplicationComponent.h"
 
+#ifdef TARGET_WINDOWS
+#include "powermanagement/WinIdleTimer.h"
+#endif
 #include "utils/Stopwatch.h"
+#include "windowing/OSScreenSaver.h"
 
 #include <string>
 
@@ -97,6 +101,16 @@ protected:
   CStopWatch m_navigationTimer;
   CStopWatch m_shutdownTimer;
 
+#ifdef TARGET_WINDOWS
+  CWinIdleTimer m_idleTimer;
+  CWinIdleTimer m_screenSaverTimer;
+#else
   CStopWatch m_idleTimer;
   CStopWatch m_screenSaverTimer;
+#endif
+
+  // OS screen saver inhibitor that is always active if user selected a Kodi screen saver
+  KODI::WINDOWING::COSScreenSaverInhibitor m_globalScreensaverInhibitor;
+  // Inhibitor that is active e.g. during video playback
+  KODI::WINDOWING::COSScreenSaverInhibitor m_screensaverInhibitor;
 };

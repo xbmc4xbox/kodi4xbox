@@ -11,14 +11,14 @@
 #include "ServiceBroker.h"
 #include "addons/AddonEvents.h"
 #include "addons/AddonManager.h"
-#include "addons/IAddonSupportCheck.h"
+#include "addons/AudioDecoder.h"
 #include "addons/ExtsMimeSupportList.h"
+#include "addons/ImageDecoder.h"
 #include "addons/addoninfo/AddonInfo.h"
 #include "addons/addoninfo/AddonType.h"
 #include "settings/AdvancedSettings.h"
 #include "settings/SettingsComponent.h"
 #include "utils/URIUtils.h"
-#include "utils/StringUtils.h"
 
 #include <string>
 #include <vector>
@@ -116,14 +116,12 @@ bool CFileExtensionProvider::CanOperateExtension(const std::string& path) const
     {
       switch (addonInfo.first)
       {
-#if 0
         case AddonType::AUDIODECODER:
           supportList.emplace_back(new CAudioDecoder(addonInfo.second));
           break;
         case AddonType::IMAGEDECODER:
           supportList.emplace_back(new CImageDecoder(addonInfo.second, ""));
           break;
-#endif
         default:
           break;
       }

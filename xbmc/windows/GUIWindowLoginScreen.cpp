@@ -17,13 +17,16 @@
 #include "guilib/GUIMessage.h"
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
-#include "input/Key.h"
+#include "input/actions/Action.h"
+#include "input/actions/ActionIDs.h"
 #include "interfaces/builtins/Builtins.h"
 #include "messaging/ApplicationMessenger.h"
 #include "messaging/helpers/DialogOKHelper.h"
 #include "profiles/Profile.h"
 #include "profiles/ProfileManager.h"
 #include "profiles/dialogs/GUIDialogProfileSettings.h"
+#include "pvr/PVRManager.h"
+#include "pvr/guilib/PVRGUIActionsPowerManagement.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 #include "utils/StringUtils.h"
@@ -125,7 +128,8 @@ bool CGUIWindowLoginScreen::OnAction(const CAction &action)
   {
     std::string actionName = action.GetName();
     StringUtils::ToLower(actionName);
-    if ((actionName.find("shutdown") != std::string::npos))
+    if ((actionName.find("shutdown") != std::string::npos) &&
+        CServiceBroker::GetPVRManager().Get<PVR::GUI::PowerManagement>().CanSystemPowerdown())
       CBuiltins::GetInstance().Execute(action.GetName());
     return true;
   }
@@ -140,7 +144,7 @@ bool CGUIWindowLoginScreen::OnBack(int actionID)
 
 void CGUIWindowLoginScreen::FrameMove()
 {
-  if (GetFocusedControlID() == CONTROL_BIG_LIST && !CServiceBroker::GetGUI()->GetWindowManager().HasModalDialog())
+  if (GetFocusedControlID() == CONTROL_BIG_LIST && !CServiceBroker::GetGUI()->GetWindowManager().HasModalDialog(true))
   {
     if (m_viewControl.HasControl(CONTROL_BIG_LIST))
       m_iSelectedItem = m_viewControl.GetSelectedItem();

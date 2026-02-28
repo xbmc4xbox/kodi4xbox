@@ -11,7 +11,8 @@
 #include "GUIPassword.h"
 #include "GUIUserMessages.h"
 #include "ServiceBroker.h"
-#include "input/Key.h"
+#include "input/actions/Action.h"
+#include "input/actions/ActionIDs.h"
 #include "settings/DisplaySettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
@@ -98,9 +99,9 @@ bool CGUIWindowSettingsCategory::OnMessage(CGUIMessage &message)
     {
       if (message.GetParam1() == GUI_MSG_WINDOW_RESIZE)
       {
-        if (IsActive() && CDisplaySettings::GetInstance().GetCurrentResolution() != g_graphicsContext.GetVideoResolution())
+        if (IsActive() && CDisplaySettings::GetInstance().GetCurrentResolution() != CServiceBroker::GetWinSystem()->GetGfxContext().GetVideoResolution())
         {
-          CDisplaySettings::GetInstance().SetCurrentResolution(g_graphicsContext.GetVideoResolution(), true);
+          CDisplaySettings::GetInstance().SetCurrentResolution(CServiceBroker::GetWinSystem()->GetGfxContext().GetVideoResolution(), true);
           CreateSettings();
         }
       }

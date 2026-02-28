@@ -22,6 +22,9 @@
 #include "addons/addoninfo/AddonInfo.h"
 #include "addons/addoninfo/AddonType.h"
 #include "dialogs/GUIDialogExtendedProgressBar.h"
+#include "events/AddonManagementEvent.h"
+#include "events/EventLog.h"
+#include "events/NotificationEvent.h"
 #include "favourites/FavouritesService.h"
 #include "filesystem/Directory.h"
 #include "filesystem/File.h"
@@ -43,6 +46,7 @@
 #include "utils/log.h"
 
 #include <functional>
+#include <memory>
 #include <mutex>
 
 using namespace XFILE;
@@ -413,9 +417,15 @@ bool CAddonInstaller::InstallFromZip(const std::string &path)
   //! @bug some zip files return a single item (root folder) that we think is stored, so we don't use the zip:// protocol
   CURL pathToUrl(path);
   CURL zipDir = URIUtils::CreateArchivePath("zip", pathToUrl, "");
+  auto eventLog = CServiceBroker::GetEventLog();
   if (!CDirectory::GetDirectory(zipDir, items, "", DIR_FLAG_DEFAULTS) ||
       items.Size() != 1 || !items[0]->m_bIsFolder)
   {
+    if (eventLog)
+      eventLog->AddWithNotification(EventPtr(
+          new CNotificationEvent(24045, StringUtils::Format(g_localizeStrings.Get(24143), path),
+                                 "special://xbmc/media/icon256x256.png", EventLevel::Error)));
+
     CLog::Log(
         LOGERROR,
         "CAddonInstaller: installing addon failed '{}' - itemsize: {}, first item is folder: {}",
@@ -429,6 +439,10 @@ bool CAddonInstaller::InstallFromZip(const std::string &path)
                      AutoUpdateJob::CHOICE_NO, DependencyJob::CHOICE_NO,
                      AllowCheckForUpdates::CHOICE_YES);
 
+  if (eventLog)
+    eventLog->AddWithNotification(EventPtr(
+        new CNotificationEvent(24045, StringUtils::Format(g_localizeStrings.Get(24143), path),
+                               "special://xbmc/media/icon256x256.png", EventLevel::Error)));
   return false;
 }
 
@@ -540,7 +554,7 @@ void CAddonInstaller::PrunePackageCache()
   {
     it->second->Sort(SortByLabel, SortOrderDescending);
     for (int j = 2; j < it->second->Size(); j++)
-      items.Add(CFileItemPtr(new CFileItem(*it->second->Get(j))));
+      items.Add(std::make_shared<CFileItem>(*it->second->Get(j)));
   }
 
   items.Sort(SortBySize, SortOrderDescending);
@@ -559,7 +573,7 @@ void CAddonInstaller::PrunePackageCache()
     for (auto it = packs.begin(); it != packs.end(); ++it)
     {
       if (it->second->Size() > 1)
-        items.Add(CFileItemPtr(new CFileItem(*it->second->Get(1))));
+        items.Add(std::make_shared<CFileItem>(*it->second->Get(1)));
     }
 
     items.Sort(SortByDate, SortOrderAscending);
@@ -613,7 +627,7 @@ int64_t CAddonInstaller::EnumeratePackageFolder(
     CAddonVersion::SplitFileName(pack, dummy, items[i]->GetLabel());
     if (result.find(pack) == result.end())
       result[pack] = std::make_unique<CFileItemList>();
-    result[pack]->Add(CFileItemPtr(new CFileItem(*items[i])));
+    result[pack]->Add(std::make_shared<CFileItem>(*items[i]));
   }
 
   return size;
@@ -928,6 +942,10 @@ bool CAddonInstallJob::DoWork()
                      CSettings::SETTING_ADDONS_NOTIFICATIONS) ||
                  m_isAutoUpdate == AutoUpdateJob::CHOICE_NO) &&
                 !IsModal() && m_dependsInstall == DependencyJob::CHOICE_NO;
+  auto eventLog = CServiceBroker::GetEventLog();
+  if (eventLog)
+    eventLog->Add(EventPtr(new CAddonManagementEvent(m_addon, m_isUpdate ? 24065 : 24084)), notify,
+                  false);
 
   if (m_isAutoUpdate == AutoUpdateJob::CHOICE_YES &&
       m_addon->LifecycleState() == AddonLifecycleState::BROKEN)
@@ -935,6 +953,8 @@ bool CAddonInstallJob::DoWork()
     CLog::Log(LOGDEBUG, "CAddonInstallJob[{}]: auto-disabling due to being marked as broken",
               m_addon->ID());
     CServiceBroker::GetAddonMgr().DisableAddon(m_addon->ID(), AddonDisabledReason::USER);
+    if (eventLog)
+      eventLog->Add(EventPtr(new CAddonManagementEvent(m_addon, 24094)), true, false);
   }
   else if (m_addon->LifecycleState() == AddonLifecycleState::DEPRECATED)
   {
@@ -942,6 +962,8 @@ bool CAddonInstallJob::DoWork()
               m_addon->ID());
     std::string text =
         StringUtils::Format(g_localizeStrings.Get(24168), m_addon->LifecycleStateDescription());
+    if (eventLog)
+      eventLog->Add(EventPtr(new CAddonManagementEvent(m_addon, text)), true, false);
   }
 
   // and we're done!
@@ -958,7 +980,7 @@ bool CAddonInstallJob::DownloadPackage(const std::string &path, const std::strin
 
   // need to download/copy the package first
   CFileItemList list;
-  list.Add(CFileItemPtr(new CFileItem(path, false)));
+  list.Add(std::make_shared<CFileItem>(path, false));
   list[0]->Select(true);
 
   return DoFileOperation(CFileOperationJob::ActionReplace, list, dest, true);
@@ -1153,6 +1175,7 @@ void CAddonInstallJob::ReportInstallError(const std::string& addonID, const std:
   MarkFinished();
 
   std::string msg = message;
+  EventPtr activity;
   if (addon != nullptr)
   {
     AddonPtr addon2;
@@ -1162,14 +1185,23 @@ void CAddonInstallJob::ReportInstallError(const std::string& addonID, const std:
       msg = g_localizeStrings.Get(addon2 != nullptr && success ? 113 : 114);
     }
 
+    activity = EventPtr(new CAddonManagementEvent(addon, EventLevel::Error, msg));
     if (IsModal())
       HELPERS::ShowOKDialogText(CVariant{m_addon->Name()}, CVariant{msg});
   }
   else
   {
+    activity = EventPtr(new CNotificationEvent(
+        24045, !msg.empty() ? msg : StringUtils::Format(g_localizeStrings.Get(24143), fileName),
+        EventLevel::Error));
+
     if (IsModal())
       HELPERS::ShowOKDialogText(CVariant{fileName}, CVariant{msg});
   }
+
+  auto eventLog = CServiceBroker::GetEventLog();
+  if (eventLog)
+    eventLog->Add(activity, !IsModal(), false);
 }
 
 CAddonUnInstallJob::CAddonUnInstallJob(const AddonPtr &addon, bool removeData)
@@ -1209,6 +1241,10 @@ bool CAddonUnInstallJob::DoWork()
   {
     addon = m_addon;
   }
+
+  auto eventLog = CServiceBroker::GetEventLog();
+  if (eventLog)
+    eventLog->Add(EventPtr(new CAddonManagementEvent(addon, 24144))); // Add-on uninstalled
 
   CServiceBroker::GetAddonMgr().OnPostUnInstall(m_addon->ID());
 

@@ -23,6 +23,9 @@
 #include "addons/addoninfo/AddonInfo.h"
 #include "addons/addoninfo/AddonInfoBuilder.h"
 #include "addons/addoninfo/AddonType.h"
+#include "events/AddonManagementEvent.h"
+#include "events/EventLog.h"
+#include "events/NotificationEvent.h"
 #include "filesystem/Directory.h"
 #include "filesystem/SpecialProtocol.h"
 #include "utils/FileUtils.h"
@@ -246,7 +249,6 @@ std::vector<std::shared_ptr<IAddon>> CAddonMgr::GetOutdatedAddons() const
 std::vector<std::shared_ptr<IAddon>> CAddonMgr::GetAvailableUpdatesOrOutdatedAddons(
     AddonCheckType addonCheckType) const
 {
-  std::unique_lock<CCriticalSection> lock(m_critSection);
   auto start = std::chrono::steady_clock::now();
 
   std::vector<std::shared_ptr<IAddon>> result;
@@ -449,10 +451,10 @@ bool CAddonMgr::FindInstallableById(const std::string& addonId, AddonPtr& result
   // get the latest version from all repos if the
   // addon is up-to-date or not installed yet
 
-  CLog::Log(LOGDEBUG,
-            "CAddonMgr::{}: addon {} is up-to-date or not installed. falling back to get latest "
-            "version from all repos",
-            __FUNCTION__, addonId);
+  CLog::LogFC(
+      LOGDEBUG, LOGADDONS,
+      "addon {} is up-to-date or not installed. falling back to get latest version from all repos",
+      addonId);
 
   return addonRepos.GetLatestAddonVersionFromAllRepos(addonId, result);
 }
@@ -860,7 +862,9 @@ bool CAddonMgr::DisableAddon(const std::string& id, AddonDisabledReason disabled
   AddonPtr addon;
   if (GetAddon(id, addon, AddonType::UNKNOWN, OnlyEnabled::CHOICE_NO) && addon != nullptr)
   {
-    // TODO: add support for events
+    auto eventLog = CServiceBroker::GetEventLog();
+    if (eventLog)
+      eventLog->Add(EventPtr(new CAddonManagementEvent(addon, 24141)));
   }
 
   m_events.Publish(AddonEvents::Disabled(id));
@@ -894,9 +898,14 @@ bool CAddonMgr::EnableSingle(const std::string& id)
   if (!GetAddon(id, addon, AddonType::UNKNOWN, OnlyEnabled::CHOICE_NO) || addon == nullptr)
     return false;
 
-  if (!IsCompatible(*addon))
+  auto eventLog = CServiceBroker::GetEventLog();
+
+  if (!IsCompatible(addon))
   {
     CLog::Log(LOGERROR, "Add-on '{}' is not compatible with Kodi", addon->ID());
+    if (eventLog)
+      eventLog->AddWithNotification(
+          EventPtr(new CNotificationEvent(addon->Name(), 24152, EventLevel::Error)));
     UpdateDisabledReason(addon->ID(), AddonDisabledReason::INCOMPATIBLE);
     return false;
   }
@@ -908,6 +917,9 @@ bool CAddonMgr::EnableSingle(const std::string& id)
   // If enabling a repo add-on without an origin, set its origin to its own id
   if (addon->HasType(AddonType::REPOSITORY) && addon->Origin().empty())
     SetAddonOrigin(id, id, false);
+
+  if (eventLog)
+    eventLog->Add(EventPtr(new CAddonManagementEvent(addon, 24064)));
 
   CLog::Log(LOGDEBUG, "CAddonMgr: enabled {}", addon->ID());
   m_events.Publish(AddonEvents::Enabled(id));
@@ -1098,9 +1110,9 @@ void CAddonMgr::PublishInstanceRemoved(const std::string& addonId, AddonInstance
   m_events.Publish(AddonEvents::InstanceRemoved(addonId, instanceId));
 }
 
-bool CAddonMgr::IsCompatible(const IAddon& addon) const
+bool CAddonMgr::IsCompatible(const std::shared_ptr<const IAddon>& addon) const
 {
-  for (const auto& dependency : addon.GetDependencies())
+  for (const auto& dependency : addon->GetDependencies())
   {
     if (!dependency.optional)
     {
@@ -1109,10 +1121,10 @@ bool CAddonMgr::IsCompatible(const IAddon& addon) const
       if (StringUtils::StartsWith(dependency.id, "xbmc.") ||
           StringUtils::StartsWith(dependency.id, "kodi."))
       {
-        AddonPtr addon;
-        bool haveAddon =
-            GetAddon(dependency.id, addon, AddonType::UNKNOWN, OnlyEnabled::CHOICE_YES);
-        if (!haveAddon || !addon->MeetsVersion(dependency.versionMin, dependency.version))
+        std::shared_ptr<IAddon> dep;
+        const bool haveDependency =
+            GetAddon(dependency.id, dep, AddonType::UNKNOWN, OnlyEnabled::CHOICE_YES);
+        if (!haveDependency || !dep->MeetsVersion(dependency.versionMin, dependency.version))
           return false;
       }
     }

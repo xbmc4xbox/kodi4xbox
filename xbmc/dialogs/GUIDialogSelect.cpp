@@ -1,56 +1,46 @@
 /*
- *      Copyright (C) 2005-2013 Team XBMC
- *      http://xbmc.org
+ *  Copyright (C) 2005-2018 Team Kodi
+ *  This file is part of Kodi - https://kodi.tv
  *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with XBMC; see the file COPYING.  If not, see
- *  <http://www.gnu.org/licenses/>.
- *
+ *  SPDX-License-Identifier: GPL-2.0-or-later
+ *  See LICENSES/README.md for more information.
  */
 
 #include "GUIDialogSelect.h"
+
 #include "FileItem.h"
-#include "input/Key.h"
+#include "guilib/GUIMessage.h"
 #include "guilib/LocalizeStrings.h"
+#include "input/actions/ActionIDs.h"
 #include "utils/StringUtils.h"
+
+#include <memory>
 
 #define CONTROL_HEADING         1
 #define CONTROL_NUMBER_OF_ITEMS 2
 #define CONTROL_SIMPLE_LIST     3
 #define CONTROL_DETAILED_LIST   6
 #define CONTROL_EXTRA_BUTTON    5
+#define CONTROL_EXTRA_BUTTON2 8
 #define CONTROL_CANCEL_BUTTON   7
 
 CGUIDialogSelect::CGUIDialogSelect() : CGUIDialogSelect(WINDOW_DIALOG_SELECT) {}
 
 CGUIDialogSelect::CGUIDialogSelect(int windowId)
-    : CGUIDialogBoxBase(windowId, "DialogSelect.xml"),
+  : CGUIDialogBoxBase(windowId, "DialogSelect.xml"),
+    m_vecList(std::make_unique<CFileItemList>()),
     m_bButtonEnabled(false),
+    m_bButton2Enabled(false),
     m_bButtonPressed(false),
-    m_buttonLabel(-1),
-    m_selectedItem(nullptr),
+    m_bButton2Pressed(false),
     m_useDetails(false),
-    m_multiSelection(false),
-    m_selectedItems(),
-    m_vecList(new CFileItemList())
+    m_multiSelection(false)
 {
   m_bConfirmed = false;
   m_loadType = KEEP_IN_MEMORY;
 }
 
-CGUIDialogSelect::~CGUIDialogSelect(void)
-{
-}
+CGUIDialogSelect::~CGUIDialogSelect(void) = default;
 
 bool CGUIDialogSelect::OnMessage(CGUIMessage& message)
 {
@@ -61,6 +51,7 @@ bool CGUIDialogSelect::OnMessage(CGUIMessage& message)
       CGUIDialogBoxBase::OnMessage(message);
 
       m_bButtonEnabled = false;
+      m_bButton2Enabled = false;
       m_useDetails = false;
       m_multiSelection = false;
 
@@ -85,6 +76,7 @@ bool CGUIDialogSelect::OnMessage(CGUIMessage& message)
   case GUI_MSG_WINDOW_INIT:
     {
       m_bButtonPressed = false;
+      m_bButton2Pressed = false;
       m_bConfirmed = false;
       CGUIDialogBoxBase::OnMessage(message);
       return true;
@@ -116,6 +108,13 @@ bool CGUIDialogSelect::OnMessage(CGUIMessage& message)
           }
         }
       }
+      if (iControl == CONTROL_EXTRA_BUTTON2)
+      {
+        m_bButton2Pressed = true;
+        if (m_multiSelection)
+          m_bConfirmed = true;
+        Close();
+      }
       if (iControl == CONTROL_EXTRA_BUTTON)
       {
         m_selectedItem = nullptr;
@@ -127,6 +126,8 @@ bool CGUIDialogSelect::OnMessage(CGUIMessage& message)
       else if (iControl == CONTROL_CANCEL_BUTTON)
       {
         m_selectedItem = nullptr;
+        m_vecList->Clear();
+        m_selectedItems.clear();
         m_bConfirmed = false;
         Close();
       }
@@ -166,6 +167,7 @@ void CGUIDialogSelect::OnSelect(int idx)
 bool CGUIDialogSelect::OnBack(int actionID)
 {
   m_selectedItem = nullptr;
+  m_vecList->Clear();
   m_selectedItems.clear();
   m_bConfirmed = false;
   return CGUIDialogBoxBase::OnBack(actionID);
@@ -175,8 +177,12 @@ void CGUIDialogSelect::Reset()
 {
   m_bButtonEnabled = false;
   m_bButtonPressed = false;
+  m_bButton2Enabled = false;
+  m_bButton2Pressed = false;
+
   m_useDetails = false;
   m_multiSelection = false;
+  m_focusToButton = false;
   m_selectedItem = nullptr;
   m_vecList->Clear();
   m_selectedItems.clear();
@@ -191,15 +197,16 @@ int CGUIDialogSelect::Add(const std::string& strLabel)
 
 int CGUIDialogSelect::Add(const CFileItem& item)
 {
-  m_vecList->Add(CFileItemPtr(new CFileItem(item)));
+  m_vecList->Add(std::make_shared<CFileItem>(item));
   return m_vecList->Size() - 1;
 }
 
 void CGUIDialogSelect::SetItems(const CFileItemList& pList)
 {
-  // need to make internal copy of list to be sure dialog is owner of it
   m_vecList->Clear();
-  m_vecList->Copy(pList);
+  m_vecList->Append(pList);
+
+  m_viewControl.SetItems(*m_vecList);
 }
 
 int CGUIDialogSelect::GetSelectedItem() const
@@ -211,7 +218,7 @@ const CFileItemPtr CGUIDialogSelect::GetSelectedFileItem() const
 {
   if (m_selectedItem)
     return m_selectedItem;
-  return CFileItemPtr(new CFileItem);
+  return std::make_shared<CFileItem>();
 }
 
 const std::vector<int>& CGUIDialogSelect::GetSelectedItems() const
@@ -222,12 +229,35 @@ const std::vector<int>& CGUIDialogSelect::GetSelectedItems() const
 void CGUIDialogSelect::EnableButton(bool enable, int label)
 {
   m_bButtonEnabled = enable;
+  m_buttonLabel = g_localizeStrings.Get(label);
+}
+
+void CGUIDialogSelect::EnableButton(bool enable, const std::string& label)
+{
+  m_bButtonEnabled = enable;
   m_buttonLabel = label;
+}
+
+void CGUIDialogSelect::EnableButton2(bool enable, int label)
+{
+  m_bButton2Enabled = enable;
+  m_button2Label = g_localizeStrings.Get(label);
+}
+
+void CGUIDialogSelect::EnableButton2(bool enable, const std::string& label)
+{
+  m_bButton2Enabled = enable;
+  m_button2Label = label;
 }
 
 bool CGUIDialogSelect::IsButtonPressed()
 {
   return m_bButtonPressed;
+}
+
+bool CGUIDialogSelect::IsButton2Pressed()
+{
+  return m_bButton2Pressed;
 }
 
 void CGUIDialogSelect::Sort(bool bSortOrder /*=true*/)
@@ -237,7 +267,7 @@ void CGUIDialogSelect::Sort(bool bSortOrder /*=true*/)
 
 void CGUIDialogSelect::SetSelected(int iSelected)
 {
-  if (iSelected < 0 || iSelected >= (int)m_vecList->Size() ||
+  if (iSelected < 0 || iSelected >= m_vecList->Size() ||
       m_vecList->Get(iSelected).get() == NULL)
     return;
 
@@ -264,7 +294,7 @@ void CGUIDialogSelect::SetSelected(const std::string &strSelectedLabel)
   }
 }
 
-void CGUIDialogSelect::SetSelected(std::vector<int> selectedIndexes)
+void CGUIDialogSelect::SetSelected(const std::vector<int>& selectedIndexes)
 {
   for (auto i : selectedIndexes)
     SetSelected(i);
@@ -284,6 +314,11 @@ void CGUIDialogSelect::SetUseDetails(bool useDetails)
 void CGUIDialogSelect::SetMultiSelection(bool multiSelection)
 {
   m_multiSelection = multiSelection;
+}
+
+void CGUIDialogSelect::SetButtonFocus(bool buttonFocus)
+{
+  m_focusToButton = buttonFocus;
 }
 
 CGUIControl *CGUIDialogSelect::GetFirstFocusableControl(int id)
@@ -318,23 +353,41 @@ void CGUIDialogSelect::OnInitWindow()
   }
   m_viewControl.SetCurrentView(m_useDetails ? CONTROL_DETAILED_LIST : CONTROL_SIMPLE_LIST);
 
-  SET_CONTROL_LABEL(CONTROL_NUMBER_OF_ITEMS, StringUtils::Format("{} {}",
-      m_vecList->Size(), g_localizeStrings.Get(127).c_str()));
+  SET_CONTROL_LABEL(CONTROL_NUMBER_OF_ITEMS,
+                    StringUtils::Format("{} {}", m_vecList->Size(), g_localizeStrings.Get(127)));
 
   if (m_multiSelection)
     EnableButton(true, 186);
 
   if (m_bButtonEnabled)
   {
-    SET_CONTROL_LABEL(CONTROL_EXTRA_BUTTON, g_localizeStrings.Get(m_buttonLabel));
+    SET_CONTROL_LABEL(CONTROL_EXTRA_BUTTON, m_buttonLabel);
     SET_CONTROL_VISIBLE(CONTROL_EXTRA_BUTTON);
   }
   else
     SET_CONTROL_HIDDEN(CONTROL_EXTRA_BUTTON);
 
+  if (m_bButton2Enabled)
+  {
+    SET_CONTROL_LABEL(CONTROL_EXTRA_BUTTON2, m_button2Label);
+    SET_CONTROL_VISIBLE(CONTROL_EXTRA_BUTTON2);
+  }
+  else
+    SET_CONTROL_HIDDEN(CONTROL_EXTRA_BUTTON2);
+
   SET_CONTROL_LABEL(CONTROL_CANCEL_BUTTON, g_localizeStrings.Get(222));
 
   CGUIDialogBoxBase::OnInitWindow();
+
+  // focus one of the buttons if explicitly requested
+  // ATTENTION: this must be done after calling CGUIDialogBoxBase::OnInitWindow()
+  if (m_focusToButton)
+  {
+    if (m_bButtonEnabled)
+      SET_CONTROL_FOCUS(CONTROL_EXTRA_BUTTON, 0);
+    else
+      SET_CONTROL_FOCUS(CONTROL_CANCEL_BUTTON, 0);
+  }
 
   // if nothing is selected, select first item
   m_viewControl.SetSelectedItem(std::max(GetSelectedItem(), 0));

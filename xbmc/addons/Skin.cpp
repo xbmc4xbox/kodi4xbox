@@ -34,6 +34,7 @@
 #include "utils/log.h"
 
 #include <charconv>
+#include <memory>
 
 #define XML_SETTINGS      "settings"
 #define XML_SETTING       "setting"
@@ -157,7 +158,7 @@ CSkinInfo::CSkinInfo(const AddonInfoPtr& addonInfo,
     m_effectsSlowDown(1.f),
     m_debugging(false)
 {
-  m_settingsUpdateHandler.reset(new CSkinSettingUpdateHandler(*this));
+  m_settingsUpdateHandler = std::make_unique<CSkinSettingUpdateHandler>(*this);
 }
 
 CSkinInfo::CSkinInfo(const AddonInfoPtr& addonInfo) : CAddon(addonInfo, AddonType::SKIN)
@@ -193,7 +194,7 @@ CSkinInfo::CSkinInfo(const AddonInfoPtr& addonInfo) : CAddon(addonInfo, AddonTyp
 
   m_debugging = Type(AddonType::SKIN)->GetValue("@debugging").asBoolean();
 
-  m_settingsUpdateHandler.reset(new CSkinSettingUpdateHandler(*this));
+  m_settingsUpdateHandler = std::make_unique<CSkinSettingUpdateHandler>(*this);
   LoadStartupWindows(addonInfo);
 }
 
@@ -235,7 +236,7 @@ void CSkinInfo::Start()
   if (!m_resolutions.empty())
   {
     // find the closest resolution
-    const RESOLUTION_INFO &target = g_graphicsContext.GetResInfo();
+    const RESOLUTION_INFO &target = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo();
     RESOLUTION_INFO& res = *std::min_element(m_resolutions.begin(), m_resolutions.end(), closestRes(target));
     m_currentAspect = res.strId;
   }
@@ -256,7 +257,7 @@ std::string CSkinInfo::GetSkinPath(const std::string& strFile, RESOLUTION_INFO *
     res = &tempRes;
 
   // find the closest resolution
-  const RESOLUTION_INFO &target = g_graphicsContext.GetResInfo();
+  const RESOLUTION_INFO &target = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo();
   *res = *std::min_element(m_resolutions.begin(), m_resolutions.end(), closestRes(target));
 
   std::string strPath = URIUtils::AddFileToFolder(strPathToUse, res->strMode, strFile);
@@ -279,21 +280,23 @@ void CSkinInfo::LoadIncludes()
   std::string includesPath =
       CSpecialProtocol::TranslatePathConvertCase(GetSkinPath("Includes.xml"));
   CLog::Log(LOGINFO, "Loading skin includes from {}", includesPath);
-  m_includes.ClearIncludes();
-  m_includes.LoadIncludes(includesPath);
+  m_includes.Clear();
+  m_includes.Load(includesPath);
 }
 
 void CSkinInfo::LoadTimers()
 {
+  m_skinTimerManager =
+      std::make_unique<CSkinTimerManager>(CServiceBroker::GetGUI()->GetInfoManager());
   const std::string timersPath =
       CSpecialProtocol::TranslatePathConvertCase(GetSkinPath("Timers.xml"));
   CLog::LogF(LOGINFO, "Trying to load skin timers from {}", timersPath);
-  m_skinTimerManager.LoadTimers(timersPath);
+  m_skinTimerManager->LoadTimers(timersPath);
 }
 
 void CSkinInfo::ProcessTimers()
 {
-  m_skinTimerManager.Process();
+  m_skinTimerManager->Process();
 }
 void CSkinInfo::ResolveIncludes(TiXmlElement* node,
                                 std::map<INFO::InfoPtr, bool>* xmlIncludeConditions /* = nullptr */)
@@ -301,7 +304,7 @@ void CSkinInfo::ResolveIncludes(TiXmlElement* node,
   if(xmlIncludeConditions)
     xmlIncludeConditions->clear();
 
-  m_includes.ResolveIncludes(node, xmlIncludeConditions);
+  m_includes.Resolve(node, xmlIncludeConditions);
 }
 
 int CSkinInfo::GetStartWindow() const
@@ -418,27 +421,27 @@ void CSkinInfo::OnPostInstall(bool update, bool modal)
 
 void CSkinInfo::Unload()
 {
-  m_skinTimerManager.Stop();
+  m_skinTimerManager->Stop();
 }
 
 bool CSkinInfo::TimerIsRunning(const std::string& timer) const
 {
-  return m_skinTimerManager.TimerIsRunning(timer);
+  return m_skinTimerManager->TimerIsRunning(timer);
 }
 
 float CSkinInfo::GetTimerElapsedSeconds(const std::string& timer) const
 {
-  return m_skinTimerManager.GetTimerElapsedSeconds(timer);
+  return m_skinTimerManager->GetTimerElapsedSeconds(timer);
 }
 
 void CSkinInfo::TimerStart(const std::string& timer) const
 {
-  m_skinTimerManager.TimerStart(timer);
+  m_skinTimerManager->TimerStart(timer);
 }
 
 void CSkinInfo::TimerStop(const std::string& timer) const
 {
-  m_skinTimerManager.TimerStop(timer);
+  m_skinTimerManager->TimerStop(timer);
 }
 
 void CSkinInfo::SettingOptionsSkinColorsFiller(const SettingConstPtr& setting,
@@ -488,6 +491,42 @@ void CSkinInfo::SettingOptionsSkinColorsFiller(const SettingConstPtr& setting,
   }
 }
 
+namespace
+{
+void GetFontsetsFromFile(const std::string& fontsetFilePath,
+                         std::vector<StringSettingOption>& list,
+                         const std::string& settingValue,
+                         bool* currentValueSet)
+{
+  CXBMCTinyXML xmlDoc;
+  if (xmlDoc.LoadFile(fontsetFilePath))
+  {
+    TiXmlElement* rootElement = xmlDoc.RootElement();
+    g_SkinInfo->ResolveIncludes(rootElement);
+    if (rootElement && (rootElement->ValueStr() == "fonts"))
+    {
+      const TiXmlElement* fontsetElement = rootElement->FirstChildElement("fontset");
+      while (fontsetElement)
+      {
+        const char* idAttr = fontsetElement->Attribute("id");
+        const char* idLocAttr = fontsetElement->Attribute("idloc");
+        if (idAttr)
+        {
+          if (idLocAttr)
+            list.emplace_back(g_localizeStrings.Get(atoi(idLocAttr)), idAttr);
+          else
+            list.emplace_back(idAttr, idAttr);
+
+          if (StringUtils::EqualsNoCase(idAttr, settingValue))
+            *currentValueSet = true;
+        }
+        fontsetElement = fontsetElement->NextSiblingElement("fontset");
+      }
+    }
+  }
+}
+} // unnamed namespace
+
 void CSkinInfo::SettingOptionsSkinFontsFiller(const SettingConstPtr& setting,
                                               std::vector<StringSettingOption>& list,
                                               std::string& current,
@@ -496,44 +535,24 @@ void CSkinInfo::SettingOptionsSkinFontsFiller(const SettingConstPtr& setting,
   if (!g_SkinInfo)
     return;
 
-  std::string settingValue = std::static_pointer_cast<const CSettingString>(setting)->GetValue();
+  const std::string settingValue =
+      std::static_pointer_cast<const CSettingString>(setting)->GetValue();
   bool currentValueSet = false;
-  std::string strPath = g_SkinInfo->GetSkinPath("Font.xml");
 
-  CXBMCTinyXML xmlDoc;
-  if (!xmlDoc.LoadFile(strPath))
-  {
-    CLog::Log(LOGERROR, "FillInSkinFonts: Couldn't load {}", strPath);
-    return;
-  }
+  // Look for fontsets that are defined in the skin's Font.xml file
+  const std::string fontsetFilePath = g_SkinInfo->GetSkinPath("Font.xml");
+  GetFontsetsFromFile(fontsetFilePath, list, settingValue, &currentValueSet);
 
-  const TiXmlElement* pRootElement = xmlDoc.RootElement();
-  if (!pRootElement || pRootElement->ValueStr() != "fonts")
-  {
-    CLog::Log(LOGERROR, "FillInSkinFonts: file {} doesn't start with <fonts>", strPath);
-    return;
-  }
-
-  const TiXmlElement *pChild = pRootElement->FirstChildElement("fontset");
-  while (pChild)
-  {
-    const char* idAttr = pChild->Attribute("id");
-    const char* idLocAttr = pChild->Attribute("idloc");
-    if (idAttr != nullptr)
-    {
-      if (idLocAttr)
-        list.emplace_back(g_localizeStrings.Get(atoi(idLocAttr)), idAttr);
-      else
-        list.emplace_back(idAttr, idAttr);
-
-      if (StringUtils::EqualsNoCase(idAttr, settingValue))
-        currentValueSet = true;
-    }
-    pChild = pChild->NextSiblingElement("fontset");
-  }
+  // Look for additional fontsets that are defined in .xml files in the skin's fonts directory
+  CFileItemList xmlFileItems;
+  CDirectory::GetDirectory(CSpecialProtocol::TranslatePath("special://skin/fonts"), xmlFileItems,
+                           ".xml", DIR_FLAG_DEFAULTS);
+  for (int i = 0; i < xmlFileItems.Size(); i++)
+    GetFontsetsFromFile(xmlFileItems[i]->GetPath(), list, settingValue, &currentValueSet);
 
   if (list.empty())
   { // Since no fontset is defined, there is no selection of a fontset, so disable the component
+    CLog::LogF(LOGERROR, "No fontsets found");
     list.emplace_back(g_localizeStrings.Get(13278), "");
     current = "";
     currentValueSet = true;

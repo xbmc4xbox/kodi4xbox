@@ -14,10 +14,12 @@
 #include "addons/AddonManager.h"
 #include "addons/gui/GUIWindowAddonBrowser.h"
 #include "addons/settings/SettingUrlEncodedString.h"
+#include "dialogs/GUIDialogColorPicker.h"
 #include "dialogs/GUIDialogFileBrowser.h"
 #include "dialogs/GUIDialogNumeric.h"
 #include "dialogs/GUIDialogSelect.h"
 #include "dialogs/GUIDialogSlider.h"
+#include "guilib/GUIColorButtonControl.h"
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIEditControl.h"
 #include "guilib/GUIImage.h"
@@ -122,8 +124,7 @@ static bool GetIntegerOptions(const SettingConstPtr& setting,
       const TranslatableIntegerSettingOptions& settingOptions =
           pSettingInt->GetTranslatableOptions();
       for (const auto& option : settingOptions)
-        options.push_back(
-            IntegerSettingOption(Localize(option.label, localizer, option.addonId), option.value));
+        options.emplace_back(Localize(option.label, localizer, option.addonId), option.value);
       break;
     }
 
@@ -161,7 +162,7 @@ static bool GetIntegerOptions(const SettingConstPtr& setting,
         else
           strLabel = StringUtils::Format(control->GetFormatString(), i);
 
-        options.push_back(IntegerSettingOption(strLabel, i));
+        options.emplace_back(strLabel, i);
       }
 
       break;
@@ -228,7 +229,7 @@ static bool GetStringOptions(const SettingConstPtr& setting,
       const TranslatableStringSettingOptions& settingOptions =
           pSettingString->GetTranslatableOptions();
       for (const auto& option : settingOptions)
-        options.push_back(StringSettingOption(Localize(option.first, localizer), option.second));
+        options.emplace_back(Localize(option.first, localizer), option.second);
       break;
     }
 
@@ -293,11 +294,7 @@ static bool GetStringOptions(const SettingConstPtr& setting,
 CGUIControlBaseSetting::CGUIControlBaseSetting(int id,
                                                std::shared_ptr<CSetting> pSetting,
                                                ILocalizer* localizer)
-  : m_id(id),
-    m_pSetting(std::move(pSetting)),
-    m_localizer(localizer),
-    m_delayed(false),
-    m_valid(true)
+  : m_id(id), m_pSetting(std::move(pSetting)), m_localizer(localizer)
 {
 }
 
@@ -366,6 +363,64 @@ void CGUIControlRadioButtonSetting::Update(bool fromControl, bool updateDisplayO
   CGUIControlBaseSetting::Update(fromControl, updateDisplayOnly);
 
   m_pRadioButton->SetSelected(std::static_pointer_cast<CSettingBool>(m_pSetting)->GetValue());
+}
+
+CGUIControlColorButtonSetting::CGUIControlColorButtonSetting(
+    CGUIColorButtonControl* pColorControl,
+    int id,
+    const std::shared_ptr<CSetting>& pSetting,
+    ILocalizer* localizer)
+  : CGUIControlBaseSetting(id, pSetting, localizer)
+{
+  m_pColorButton = pColorControl;
+  if (!m_pColorButton)
+    return;
+
+  m_pColorButton->SetID(id);
+}
+
+CGUIControlColorButtonSetting::~CGUIControlColorButtonSetting() = default;
+
+bool CGUIControlColorButtonSetting::OnClick()
+{
+  if (!m_pColorButton)
+    return false;
+
+  std::shared_ptr<CSettingString> settingHexColor =
+      std::static_pointer_cast<CSettingString>(m_pSetting);
+
+  CGUIDialogColorPicker* dialog =
+      CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIDialogColorPicker>(
+          WINDOW_DIALOG_COLOR_PICKER);
+  if (!dialog)
+    return false;
+
+  dialog->Reset();
+  dialog->SetHeading(CVariant{Localize(m_pSetting->GetLabel())});
+  dialog->LoadColors();
+  std::string hexColor;
+  if (settingHexColor)
+    hexColor = settingHexColor.get()->GetValue();
+  dialog->SetSelectedColor(hexColor);
+  dialog->Open();
+
+  if (!dialog->IsConfirmed())
+    return false;
+
+  SetValid(
+      std::static_pointer_cast<CSettingString>(m_pSetting)->SetValue(dialog->GetSelectedColor()));
+  return IsValid();
+}
+
+void CGUIControlColorButtonSetting::Update(bool fromControl, bool updateDisplayOnly)
+{
+  if (fromControl || !m_pColorButton)
+    return;
+
+  CGUIControlBaseSetting::Update(fromControl, updateDisplayOnly);
+  // Set the color to apply to the preview color box
+  m_pColorButton->SetImageBoxColor(
+      std::static_pointer_cast<CSettingString>(m_pSetting)->GetValue());
 }
 
 CGUIControlSpinExSetting::CGUIControlSpinExSetting(CGUISpinControlEx* pSpin,
@@ -656,16 +711,13 @@ bool CGUIControlListSetting::OnClick()
       dialog->SetHeading(CVariant{ Localize(m_pSetting->GetLabel()) });
       dialog->SetItems(options);
       dialog->SetMultiSelection(control->CanMultiSelect());
-#if 0
       dialog->EnableButton2(bAllowNewOption, strAddButton);
-#endif
 
       dialog->Open();
 
       if (!dialog->IsConfirmed())
         return false;
 
-#if 0
       if (dialog->IsButton2Pressed())
       {
         // Get new list value
@@ -694,7 +746,6 @@ bool CGUIControlListSetting::OnClick()
         }
       }
       bRepeat = dialog->IsButton2Pressed();
-#endif
     }
   }
 
@@ -1248,7 +1299,7 @@ CGUIControlEditSetting::CGUIControlEditSetting(CGUIEditControl* pEdit,
   else if (controlFormat == "md5")
     inputType = CGUIEditControl::INPUT_TYPE_PASSWORD_MD5;
 
-  m_pEdit->SetInputType(inputType, heading);
+  m_pEdit->SetInputType(inputType, localizer ? CVariant{localizer->Localize(heading)} : heading);
 
   // this will automatically trigger validation so it must be executed after
   // having set the value of the control based on the value of the setting

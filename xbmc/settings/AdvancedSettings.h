@@ -8,20 +8,16 @@
 
 #pragma once
 
+#include "pictures/PictureScalingAlgorithm.h"
 #include "settings/lib/ISettingCallback.h"
 #include "settings/lib/ISettingsHandler.h"
 #include "utils/SortUtils.h"
 
+#include <cstdint>
 #include <set>
 #include <string>
 #include <utility>
 #include <vector>
-
-#define CACHE_BUFFER_MODE_INTERNET 0
-#define CACHE_BUFFER_MODE_ALL 1
-#define CACHE_BUFFER_MODE_TRUE_INTERNET 2
-#define CACHE_BUFFER_MODE_NONE 3
-#define CACHE_BUFFER_MODE_NETWORK 4
 
 class CProfileManager;
 class CSettingsManager;
@@ -158,7 +154,8 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
     int m_videoIgnoreSecondsAtStart;
     float m_videoIgnorePercentAtEnd;
     float m_audioApplyDrc;
-    unsigned int m_maxPassthroughOffSyncDuration = 10; // when 10 ms off adjust
+    unsigned int m_maxPassthroughOffSyncDuration = 50; // when 50 ms off adjust
+    bool m_AllowMultiChannelFloat = false; // Android only switch to be removed in v22
     bool m_superviseAudioDelay = false; // Android only to correct broken audio firmwares
 
     int   m_videoVDPAUScaling;
@@ -205,6 +202,7 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
     bool m_fullScreenOnMovieStart;
     std::string m_cachePath;
     std::string m_videoCleanDateTimeRegExp;
+    std::string m_videoFilenameIdentifierRegExp;
     std::vector<std::string> m_videoCleanStringRegExps;
     std::vector<std::string> m_videoExcludeFromListingRegExps;
     std::vector<std::string> m_allExcludeFromScanRegExps;
@@ -228,6 +226,7 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
 
     unsigned int m_fanartRes; ///< \brief the maximal resolution to cache fanart at (assumes 16x9)
     unsigned int m_imageRes;  ///< \brief the maximal resolution to cache images at (assumes 16x9)
+    CPictureScalingAlgorithm::Algorithm m_imageScalingAlgorithm;
     unsigned int
         m_imageQualityJpeg; ///< \brief the stored jpeg quality the lower the better (default: 4)
 
@@ -241,8 +240,6 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
     bool m_bShoutcastArt;
 
     std::string m_musicThumbs;
-    std::vector<std::string> m_musicArtistExtraArt;
-    std::vector<std::string> m_musicAlbumExtraArt;
 
     int m_iMusicLibraryRecentlyAddedItems;
     int m_iMusicLibraryDateAdded;
@@ -250,6 +247,7 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
     bool m_bMusicLibraryCleanOnUpdate;
     bool m_bMusicLibraryArtistSortOnUpdate;
     bool m_bMusicLibraryUseISODates;
+    bool m_bMusicLibraryArtistNavigatesToSongs;
     std::string m_strMusicLibraryAlbumFormat;
     bool m_prioritiseAPEv2tags;
     std::string m_musicItemSeparator;
@@ -263,12 +261,6 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
     bool m_bVideoLibraryUseFastHash;
     bool m_bVideoLibraryImportWatchedState{true};
     bool m_bVideoLibraryImportResumePoint{true};
-    std::vector<std::string> m_videoEpisodeExtraArt;
-    std::vector<std::string> m_videoTvShowExtraArt;
-    std::vector<std::string> m_videoTvSeasonExtraArt;
-    std::vector<std::string> m_videoMovieExtraArt;
-    std::vector<std::string> m_videoMovieSetExtraArt;
-    std::vector<std::string> m_videoMusicVideoExtraArt;
 
     bool m_bVideoScannerIgnoreErrors;
     int m_iVideoLibraryDateAdded;
@@ -340,12 +332,8 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
     bool m_guiVisualizeDirtyRegions;
     int  m_guiAlgorithmDirtyRegions;
     bool m_guiSmartRedraw;
+    bool m_guiVideoLayoutTransparent{false};
     unsigned int m_addonPackageFolderSize;
-
-    unsigned int m_cacheMemSize;
-    unsigned int m_cacheBufferMode;
-    unsigned int m_cacheChunkSize;
-    float m_cacheReadFactor;
 
     bool m_jsonOutputCompact;
     unsigned int m_jsonTcpPort;
@@ -386,5 +374,4 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
     void Initialize();
     void Clear();
     void SetExtraArtwork(const TiXmlElement* arttypes, std::vector<std::string>& artworkMap);
-    void MigrateOldArtSettings();
 };

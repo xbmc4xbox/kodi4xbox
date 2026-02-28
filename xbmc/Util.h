@@ -22,11 +22,16 @@
 #define LEGAL_WIN32_COMPAT    1
 #define LEGAL_FATX            2
 
-#define ARRAY_SIZE(X)         (sizeof(X)/sizeof((X)[0]))
-
 class CFileItem;
 class CFileItemList;
 class CURL;
+
+struct ExternalStreamInfo
+{
+  std::string name;
+  std::string language;
+  unsigned int flag = 0;
+};
 
 class CUtil
 {
@@ -38,10 +43,36 @@ public:
                           std::string& strYear,
                           bool bRemoveExtension = false,
                           bool bCleanChars = true);
+  static bool GetFilenameIdentifier(const std::string& fileName,
+                                    std::string& identifierType,
+                                    std::string& identifier);
+  static bool GetFilenameIdentifier(const std::string& fileName,
+                                    std::string& identifierType,
+                                    std::string& identifier,
+                                    std::string& match);
+  static bool HasFilenameIdentifier(const std::string& fileName);
   static std::string GetTitleFromPath(const CURL& url, bool bIsFolder = false);
   static std::string GetTitleFromPath(const std::string& strFileNameAndPath, bool bIsFolder = false);
+
+  /*! \brief Return the disc number in case the last segment of given path ends with 'Disc n'.
+   Will look for 'Disc', 'Disk' and the locale specific spelling.
+   \return the disc number as string if found, empty string otherwise.
+   */
+  static std::string GetDiscNumberFromPath(const std::string& path);
+
+  /*! \brief Remove last segment of the given path if it matches 'Disc n'.
+   Will look for 'Disc', 'Disk' and the locale specific spelling.
+   \return the given path with last segment removed if it matches 'Disc n', unchanged path otherwise.
+   */
+  static std::string RemoveTrailingDiscNumberSegmentFromPath(std::string path);
+
   static void GetQualifiedFilename(const std::string &strBasePath, std::string &strFilename);
+  static void RunShortcut(const char* szPath);
+  static std::string GetHomePath(
+      const std::string& strTarget = "KODI_HOME"); // default target is "KODI_HOME"
   static bool ExcludeFileOrFolder(const std::string& strFileOrFolder, const std::vector<std::string>& regexps);
+  static void GetFileAndProtocol(const std::string& strURL, std::string& strDir);
+  static int GetDVDIfoTitle(const std::string& strPathFile);
 
   static bool IsPicture(const std::string& strFile);
   /// Get resolved filesystem location of splash image
@@ -52,20 +83,60 @@ public:
    \return md5 sum of the file
    */
   static std::string GetFileDigest(const std::string& strPath, KODI::UTILITY::CDigest::Type type);
+  static bool GetDirectoryName(const std::string& strFileName, std::string& strDescription);
   static void GetDVDDriveIcon(const std::string& strPath, std::string& strIcon);
   static void RemoveTempFiles();
 
-  static std::string ValidatePath(const std::string &path, bool bFixDoubleSlashes = false); ///< return a validated path, with correct directory separators.
+  static void ClearSubtitles();
+  static void ScanForExternalSubtitles(const std::string& strMovie, std::vector<std::string>& vecSubtitles );
 
+  /** \brief Retrieves stream info of external associated files, e.g., subtitles, for a given video.
+  *   \param[in] videoPath The full path of the video file.
+  *   \param[in] associatedFile A file that provides additional streams for the given video file.
+  *   \return stream info for the given associatedFile
+  */
+  static ExternalStreamInfo GetExternalStreamDetailsFromFilename(const std::string& videoPath, const std::string& associatedFile);
+  static bool FindVobSubPair( const std::vector<std::string>& vecSubtitles, const std::string& strIdxPath, std::string& strSubPath );
+  static bool IsVobSub(const std::vector<std::string>& vecSubtitles, const std::string& strSubPath);
+  static std::string GetVobSubSubFromIdx(const std::string& vobSubIdx);
+  static std::string GetVobSubIdxFromSub(const std::string& vobSub);
+
+  /** \brief Retrieves paths of external audio files for a given video.
+  *   \param[in] videoPath The full path of the video file.
+  *   \param[out] vecAudio A vector containing the full paths of all found external audio files.
+  */
+  static void ScanForExternalAudio(const std::string& videoPath, std::vector<std::string>& vecAudio);
+  static int64_t ToInt64(uint32_t high, uint32_t low);
   static std::string GetNextFilename(const std::string &fn_template, int max);
-
-#if defined(TARGET_WINDOWS) || defined(_XBOX)
-  static std::string MakeLegalFileName(const std::string &strFile, int LegalType=LEGAL_WIN32_COMPAT);
-  static std::string MakeLegalPath(const std::string &strPath, int LegalType=LEGAL_WIN32_COMPAT);
-#else
-  static std::string MakeLegalFileName(const std::string &strFile, int LegalType=LEGAL_NONE);
-  static std::string MakeLegalPath(const std::string &strPath, int LegalType=LEGAL_NONE);
+  static std::string GetNextPathname(const std::string &path_template, int max);
+  static void StatToStatI64(struct _stati64 *result, struct stat *stat);
+  static void StatToStat64(struct __stat64 *result, const struct stat *stat);
+  static void Stat64ToStatI64(struct _stati64 *result, struct __stat64 *stat);
+  static void StatI64ToStat64(struct __stat64 *result, struct _stati64 *stat);
+  static void Stat64ToStat(struct stat *result, struct __stat64 *stat);
+#ifdef TARGET_WINDOWS
+  static void Stat64ToStat64i32(struct _stat64i32 *result, struct __stat64 *stat);
 #endif
+  static bool CreateDirectoryEx(const std::string& strPath);
+
+#ifdef TARGET_WINDOWS
+  static std::string MakeLegalFileName(std::string strFile, int LegalType = LEGAL_WIN32_COMPAT);
+  static std::string MakeLegalPath(std::string strPath, int LegalType = LEGAL_WIN32_COMPAT);
+#else
+  static std::string MakeLegalFileName(std::string strFile, int LegalType = LEGAL_NONE);
+  static std::string MakeLegalPath(std::string strPath, int LegalType = LEGAL_NONE);
+#endif
+  static std::string ValidatePath(
+      std::string path,
+      bool bFixDoubleSlashes =
+          false); ///< return a validated path, with correct directory separators.
+
+  /*!
+   * \brief Check if a filename contains a supported font extension.
+   * \param filename The filename to check
+   * \return True if it is supported, otherwise false
+   */
+  static bool IsSupportedFontExtension(const std::string& fileName);
 
   /*! \brief Split a comma separated parameter list into separate parameters.
    Takes care of the case where we may have a quoted string containing commas, or we may
@@ -82,7 +153,7 @@ public:
    \param paramString the string to break up
    \param parameters the returned parameters
    */
-  static void SplitParams(const std::string &paramString, std::vector<std::string> &parameters);
+  static void SplitParams(const std::string& paramString, std::vector<std::string>& parameters);
   static int GetMatchingSource(const std::string& strPath, VECSOURCES& VECSOURCES, bool& bIsSourceName);
   static std::string TranslateSpecialSource(const std::string &strSpecial);
   static void DeleteDirectoryCache(const std::string &prefix = "");
@@ -123,6 +194,23 @@ public:
   // return -1 on error, valid range is 1-3999
   static int TranslateRomanNumeral(const char* roman_numeral);
 
+#if defined(TARGET_POSIX) && !defined(TARGET_DARWIN_TVOS)
+  //
+  // Forks to execute a shell command.
+  //
+  static bool Command(const std::vector<std::string>& arrArgs, bool waitExit = false);
+
+  //
+  // Forks to execute an unparsed shell command line.
+  //
+  static bool RunCommandLine(const std::string& cmdLine, bool waitExit = false);
+#endif
+  static std::string ResolveExecutablePath();
+  static std::string GetFrameworksPath(bool forPython = false);
+
+  static bool CanBindPrivileged();
+  static bool ValidatePort(int port);
+
   /*!
    * \brief Thread-safe random number generation
    */
@@ -138,6 +226,55 @@ public:
   static void CopyUserDataIfNeeded(const std::string& strPath,
                                    const std::string& file,
                                    const std::string& destname = "");
+
+#if !defined(TARGET_WINDOWS)
+private:
+  static unsigned int s_randomSeed;
+#endif
+
+  protected:
+    /** \brief Retrieves the base path and the filename of a given video.
+    *   \param[in]  videoPath The full path of the video file.
+    *   \param[out] basePath The base path of the given video.
+    *   \param[out] videoFileName The file name of the given video..
+    */
+    static void GetVideoBasePathAndFileName(const std::string& videoPath,
+                                            std::string& basePath,
+                                            std::string& videoFileName);
+
+    /** \brief Retrieves FileItems that could contain associated files of a given video.
+    *   \param[in]  videoPath The full path of the video file.
+    *   \param[in]  item_exts A | separated string of extensions specifying the associated files.
+    *   \param[in]  sub_dirs A vector of sub directory names to look for.
+    *   \param[out] items A List of FileItems to scan for associated files.
+    */
+    static void GetItemsToScan(const std::string& videoPath,
+                               const std::string& item_exts,
+                               const std::vector<std::string>& sub_dirs,
+                               CFileItemList& items);
+
+    /** \brief Searches for associated files of a given video.
+    *   \param[in]  videoName The name of the video file.
+    *   \param[in]  items A List of FileItems to scan for associated files.
+    *   \param[in]  item_exts A vector of extensions specifying the associated files.
+    *   \param[out] associatedFiles A vector containing the full paths of all found associated files.
+    */
+    static void ScanPathsForAssociatedItems(const std::string& videoName,
+                                            const CFileItemList& items,
+                                            const std::vector<std::string>& item_exts,
+                                            std::vector<std::string>& associatedFiles);
+
+    /** \brief Searches in an archive for associated files of a given video.
+    *   \param[in]  strArchivePath The full path of the archive.
+    *   \param[in]  videoNameNoExt The filename of the video without extension for which associated files should be retrieved.
+    *   \param[in]  item_exts A vector of extensions specifying the associated files.
+    *   \param[out] associatedFiles A vector containing the full paths of all found associated files.
+    */
+    static int ScanArchiveForAssociatedItems(const std::string& strArchivePath,
+                                             const std::string& videoNameNoExt,
+                                             const std::vector<std::string>& item_exts,
+                                             std::vector<std::string>& associatedFiles);
+
 };
 
 

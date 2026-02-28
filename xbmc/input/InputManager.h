@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2018 Team Kodi
+ *  Copyright (C) 2005-2024 Team Kodi
  *  This file is part of Kodi - https://kodi.tv
  *
  *  SPDX-License-Identifier: GPL-2.0-or-later
@@ -8,27 +8,55 @@
 
 #pragma once
 
-#include "input/Key.h"
 #include "input/actions/Action.h"
-#include "interfaces/IActionListener.h"
+#include "input/actions/interfaces/IActionListener.h"
+#include "input/keyboard/KeyboardStat.h"
+#include "input/keymaps/ButtonStat.h"
+#include "input/mouse/MouseStat.h"
+#include "input/mouse/interfaces/IMouseInputProvider.h"
 #include "settings/lib/ISettingCallback.h"
 #include "threads/CriticalSection.h"
 #include "utils/Observer.h"
+#include "windowing/XBMC_events.h"
 
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
 
-class CButtonTranslator;
 class CKey;
 class CProfileManager;
+
+namespace KODI
+{
+
+namespace KEYBOARD
+{
+class IKeyboardDriverHandler;
+}
+
+namespace KEYMAP
+{
+class CButtonTranslator;
+class CCustomControllerTranslator;
+class CJoystickMapper;
+class CTouchTranslator;
+class IKeymapEnvironment;
+class IWindowKeymap;
+} // namespace KEYMAP
+
+namespace MOUSE
+{
+class IMouseDriverHandler;
+}
+} // namespace KODI
 
 /// \addtogroup input
 /// \{
 
 /*!
- * \ingroup input keyboard mouse touch joystick
+ * \ingroup input keyboard mouse touch joystick keymap
+ *
  * \brief Main input processing class.
  *
  * This class consolidates all input generated from different sources such as
@@ -37,13 +65,31 @@ class CProfileManager;
  * \copydoc keyboard
  * \copydoc mouse
  */
-class CInputManager : public ISettingCallback, public IActionListener, public Observable
+class CInputManager : public ISettingCallback,
+                      public KODI::ACTION::IActionListener,
+                      public Observable
 {
 public:
   CInputManager();
   CInputManager(const CInputManager&) = delete;
   CInputManager const& operator=(CInputManager const&) = delete;
   ~CInputManager() override;
+
+  /*! \brief decode a mouse event and reset idle timers.
+   *
+   * \param windowId Currently active window
+   * \return true if event is handled, false otherwise
+   */
+  bool ProcessMouse(int windowId);
+
+  /*! \brief decode an event from the event service, this can be mouse, key, joystick, reset idle
+   * timers.
+   *
+   * \param windowId Currently active window
+   * \param frameTime Time in seconds since last call
+   * \return true if event is handled, false otherwise
+   */
+  bool ProcessEventServer(int windowId, float frameTime);
 
   /*! \brief decode an event from peripherals.
    *
@@ -70,6 +116,14 @@ public:
    */
   void Deinitialize();
 
+  /*! \brief Handle an input event
+   *
+   * \param newEvent event details
+   * \return true on successfully handled event
+   * \sa XBMC_Event
+   */
+  bool OnEvent(XBMC_Event& newEvent);
+
   /*! \brief Control if the mouse is actively used or not
    *
    * \param[in] active sets mouse active or inactive
@@ -82,11 +136,42 @@ public:
    */
   void SetMouseEnabled(bool mouseEnabled = true);
 
+  /*! \brief Set the current state of the mouse such as click, drag operation
+   *
+   * \param[in] mouseState which state the mouse should be set to
+   * \sa MOUSE_STATE
+   */
+  void SetMouseState(MOUSE_STATE mouseState);
+
   /*! \brief Check if the mouse is currently active
    *
    * \return true if active, false otherwise
    */
   bool IsMouseActive();
+
+  /*! \brief Get the current state of the mouse, such as click or drag operation
+   *
+   * \return the current state of the mouse as a value from MOUSE_STATE
+   * \sa MOUSE_STATE
+   */
+  MOUSE_STATE GetMouseState();
+
+  /*! \brief Get the current mouse positions x and y coordinates
+   *
+   * \return a struct containing the x and y coordinates
+   * \sa MousePosition
+   */
+  MousePosition GetMousePosition();
+
+  /*! \brief Set the current screen resolution and pointer speed
+   *
+   * \param[in] maxX    screen width
+   * \param[in] maxY    screen height
+   * \param[in] speedX  mouse speed in x dimension
+   * \param[in] speedY  mouse speed in y dimension
+   * \return
+   */
+  void SetMouseResolution(int maxX, int maxY, float speedX, float speedY);
 
   /*! \brief Get the status of the controller-enable setting
    * \return True if controller input is enabled for the UI, false otherwise
@@ -114,6 +199,8 @@ public:
   void AddKeymap(const std::string& keymap);
   void RemoveKeymap(const std::string& keymap);
 
+  const KODI::KEYMAP::IKeymapEnvironment* KeymapEnvironment() const;
+
   /*! \brief Obtain the action configured for a given window and key
    *
    * \param window the window id
@@ -125,6 +212,17 @@ public:
    */
   CAction GetAction(int window, const CKey& key, bool fallback = true);
 
+  bool TranslateCustomControllerString(int windowId,
+                                       const std::string& controllerName,
+                                       int buttonId,
+                                       int& action,
+                                       std::string& strAction);
+
+  bool TranslateTouchAction(
+      int windowId, int touchAction, int touchPointers, int& action, std::string& actionString);
+
+  std::vector<std::shared_ptr<const KODI::KEYMAP::IWindowKeymap>> GetJoystickKeymaps() const;
+
   /*!
    * \brief Queue an action to be processed on the next call to Process()
    */
@@ -135,6 +233,12 @@ public:
 
   // implementation of IActionListener
   bool OnAction(const CAction& action) override;
+
+  void RegisterKeyboardDriverHandler(KODI::KEYBOARD::IKeyboardDriverHandler* handler);
+  void UnregisterKeyboardDriverHandler(KODI::KEYBOARD::IKeyboardDriverHandler* handler);
+
+  virtual void RegisterMouseDriverHandler(KODI::MOUSE::IMouseDriverHandler* handler);
+  virtual void UnregisterMouseDriverHandler(KODI::MOUSE::IMouseDriverHandler* handler);
 
 private:
   /*! \brief Process keyboard event and translate into an action
@@ -181,6 +285,9 @@ private:
    */
   void ProcessQueuedActions();
 
+  KODI::KEYBOARD::CKeyboardStat m_Keyboard;
+  KODI::KEYMAP::CButtonStat m_buttonStat;
+  CMouseStat m_Mouse;
   CKey m_LastKey;
 
   std::map<std::string, std::map<int, float>> m_lastAxisMap;
@@ -189,7 +296,16 @@ private:
   CCriticalSection m_actionMutex;
 
   // Button translation
-  std::unique_ptr<CButtonTranslator> m_buttonTranslator;
+  std::unique_ptr<KODI::KEYMAP::IKeymapEnvironment> m_keymapEnvironment;
+  std::unique_ptr<KODI::KEYMAP::CButtonTranslator> m_buttonTranslator;
+  std::unique_ptr<KODI::KEYMAP::CCustomControllerTranslator> m_customControllerTranslator;
+  std::unique_ptr<KODI::KEYMAP::CTouchTranslator> m_touchTranslator;
+  std::unique_ptr<KODI::KEYMAP::CJoystickMapper> m_joystickTranslator;
+
+  std::vector<KODI::KEYBOARD::IKeyboardDriverHandler*> m_keyboardHandlers;
+  std::vector<KODI::MOUSE::IMouseDriverHandler*> m_mouseHandlers;
+
+  std::unique_ptr<KODI::KEYBOARD::IKeyboardDriverHandler> m_keyboardEasterEgg;
 
   // Input state
   bool m_enableController = true;

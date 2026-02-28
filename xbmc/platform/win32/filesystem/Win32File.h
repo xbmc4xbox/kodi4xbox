@@ -38,8 +38,8 @@ namespace XFILE
     virtual bool Rename(const CURL& urlCurrentName, const CURL& urlNewName);
     virtual bool SetHidden(const CURL& url, bool hidden);
     virtual bool Exists(const CURL& url);
-    // virtual int Stat(const CURL& url, struct __stat64* statData);
-    // virtual int Stat(struct __stat64* statData);
+    virtual int Stat(const CURL& url, struct __stat64* statData);
+    virtual int Stat(struct __stat64* statData);
     virtual int GetChunkSize();
 
   protected:
@@ -48,11 +48,7 @@ namespace XFILE
     int64_t m_filePos;
     bool    m_allowWrite;
     // file path and name in win32 long form "\\?\D:\path\to\file.ext"
-#ifdef NXDK
-    std::string m_filepathnameW;
-#else
     std::wstring m_filepathnameW;
-#endif
     const bool m_smbFile; // true for SMB file, false for local file
     unsigned long m_lastSMBFileErr; // used for SMB file operations
   };

@@ -28,15 +28,19 @@
 #include "favourites/FavouritesService.h"
 #include "filesystem/Directory.h"
 #include "filesystem/FileDirectoryFactory.h"
+#include "filesystem/ZipManager.h"
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIKeyboardFactory.h"
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
 #include "input/InputManager.h"
+#include "input/actions/Action.h"
+#include "input/actions/ActionIDs.h"
 #include "interfaces/generic/ScriptInvocationManager.h"
 #include "messaging/ApplicationMessenger.h"
 #include "messaging/helpers/DialogOKHelper.h"
-#include "pictures/GUIWindowSlideShow.h"
+#include "network/Network.h"
+#include "pictures/SlideShowDelegator.h"
 #include "platform/Filesystem.h"
 #include "playlists/PlayList.h"
 #include "playlists/PlayListFactory.h"
@@ -84,8 +88,8 @@ namespace
 class CGetDirectoryItems : public IRunnable
 {
 public:
-  CGetDirectoryItems(XFILE::CVirtualDirectory &dir, CURL &url, CFileItemList &items)
-  : m_result(false), m_dir(dir), m_url(url), m_items(items)
+  CGetDirectoryItems(XFILE::CVirtualDirectory& dir, CURL& url, CFileItemList& items)
+    : m_dir(dir), m_url(url), m_items(items)
   {
   }
   void Run() override
@@ -96,7 +100,8 @@ public:
   {
     m_dir.CancelDirectory();
   }
-  bool m_result;
+  bool m_result = false;
+
 protected:
   XFILE::CVirtualDirectory &m_dir;
   CURL m_url;
@@ -188,7 +193,7 @@ bool CGUIWindowFileManager::OnAction(const CAction &action)
     }
     if (action.GetID() == ACTION_PLAYER_PLAY)
     {
-#ifdef HAS_DVD_DRIVE
+#ifdef HAS_OPTICAL_DRIVE
       if (m_vecItems[list]->Get(GetSelectedItem(list))->IsDVD())
         return MEDIA_DETECT::CAutorun::PlayDiscAskResume(m_vecItems[list]->Get(GetSelectedItem(list))->GetPath());
 #endif
@@ -458,7 +463,7 @@ bool CGUIWindowFileManager::Update(int iList, const std::string &strDirectory)
     if (!pItem->IsParentFolder())
     {
       GetDirectoryHistoryString(pItem.get(), strSelectedItem);
-      m_history[iList].SetSelectedItem(strSelectedItem, m_Directory[iList]->GetPath());
+      m_history[iList].SetSelectedItem(strSelectedItem, m_Directory[iList]->GetPath(), iItem);
     }
   }
 
@@ -519,6 +524,13 @@ bool CGUIWindowFileManager::Update(int iList, const std::string &strDirectory)
     #ifdef TARGET_DARWIN_EMBEDDED
       CFileItemPtr iItem(new CFileItem("special://envhome/Documents/Inbox", true));
       iItem->SetLabel("Inbox");
+      iItem->SetArt("thumb", "DefaultFolder.png");
+      iItem->SetLabelPreformatted(true);
+      m_vecItems[iList]->Add(iItem);
+    #endif
+    #ifdef TARGET_ANDROID
+      CFileItemPtr iItem(new CFileItem("special://logpath", true));
+      iItem->SetLabel("Logs");
       iItem->SetArt("thumb", "DefaultFolder.png");
       iItem->SetLabelPreformatted(true);
       m_vecItems[iList]->Add(iItem);
@@ -662,18 +674,15 @@ void CGUIWindowFileManager::OnStart(CFileItem *pItem, const std::string &player)
 #endif
   if (pItem->IsPicture())
   {
-    CGUIWindowSlideShow *pSlideShow = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIWindowSlideShow>(WINDOW_SLIDESHOW);
-    if (!pSlideShow)
-      return ;
-
     const auto& components = CServiceBroker::GetAppComponents();
     const auto appPlayer = components.GetComponent<CApplicationPlayer>();
     if (appPlayer->IsPlayingVideo())
       g_application.StopPlaying();
 
-    pSlideShow->Reset();
-    pSlideShow->Add(pItem);
-    pSlideShow->Select(pItem->GetPath());
+    CSlideShowDelegator& slideShow = CServiceBroker::GetSlideShowDelegator();
+    slideShow.Reset();
+    slideShow.Add(pItem);
+    slideShow.Select(pItem->GetPath());
 
     CServiceBroker::GetGUI()->GetWindowManager().ActivateWindow(WINDOW_SLIDESHOW);
     return;
@@ -698,16 +707,12 @@ bool CGUIWindowFileManager::HaveDiscOrConnection( std::string& strPath, int iDri
   }
   else if ( iDriveType == CMediaSource::SOURCE_TYPE_REMOTE )
   {
-#if 0
     //! @todo Handle not connected to a remote share
     if (!CServiceBroker::GetNetwork().IsConnected())
     {
       HELPERS::ShowOKDialogText(CVariant{220}, CVariant{221});
       return false;
     }
-#else
-    return false;
-#endif
   }
   else
     return true;
@@ -868,12 +873,10 @@ void CGUIWindowFileManager::GoParentFolder(int iList)
   CURL url(m_Directory[iList]->GetPath());
   if (url.IsProtocol("rar") || url.IsProtocol("zip"))
   {
-#if 0
     // check for step-below, if, unmount rar
     if (url.GetFileName().empty())
       if (url.IsProtocol("zip"))
         g_ZipManager.release(m_Directory[iList]->GetPath()); // release resources
-#endif
   }
 
   std::string strPath(m_strParentPath[iList]), strOldPath(m_Directory[iList]->GetPath());
@@ -929,7 +932,7 @@ bool CGUIWindowFileManager::GetDirectory(int iList, const std::string &strDirect
   CURL pathToUrl(strDirectory);
 
   CGetDirectoryItems getItems(m_rootDir, pathToUrl, items);
-  if (!CGUIDialogBusy::Wait(&getItems))
+  if (!CGUIDialogBusy::Wait(&getItems, 100, true))
   {
     return false;
   }

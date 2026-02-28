@@ -17,6 +17,7 @@
 #include "addons/gui/GUIWindowAddonBrowser.h"
 #include "application/ApplicationComponents.h"
 #include "application/ApplicationSkinHandling.h"
+#include "dialogs/GUIDialogColorPicker.h"
 #include "dialogs/GUIDialogFileBrowser.h"
 #include "dialogs/GUIDialogNumeric.h"
 #include "dialogs/GUIDialogSelect.h"
@@ -99,7 +100,11 @@ static int SetAddon(const std::vector<std::string>& params)
 
 /*! \brief Select and set a skin bool setting.
  *  \param params The parameters.
- *  \details params[0] = Names of skin settings.
+ *  \details params[0] = Number of a localized string to display as a header in a select dialog
+ *  \details params[1,...] = one or more number|skinbool-setting pairs where number is index of a localized string used as label
+ *  \details and skinbool-setting is a string of the skinbool setting name. The pairs are added to the select dialog list.
+ *  \details If the users confirms a (single) selection label in the select dialog, the paired skinbool is set to true and all others
+ *  \details in the list are set to false. Multi-select is not available.
  */
 static int SelectBool(const std::vector<std::string>& params)
 {
@@ -314,7 +319,6 @@ static int SetImage(const std::vector<std::string>& params)
  */
 static int SetColor(const std::vector<std::string>& params)
 {
-#if 0
   int string = CSkinSettings::GetInstance().TranslateString(params[0]);
   std::string value = CSkinSettings::GetInstance().GetString(string);
 
@@ -347,7 +351,6 @@ static int SetColor(const std::vector<std::string>& params)
     value = pDlgColorPicker->GetSelectedColor();
     CSkinSettings::GetInstance().SetString(string, value);
   }
-#endif
 
   return 0;
 }
@@ -421,15 +424,11 @@ static int SetTheme(const std::vector<std::string>& params)
   if (iTheme != -1 && iTheme < (int)vecTheme.size())
     strSkinTheme = vecTheme[iTheme];
 
+  // Because of the way callbacks are implemented, calling  settings->SetString(...)
+  // causes ApplicationSkinHandling::OnSettingChanged(...) to be called.
+  // The ApplicationSkinHandling::OnSettingChanged method will do all the work of
+  // changing to the new theme, including reloading the skin.
   settings->SetString(CSettings::SETTING_LOOKANDFEEL_SKINTHEME, strSkinTheme);
-  // also set the default color theme
-  std::string colorTheme(URIUtils::ReplaceExtension(strSkinTheme, ".xml"));
-  if (StringUtils::EqualsNoCase(colorTheme, "Textures.xml"))
-    colorTheme = "defaults.xml";
-  settings->SetString(CSettings::SETTING_LOOKANDFEEL_SKINCOLORS, colorTheme);
-  auto& components = CServiceBroker::GetAppComponents();
-  const auto appSkin = components.GetComponent<CApplicationSkinHandling>();
-  appSkin->ReloadSkin();
 
   return 0;
 }
@@ -546,6 +545,18 @@ static int SkinTimerStop(const std::vector<std::string>& params)
 ///     xbmc.addon.audio\, xbmc.addon.image and xbmc.addon.executable.
 ///     @param[in] string[0]             Skin setting to store result in.
 ///     @param[in] type[1\,...]           Add-on types to allow selecting.
+///   }
+///   \table_row2_l{
+///     <b>`Skin.SelectBool(header\, label1|setting1\, label2|setting2\, ...)`</b>
+///     \anchor Skin_SelectBool,
+///     Pops up select dialog to select between multiple skin setting options.
+///     @param[in] header              Localized string to display as dialog select header.
+///     @param[in] pairs               One or more number|skinbool-setting pairs where number is index of a localized string used as label and
+///     skinbool-setting is a string of the skinbool setting name. The pairs are added to the select dialog list.
+///     @details If the users confirms a (single) selection label in the select dialog\, the paired skinbool is set to true and all others
+///     in the list are set to false. Multi-select is not available.</p>
+///     <b>Example:</b></p>
+///     <code>Skin.SelectBool(424\, 31411|RecentWidget\, 31412|RandomWidget\, 31413|InProgressWidget)</code>
 ///   }
 ///   \table_row2_l{
 ///     <b>`Skin.SetBool(setting[\,value])`</b>

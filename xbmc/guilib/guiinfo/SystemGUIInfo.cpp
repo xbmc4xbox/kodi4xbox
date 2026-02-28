@@ -20,12 +20,10 @@
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
-#if defined(TARGET_DARWIN_OSX)
-#include "platform/darwin/osx/smc.h"
-#endif
 #include "guilib/guiinfo/GUIInfo.h"
 #include "guilib/guiinfo/GUIInfoHelper.h"
 #include "guilib/guiinfo/GUIInfoLabels.h"
+#include "powermanagement/PowerManager.h"
 #include "profiles/ProfileManager.h"
 #include "settings/AdvancedSettings.h"
 #include "settings/MediaSettings.h"
@@ -36,16 +34,20 @@
 #include "storage/discs/IDiscDriveHandler.h"
 #include "utils/AlarmClock.h"
 #include "utils/CPUInfo.h"
+#include "utils/GpuInfo.h"
+#include "utils/HDRCapabilities.h"
+#include "utils/MemUtils.h"
 #include "utils/StringUtils.h"
 #include "utils/SystemInfo.h"
 #include "utils/TimeUtils.h"
+#include "windowing/WinSystem.h"
 #include "windows/GUIMediaWindow.h"
 
 using namespace KODI::GUILIB;
 using namespace KODI::GUILIB::GUIINFO;
 
 CSystemGUIInfo::CSystemGUIInfo()
-: m_lastSysHeatInfoTime(-SYSTEM_HEAT_UPDATE_INTERVAL)
+  : m_gpuInfo(CGPUInfo::GetGPUInfo()), m_lastSysHeatInfoTime(-SYSTEM_HEAT_UPDATE_INTERVAL)
 {
 }
 
@@ -54,10 +56,11 @@ std::string CSystemGUIInfo::GetSystemHeatInfo(int info) const
   if (CTimeUtils::GetFrameTime() - m_lastSysHeatInfoTime >= SYSTEM_HEAT_UPDATE_INTERVAL)
   {
     m_lastSysHeatInfoTime = CTimeUtils::GetFrameTime();
-#if defined(TARGET_POSIX)
     CServiceBroker::GetCPUInfo()->GetTemperature(m_cpuTemp);
-    m_gpuTemp = GetGPUTemperature();
-#endif
+    if (m_gpuInfo)
+    {
+      m_gpuInfo->GetTemperature(m_gpuTemp);
+    }
   }
 
   std::string text;
@@ -82,38 +85,6 @@ std::string CSystemGUIInfo::GetSystemHeatInfo(int info) const
       break;
   }
   return text;
-}
-
-CTemperature CSystemGUIInfo::GetGPUTemperature() const
-{
-  int value = 0;
-  char scale = 0;
-
-#if defined(TARGET_DARWIN_OSX)
-  value = SMCGetTemperature(SMC_KEY_GPU_TEMP);
-  return CTemperature::CreateFromCelsius(value);
-#elif defined(TARGET_WINDOWS_STORE) || defined(_XBOX)
-  return CTemperature::CreateFromCelsius(0);
-#else
-  std::string cmd = CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_gpuTempCmd;
-  int ret = 0;
-  FILE* p = NULL;
-
-  if (cmd.empty() || !(p = popen(cmd.c_str(), "r")))
-    return CTemperature();
-
-  ret = fscanf(p, "%d %c", &value, &scale);
-  pclose(p);
-
-  if (ret != 2)
-    return CTemperature();
-#endif
-
-  if (scale == 'C' || scale == 'c')
-    return CTemperature::CreateFromCelsius(value);
-  if (scale == 'F' || scale == 'f')
-    return CTemperature::CreateFromFahrenheit(value);
-  return CTemperature();
 }
 
 void CSystemGUIInfo::UpdateFPS()
@@ -166,7 +137,13 @@ bool CSystemGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
       value = GetSystemHeatInfo(info.m_info);
       return true;
     case SYSTEM_VIDEO_ENCODER_INFO:
+    case NETWORK_IP_ADDRESS:
     case NETWORK_MAC_ADDRESS:
+    case NETWORK_SUBNET_MASK:
+    case NETWORK_GATEWAY_ADDRESS:
+    case NETWORK_DNS1_ADDRESS:
+    case NETWORK_DNS2_ADDRESS:
+    case NETWORK_LINK_STATE:
     case SYSTEM_OS_VERSION_INFO:
     case SYSTEM_CPUFREQUENCY:
     case SYSTEM_INTERNET_STATE:
@@ -180,10 +157,23 @@ bool CSystemGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
       return true;
     case SYSTEM_SCREEN_RESOLUTION:
     {
-      value = StringUtils::Format("{}x{} {}",
-                                      g_graphicsContext.GetResInfo().iWidth,
-                                      g_graphicsContext.GetResInfo().iHeight,
-                                      g_graphicsContext.GetResInfo().strMode.c_str());
+      const auto winSystem = CServiceBroker::GetWinSystem();
+      if (winSystem)
+      {
+        const RESOLUTION_INFO& resInfo = winSystem->GetGfxContext().GetResInfo();
+
+        if (winSystem->IsFullScreen())
+          value = StringUtils::Format("{}x{} @ {:.2f} Hz - {}", resInfo.iScreenWidth,
+                                      resInfo.iScreenHeight, resInfo.fRefreshRate,
+                                      g_localizeStrings.Get(244));
+        else
+          value = StringUtils::Format("{}x{} - {}", resInfo.iScreenWidth, resInfo.iScreenHeight,
+                                      g_localizeStrings.Get(242));
+      }
+      else
+      {
+        value = "";
+      }
       return true;
     }
     case SYSTEM_BUILD_VERSION_SHORT:
@@ -207,7 +197,6 @@ bool CSystemGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
     case SYSTEM_USED_MEMORY_PERCENT:
     case SYSTEM_TOTAL_MEMORY:
     {
-#if 0
       KODI::MEMORY::MemoryStatus stat;
       KODI::MEMORY::GetMemoryStatus(&stat);
       int iMemPercentFree = 100 - static_cast<int>(100.0f * (stat.totalPhys - stat.availPhys) / stat.totalPhys + 0.5f);
@@ -224,26 +213,23 @@ bool CSystemGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
         value = StringUtils::Format("{}%", iMemPercentUsed);
       else if (info.m_info == SYSTEM_TOTAL_MEMORY)
         value = StringUtils::Format("{}MB", static_cast<unsigned int>(stat.totalPhys / MB));
-#else
-      value = "64MB";
-#endif
       return true;
     }
     case SYSTEM_SCREEN_MODE:
-      value = g_graphicsContext.GetResInfo().strMode;
+      value = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo().strMode;
       return true;
     case SYSTEM_SCREEN_WIDTH:
       value = StringUtils::Format(
-          "{}", g_graphicsContext.GetResInfo().iWidth);
+          "{}", CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo().iScreenWidth);
       return true;
     case SYSTEM_SCREEN_HEIGHT:
       value = StringUtils::Format(
-          "{}", g_graphicsContext.GetResInfo().iHeight);
+          "{}", CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo().iScreenHeight);
       return true;
     case SYSTEM_FPS:
       value = StringUtils::Format("{:02.2f}", m_fps);
       return true;
-#ifdef HAS_DVD_DRIVE
+#ifdef HAS_OPTICAL_DRIVE
     case SYSTEM_DVD_LABEL:
       value = CServiceBroker::GetMediaManager().GetDiskLabel();
       return true;
@@ -302,7 +288,6 @@ bool CSystemGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
           "{:4.2f}",
           CServiceBroker::GetCPUInfo()->GetCoreInfo(std::stoi(info.GetData3())).m_usagePercent);
       return true;
-#ifndef _XBOX
     case SYSTEM_RENDER_VENDOR:
       value = CServiceBroker::GetRenderSystem()->GetRenderVendor();
       return true;
@@ -312,7 +297,6 @@ bool CSystemGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
     case SYSTEM_RENDER_VERSION:
       value = CServiceBroker::GetRenderSystem()->GetRenderVersionString();
       return true;
-#endif
     case SYSTEM_ADDON_UPDATE_COUNT:
       value = CServiceBroker::GetAddonMgr().GetLastAvailableUpdatesCountAsString();
       return true;
@@ -322,7 +306,6 @@ bool CSystemGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
       StringUtils::ToCapitalize(value);
       return true;
 #endif
-#ifndef _XBOX
     case SYSTEM_SUPPORTED_HDR_TYPES:
     {
       if (CServiceBroker::GetWinSystem()->IsHDRDisplay())
@@ -344,90 +327,38 @@ bool CSystemGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
 
       return true;
     }
-#endif
 
-    ///////////////////////////////////////////////////////////////////////////////////////////////
-    // NETWORK_*
-    ///////////////////////////////////////////////////////////////////////////////////////////////
-#if 0
-    case NETWORK_IP_ADDRESS:
+    case SYSTEM_LOCALE_TIMEZONECOUNTRY:
     {
-      CNetworkInterface* iface = CServiceBroker::GetNetwork().GetFirstConnectedInterface();
-      if (iface)
-      {
-        value = iface->GetCurrentIPAddress();
-        return true;
-      }
-      break;
-    }
-    case NETWORK_SUBNET_MASK:
-    {
-      CNetworkInterface* iface = CServiceBroker::GetNetwork().GetFirstConnectedInterface();
-      if (iface)
-      {
-        value = iface->GetCurrentNetmask();
-        return true;
-      }
-      break;
-    }
-    case NETWORK_GATEWAY_ADDRESS:
-    {
-      CNetworkInterface* iface = CServiceBroker::GetNetwork().GetFirstConnectedInterface();
-      if (iface)
-      {
-        value = iface->GetCurrentDefaultGateway();
-        return true;
-      }
-      break;
-    }
-    case NETWORK_DNS1_ADDRESS:
-    {
-      const std::vector<std::string> nss = CServiceBroker::GetNetwork().GetNameServers();
-      if (nss.size() >= 1)
-      {
-        value = nss[0];
-        return true;
-      }
-      break;
-    }
-    case NETWORK_DNS2_ADDRESS:
-    {
-      const std::vector<std::string> nss = CServiceBroker::GetNetwork().GetNameServers();
-      if (nss.size() >= 2)
-      {
-        value = nss[1];
-        return true;
-      }
-      break;
-    }
-    case NETWORK_DHCP_ADDRESS:
-    {
-      // wtf?
-      std::string dhcpserver;
-      value = dhcpserver;
+      value = CServiceBroker::GetSettingsComponent()->GetSettings()->GetString(
+          CSettings::SETTING_LOCALE_TIMEZONECOUNTRY);
       return true;
     }
-    case NETWORK_LINK_STATE:
+
+    case SYSTEM_LOCALE_TIMEZONE:
     {
-      std::string linkStatus = g_localizeStrings.Get(151);
-      linkStatus += " ";
-      CNetworkInterface* iface = CServiceBroker::GetNetwork().GetFirstConnectedInterface();
-      if (iface && iface->IsConnected())
-        linkStatus += g_localizeStrings.Get(15207);
-      else
-        linkStatus += g_localizeStrings.Get(15208);
-      value = linkStatus;
+      value = CServiceBroker::GetSettingsComponent()->GetSettings()->GetString(
+          CSettings::SETTING_LOCALE_TIMEZONE);
       return true;
     }
-#endif
+
+    case SYSTEM_LOCALE_REGION:
+    {
+      value = g_langInfo.GetCurrentRegion();
+      return true;
+    }
+
+    case SYSTEM_LOCALE:
+    {
+      value = g_langInfo.GetRegionLocale();
+      return true;
+    }
   }
-
   return false;
 }
 
 bool CSystemGUIInfo::GetInt(int& value, const CGUIListItem *gitem, int contextWindow, const CGUIInfo &info) const
 {
-#if 0
   switch (info.m_info)
   {
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -458,7 +389,6 @@ bool CSystemGUIInfo::GetInt(int& value, const CGUIListItem *gitem, int contextWi
       value = CServiceBroker::GetPowerManager().BatteryLevel();
       return true;
   }
-#endif
 
   return false;
 }
@@ -536,11 +466,18 @@ bool CSystemGUIInfo::GetBool(bool& value, const CGUIListItem *gitem, int context
       value = false;
 #endif
       return true;
+    case SYSTEM_PLATFORM_WEBOS:
+#if defined(TARGET_WEBOS)
+      value = true;
+#else
+      value = false;
+#endif
+      return true;
     case SYSTEM_MEDIA_DVD:
       value = CServiceBroker::GetMediaManager().IsDiscInDrive();
       return true;
     case SYSTEM_MEDIA_AUDIO_CD:
-    #ifdef HAS_DVD_DRIVE
+#ifdef HAS_OPTICAL_DRIVE
       if (CServiceBroker::GetMediaManager().IsDiscInDrive())
       {
         MEDIA_DETECT::CCdInfo* pCdInfo = CServiceBroker::GetMediaManager().GetCdInfo();
@@ -552,7 +489,7 @@ bool CSystemGUIInfo::GetBool(bool& value, const CGUIListItem *gitem, int context
         value = false;
       }
       return true;
-#ifdef HAS_DVD_DRIVE
+#ifdef HAS_OPTICAL_DRIVE
     case SYSTEM_DVDREADY:
       value = CServiceBroker::GetMediaManager().GetDriveStatus() != DriveState::NOT_READY;
       return true;
@@ -561,16 +498,16 @@ bool CSystemGUIInfo::GetBool(bool& value, const CGUIListItem *gitem, int context
       return true;
 #endif
     case SYSTEM_CAN_POWERDOWN:
-      value = true;
+      value = CServiceBroker::GetPowerManager().CanPowerdown();
       return true;
     case SYSTEM_CAN_SUSPEND:
-      value = false;
+      value = CServiceBroker::GetPowerManager().CanSuspend();
       return true;
     case SYSTEM_CAN_HIBERNATE:
-      value = false;
+      value = CServiceBroker::GetPowerManager().CanHibernate();
       return true;
     case SYSTEM_CAN_REBOOT:
-      value = true;
+      value = CServiceBroker::GetPowerManager().CanReboot();
       return true;
     case SYSTEM_SCREENSAVER_ACTIVE:
     case SYSTEM_IS_SCREENSAVER_INHIBITED:
@@ -621,7 +558,7 @@ bool CSystemGUIInfo::GetBool(bool& value, const CGUIListItem *gitem, int context
       value = CServiceBroker::GetSettingsComponent()->GetProfileManager()->GetMasterProfile().getLockMode() != LOCK_MODE_EVERYONE && g_passwordManager.bMasterUser;
       return true;
     case SYSTEM_ISFULLSCREEN:
-      value = true;
+      value = CServiceBroker::GetWinSystem()->IsFullScreen();
       return true;
     case SYSTEM_ISSTANDALONE:
       value = CServiceBroker::GetAppParams()->IsStandAlone();

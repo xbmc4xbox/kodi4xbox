@@ -313,7 +313,7 @@ bool CGUIControlsGUIInfo::GetLabel(std::string& value, const CFileItem *item, in
     // SYSTEM_*
     ///////////////////////////////////////////////////////////////////////////////////////////////
     case SYSTEM_CURRENT_WINDOW:
-      value = g_localizeStrings.Get(CServiceBroker::GetGUI()->GetWindowManager().GetFocusedWindow());
+      value = g_localizeStrings.Get(CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindowOrDialog());
       return true;
     case SYSTEM_STARTUP_WINDOW:
       value = std::to_string(CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(
@@ -322,7 +322,7 @@ bool CGUIControlsGUIInfo::GetLabel(std::string& value, const CFileItem *item, in
     case SYSTEM_CURRENT_CONTROL:
     case SYSTEM_CURRENT_CONTROL_ID:
     {
-      CGUIWindow *window = CServiceBroker::GetGUI()->GetWindowManager().GetWindow(CServiceBroker::GetGUI()->GetWindowManager().GetFocusedWindow());
+      CGUIWindow *window = CServiceBroker::GetGUI()->GetWindowManager().GetWindow(CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindowOrDialog());
       if (window)
       {
         CGUIControl *control = window->GetFocusedControl();
@@ -704,7 +704,7 @@ bool CGUIControlsGUIInfo::GetBool(bool& value, const CGUIListItem *gitem, int co
         if (!window)
         {
           // try topmost dialog
-          window = windowMgr.GetWindow(windowMgr.GetTopMostModalDialogID());
+          window = windowMgr.GetWindow(windowMgr.GetTopmostModalDialog());
           if (!window)
           {
             // try active window
@@ -735,7 +735,6 @@ bool CGUIControlsGUIInfo::GetBool(bool& value, const CGUIListItem *gitem, int co
         value = CServiceBroker::GetGUI()->GetWindowManager().IsWindowActive(info.GetData3());
       return true;
     }
-#if 0
     case WINDOW_IS_DIALOG_TOPMOST:
     {
       if (info.GetData1())
@@ -752,7 +751,6 @@ bool CGUIControlsGUIInfo::GetBool(bool& value, const CGUIListItem *gitem, int co
         value = CServiceBroker::GetGUI()->GetWindowManager().IsModalDialogTopmost(info.GetData3());
       return true;
     }
-#endif
     case WINDOW_NEXT:
     {
       if (info.GetData1())
@@ -794,13 +792,11 @@ bool CGUIControlsGUIInfo::GetBool(bool& value, const CGUIListItem *gitem, int co
     // SYSTEM_*
     ///////////////////////////////////////////////////////////////////////////////////////////////
     case SYSTEM_HAS_ACTIVE_MODAL_DIALOG:
-      value = CServiceBroker::GetGUI()->GetWindowManager().HasModalDialog();
+      value = CServiceBroker::GetGUI()->GetWindowManager().HasModalDialog(true);
       return true;
-#if 0
     case SYSTEM_HAS_VISIBLE_MODAL_DIALOG:
       value = CServiceBroker::GetGUI()->GetWindowManager().HasVisibleModalDialog();
       return true;
-#endif
     case SYSTEM_HAS_INPUT_HIDDEN:
     {
       CGUIDialogNumeric *pNumeric = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIDialogNumeric>(WINDOW_DIALOG_NUMERIC);

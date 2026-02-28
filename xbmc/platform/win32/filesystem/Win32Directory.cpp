@@ -11,41 +11,23 @@
 #include "FileItem.h"
 #include "URL.h"
 #include "utils/CharsetConverter.h"
-#ifndef NXDK
 #include "utils/SystemInfo.h"
-#endif
 #include "utils/XTimeUtils.h"
 #include "utils/log.h"
 
-#ifdef NXDK
-#include "platform/xbox/XBOXUtil.h"
-#else
 #include "platform/win32/WIN32Util.h"
-#endif
 
-#include <windows.h>
+#include <Windows.h>
 
 using namespace XFILE;
 
 // check for empty string, remove trailing slash if any, convert to win32 form
-#ifdef NXDK
-inline static std::string prepareWin32DirectoryName(const std::string& strPath)
-#else
 inline static std::wstring prepareWin32DirectoryName(const std::string& strPath)
-#endif
 {
   if (strPath.empty())
-#ifdef NXDK
-    return std::string(); // empty string
-#else
     return std::wstring(); // empty string
-#endif
 
-#ifdef NXDK
-  std::string nameW(CXBOXUtil::GetFatXQualifiedPath(strPath));
-#else
   std::wstring nameW(CWIN32Util::ConvertPathToWin32Form(strPath));
-#endif
   if (!nameW.empty())
   {
     if (nameW.back() == L'\\')
@@ -68,11 +50,7 @@ bool CWin32Directory::GetDirectory(const CURL& url, CFileItemList &items)
   if (!pathWithSlash.empty() && pathWithSlash.back() != '\\')
     pathWithSlash.push_back('\\');
 
-#ifdef NXDK
-  std::string searchMask(CXBOXUtil::GetFatXQualifiedPath(pathWithSlash));
-#else
   std::wstring searchMask(CWIN32Util::ConvertPathToWin32Form(pathWithSlash));
-#endif
   if (searchMask.empty())
     return false;
 
@@ -80,42 +58,25 @@ bool CWin32Directory::GetDirectory(const CURL& url, CFileItemList &items)
   searchMask += L'*';
 
   HANDLE hSearch;
-#ifdef NXDK
-  WIN32_FIND_DATA findData = {};
-#else
   WIN32_FIND_DATAW findData = {};
-#endif
 
-#ifdef NXDK
-  hSearch = FindFirstFileA(searchMask.c_str(), &findData);
-#else
   hSearch = FindFirstFileExW(searchMask.c_str(), FindExInfoBasic, &findData, FindExSearchNameMatch, NULL, FIND_FIRST_EX_LARGE_FETCH);
-#endif
 
   if (hSearch == INVALID_HANDLE_VALUE)
     return GetLastError() == ERROR_FILE_NOT_FOUND ? Exists(url) : false; // return true if directory exist and empty
 
   do
   {
-#ifdef NXDK
-    std::string itemNameW(findData.cFileName);
-    if (itemNameW == "." || itemNameW == "..")
-#else
     std::wstring itemNameW(findData.cFileName);
     if (itemNameW == L"." || itemNameW == L"..")
-#endif
       continue;
 
     std::string itemName;
-#ifdef NXDK
-    itemName = itemNameW;
-#else
     if (!g_charsetConverter.wToUTF8(itemNameW, itemName, true) || itemName.empty())
     {
       CLog::Log(LOGERROR, "{}: Can't convert wide string name to UTF-8 encoding", __FUNCTION__);
       continue;
     }
-#endif
 
     CFileItemPtr pItem(new CFileItem(itemName));
 
@@ -144,11 +105,7 @@ bool CWin32Directory::GetDirectory(const CURL& url, CFileItemList &items)
         pItem->m_dwSize = (__int64(findData.nFileSizeHigh) << 32) + findData.nFileSizeLow;
 
     items.Add(pItem);
-#ifdef NXDK
-  } while (FindNextFileA(hSearch, &findData));
-#else
   } while (FindNextFileW(hSearch, &findData));
-#endif
 
   FindClose(hSearch);
 
@@ -169,19 +126,11 @@ bool CWin32Directory::Create(const CURL& url)
 
 bool CWin32Directory::Exists(const CURL& url)
 {
-#ifdef NXDK
-  std::string nameW(url.Get());
-#else
   std::wstring nameW(prepareWin32DirectoryName(url.Get()));
-#endif
   if (nameW.empty())
     return false;
 
-#ifdef NXDK
-  DWORD fileAttrs = GetFileAttributesA(nameW.c_str());
-#else
   DWORD fileAttrs = GetFileAttributesW(nameW.c_str());
-#endif
   if (fileAttrs == INVALID_FILE_ATTRIBUTES || (fileAttrs & FILE_ATTRIBUTE_DIRECTORY) == 0)
     return false;
 
@@ -190,19 +139,11 @@ bool CWin32Directory::Exists(const CURL& url)
 
 bool CWin32Directory::Remove(const CURL& url)
 {
-#ifdef NXDK
-  std::string nameW(prepareWin32DirectoryName(url.Get()));
-#else
   std::wstring nameW(prepareWin32DirectoryName(url.Get()));
-#endif
   if (nameW.empty())
     return false;
 
-#ifdef NXDK
-  if (RemoveDirectoryA(nameW.c_str()))
-#else
   if (RemoveDirectoryW(nameW.c_str()))
-#endif
     return true;
 
   return !Exists(url);
@@ -214,35 +155,17 @@ bool CWin32Directory::RemoveRecursive(const CURL& url)
   if (!pathWithSlash.empty() && pathWithSlash.back() != '\\')
     pathWithSlash.push_back('\\');
 
-#ifdef NXDK
-  auto basePath = CXBOXUtil::GetFatXQualifiedPath(pathWithSlash);
-#else
   auto basePath = CWIN32Util::ConvertPathToWin32Form(pathWithSlash);
-#endif
   if (basePath.empty())
     return false;
 
-#ifdef NXDK
-  auto searchMask = basePath + '*';
-#else
   auto searchMask = basePath + L'*';
-#endif
 
   HANDLE hSearch;
-#ifdef NXDK
-  WIN32_FIND_DATA findData = {};
-#else
   WIN32_FIND_DATAW findData = {};
-#endif
 
-#ifdef NXDK
-  hSearch = FindFirstFileA(searchMask.c_str(), &findData);
-#else
-  if (g_sysinfo.IsWindowsVersionAtLeast(CSysInfo::WindowsVersionWin7))
-    hSearch = FindFirstFileExW(searchMask.c_str(), FindExInfoBasic, &findData, FindExSearchNameMatch, nullptr, FIND_FIRST_EX_LARGE_FETCH);
-  else
-    hSearch = FindFirstFileExW(searchMask.c_str(), FindExInfoStandard, &findData, FindExSearchNameMatch, nullptr, 0);
-#endif
+  hSearch = FindFirstFileExW(searchMask.c_str(), FindExInfoBasic, &findData, FindExSearchNameMatch,
+                             nullptr, FIND_FIRST_EX_LARGE_FETCH);
 
   if (hSearch == INVALID_HANDLE_VALUE)
     return GetLastError() == ERROR_FILE_NOT_FOUND ? Exists(url) : false; // return true if directory exist and empty
@@ -250,28 +173,19 @@ bool CWin32Directory::RemoveRecursive(const CURL& url)
   bool success = true;
   do
   {
-#ifdef NXDK
-    std::string itemNameW(findData.cFileName);
-    if (itemNameW == "." || itemNameW == "..")
-#else
     std::wstring itemNameW(findData.cFileName);
     if (itemNameW == L"." || itemNameW == L"..")
-#endif
       continue;
 
     auto pathW = basePath + itemNameW;
     if (0 != (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
     {
       std::string path;
-#ifdef NXDK
-      path = pathW;
-#else
       if (!g_charsetConverter.wToUTF8(pathW, path, true))
       {
         CLog::Log(LOGERROR, "{}: Can't convert wide string name to UTF-8 encoding", __FUNCTION__);
         continue;
       }
-#endif
 
       if (!RemoveRecursive(CURL{ path }))
       {
@@ -281,46 +195,28 @@ bool CWin32Directory::RemoveRecursive(const CURL& url)
     }
     else
     {
-#ifdef NXDK
-      if (FALSE == DeleteFileA(pathW.c_str()))
-#else
       if (FALSE == DeleteFileW(pathW.c_str()))
-#endif
       {
         success = false;
         break;
       }
     }
-#ifdef NXDK
-  } while (FindNextFileA(hSearch, &findData));
-#else
   } while (FindNextFileW(hSearch, &findData));
-#endif
 
   FindClose(hSearch);
 
   if (success)
   {
-#ifdef NXDK
-    if (FALSE == RemoveDirectoryA(basePath.c_str()))
-#else
     if (FALSE == RemoveDirectoryW(basePath.c_str()))
-#endif
       success = false;
   }
 
   return success;
 }
 
-#ifdef NXDK
-bool CWin32Directory::Create(std::string path) const
-{
-  if (!CreateDirectoryA(path.c_str(), nullptr))
-#else
 bool CWin32Directory::Create(std::wstring path) const
 {
   if (!CreateDirectoryW(path.c_str(), nullptr))
-#endif
   {
     if (GetLastError() == ERROR_ALREADY_EXISTS)
       return true;
@@ -342,13 +238,8 @@ bool CWin32Directory::Create(std::wstring path) const
   const auto lastSlashPos = path.rfind(L'\\');
   if (lastSlashPos < path.length() - 1 && path[lastSlashPos + 1] == L'.')
   {
-#ifdef NXDK
-    DWORD dirAttrs = GetFileAttributesA(path.c_str());
-    if (dirAttrs != INVALID_FILE_ATTRIBUTES && SetFileAttributes(path.c_str(), dirAttrs | FILE_ATTRIBUTE_HIDDEN))
-#else
     DWORD dirAttrs = GetFileAttributesW(path.c_str());
     if (dirAttrs != INVALID_FILE_ATTRIBUTES && SetFileAttributesW(path.c_str(), dirAttrs | FILE_ATTRIBUTE_HIDDEN))
-#endif
       return true;
   }
 

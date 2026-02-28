@@ -24,10 +24,13 @@ class CFileItem;
 class CVideoInfoTag;
 
 class CGUIListItem;
-typedef std::shared_ptr<CGUIListItem> CGUIListItemPtr;
 
 namespace KODI
 {
+namespace GAME
+{
+class CGameInfoTag;
+}
 namespace GUILIB
 {
 namespace GUIINFO
@@ -95,7 +98,7 @@ public:
    */
   bool EvaluateBool(const std::string& expression,
                     int context,
-                    const CGUIListItemPtr& item = nullptr);
+                    const std::shared_ptr<CGUIListItem>& item = nullptr);
 
   int TranslateString(const std::string &strCondition);
   int TranslateSingleString(const std::string &strCondition, bool &listItemDependent);
@@ -130,6 +133,9 @@ public:
 
   // Current video stuff
   const CVideoInfoTag* GetCurrentMovieTag() const;
+
+  // Current game stuff
+  const KODI::GAME::CGameInfoTag* GetCurrentGameTag() const;
 
   void UpdateAVInfo();
 

@@ -10,9 +10,7 @@
 
 #include "SystemInfo.h"
 #ifndef TARGET_POSIX
-#ifndef _XBOX
 #include <conio.h>
-#endif
 #else
 #include <sys/utsname.h>
 #endif
@@ -22,11 +20,9 @@
 #include "filesystem/File.h"
 #include "guilib/LocalizeStrings.h"
 #include "guilib/guiinfo/GUIInfoLabels.h"
-#ifndef _XBOX
 #include "network/Network.h"
 #include "platform/Filesystem.h"
 #include "rendering/RenderSystem.h"
-#endif
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 #include "utils/CPUInfo.h"
@@ -52,9 +48,7 @@ using namespace winrt::Windows::System::Profile;
 #if defined(TARGET_DARWIN)
 #include "platform/darwin/DarwinUtils.h"
 #endif
-#ifndef _XBOX
 #include "powermanagement/PowerManager.h"
-#endif
 #include "utils/StringUtils.h"
 #include "utils/XMLUtils.h"
 #if defined(TARGET_ANDROID)
@@ -88,6 +82,12 @@ using namespace winrt::Windows::System::Profile;
 namespace
 {
 auto startTime = std::chrono::steady_clock::now();
+
+#if defined(TARGET_WEBOS)
+constexpr const char* osReleaseFile = "/usr/lib/os-release";
+#elif defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
+constexpr const char* osReleaseFile = "/etc/os-release";
+#endif
 }
 
 using namespace XFILE;
@@ -140,7 +140,7 @@ static bool appendWindows10NameVersion(std::string& osNameVer)
 #if defined(TARGET_LINUX) && !defined(TARGET_ANDROID)
 static std::string getValueFromOs_release(std::string key)
 {
-  FILE* os_rel = fopen("/etc/os-release", "r");
+  FILE* os_rel = fopen(osReleaseFile, "r");
   if (!os_rel)
     return "";
 
@@ -288,6 +288,11 @@ bool CSysInfoJob::DoWork()
   m_info.osVersionInfo     = CSysInfo::GetOsPrettyNameWithVersion() + " (kernel: " + CSysInfo::GetKernelName() + " " + CSysInfo::GetKernelVersionFull() + ")";
   m_info.macAddress        = GetMACAddress();
   m_info.batteryLevel      = GetBatteryLevel();
+  m_info.ipAddress = GetIPAddress();
+  m_info.netMask = GetNetMask();
+  m_info.dnsServers = GetDNSServers();
+  m_info.gatewayAddress = GetGatewayAddress();
+  m_info.networkLinkState = GetNetworkLinkState();
   return true;
 }
 
@@ -307,31 +312,72 @@ CSysData::INTERNET_STATE CSysInfoJob::GetInternetState()
 
 std::string CSysInfoJob::GetMACAddress()
 {
-#if 0
   CNetworkInterface* iface = CServiceBroker::GetNetwork().GetFirstConnectedInterface();
   if (iface)
     return iface->GetMacAddress();
-#endif
 
   return "";
 }
 
+std::string CSysInfoJob::GetIPAddress()
+{
+  CNetworkInterface* iface = CServiceBroker::GetNetwork().GetFirstConnectedInterface();
+  if (iface)
+  {
+    return iface->GetCurrentIPAddress();
+  }
+  return {};
+}
+
+std::string CSysInfoJob::GetNetMask()
+{
+  CNetworkInterface* iface = CServiceBroker::GetNetwork().GetFirstConnectedInterface();
+  if (iface)
+  {
+    return iface->GetCurrentNetmask();
+  }
+  return {};
+}
+
+std::string CSysInfoJob::GetGatewayAddress()
+{
+  CNetworkInterface* iface = CServiceBroker::GetNetwork().GetFirstConnectedInterface();
+  if (iface)
+  {
+    return iface->GetCurrentDefaultGateway();
+  }
+  return {};
+}
+
+std::string CSysInfoJob::GetNetworkLinkState()
+{
+  std::string linkStatus = g_localizeStrings.Get(151);
+  linkStatus += " ";
+  CNetworkInterface* iface = CServiceBroker::GetNetwork().GetFirstConnectedInterface();
+  if (iface && iface->IsConnected())
+  {
+    linkStatus += g_localizeStrings.Get(15207);
+  }
+  else
+  {
+    linkStatus += g_localizeStrings.Get(15208);
+  }
+  return linkStatus;
+}
+
+std::vector<std::string> CSysInfoJob::GetDNSServers()
+{
+  return CServiceBroker::GetNetwork().GetNameServers();
+}
+
 std::string CSysInfoJob::GetVideoEncoder()
 {
-#ifdef _XBOX
-  return "GPU: Custom NV2A";
-#else
   return "GPU: " + CServiceBroker::GetRenderSystem()->GetRenderRenderer();
-#endif
 }
 
 std::string CSysInfoJob::GetBatteryLevel()
 {
-#if 0
   return StringUtils::Format("{}%", CServiceBroker::GetPowerManager().BatteryLevel());
-#else
-  return "0%";
-#endif
 }
 
 bool CSysInfoJob::SystemUpTime(int iInputMinutes, int &iMinutes, int &iHours, int &iDays)
@@ -397,6 +443,18 @@ std::string CSysInfo::TranslateInfo(int info) const
     return m_info.videoEncoder;
   case NETWORK_MAC_ADDRESS:
     return m_info.macAddress;
+  case NETWORK_IP_ADDRESS:
+    return m_info.ipAddress;
+  case NETWORK_SUBNET_MASK:
+    return m_info.netMask;
+  case NETWORK_GATEWAY_ADDRESS:
+    return m_info.gatewayAddress;
+  case NETWORK_DNS1_ADDRESS:
+    return m_info.dnsServers.size() > 0 ? m_info.dnsServers.at(0) : g_localizeStrings.Get(231);
+  case NETWORK_DNS2_ADDRESS:
+    return m_info.dnsServers.size() > 1 ? m_info.dnsServers.at(1) : g_localizeStrings.Get(231);
+  case NETWORK_LINK_STATE:
+    return m_info.networkLinkState;
   case SYSTEM_OS_VERSION_INFO:
     return m_info.osVersionInfo;
   case SYSTEM_CPUFREQUENCY:
@@ -470,7 +528,6 @@ const std::string& CSysInfo::GetAppName(void)
 
 bool CSysInfo::GetDiskSpace(std::string drive,int& iTotal, int& iTotalFree, int& iTotalUsed, int& iPercentFree, int& iPercentUsed)
 {
-#if 0
   using namespace KODI::PLATFORM::FILESYSTEM;
 
   space_info total = {};
@@ -512,9 +569,6 @@ bool CSysInfo::GetDiskSpace(std::string drive,int& iTotal, int& iTotalFree, int&
   iPercentFree = 100 - iPercentUsed;
 
   return true;
-#else
-  return false;
-#endif
 }
 
 std::string CSysInfo::GetKernelName(bool emptyIfUnknown /*= false*/)
@@ -611,7 +665,7 @@ std::string CSysInfo::GetOsName(bool emptyIfUnknown /* = false*/)
   static std::string osName;
   if (osName.empty())
   {
-#if defined (TARGET_WINDOWS)
+#if defined(TARGET_WINDOWS)
     osName = GetKernelName() + "-based OS";
 #elif defined(TARGET_FREEBSD)
     osName = GetKernelName(true); // FIXME: for FreeBSD OS name is a kernel name
@@ -621,11 +675,13 @@ std::string CSysInfo::GetOsName(bool emptyIfUnknown /* = false*/)
     osName = "tvOS";
 #elif defined(TARGET_DARWIN_OSX)
     osName = "macOS";
-#elif defined (TARGET_ANDROID)
-    if (CJNIContext::GetPackageManager().hasSystemFeature("android.software.leanback"))
+#elif defined(TARGET_ANDROID)
+    if (CJNIContext::GetPackageManager().hasSystemFeature(CJNIPackageManager::FEATURE_LEANBACK))
       osName = "Android TV";
     else
       osName = "Android";
+#elif defined(TARGET_WEBOS)
+    osName = "webOS";
 #elif defined(TARGET_LINUX)
     osName = getValueFromOs_release("NAME");
     if (osName.empty())
@@ -695,18 +751,6 @@ std::string CSysInfo::GetOsPrettyNameWithVersion(void)
   {
     switch (GetWindowsVersion())
     {
-    case WindowsVersionWin7:
-      if (osvi.wProductType == VER_NT_WORKSTATION)
-        osNameVer.append("7");
-      else
-        osNameVer.append("Server 2008 R2");
-      break;
-    case WindowsVersionWin8:
-      if (osvi.wProductType == VER_NT_WORKSTATION)
-        osNameVer.append("8");
-      else
-        osNameVer.append("Server 2012");
-      break;
     case WindowsVersionWin8_1:
       if (osvi.wProductType == VER_NT_WORKSTATION)
         osNameVer.append("8.1");
@@ -714,17 +758,27 @@ std::string CSysInfo::GetOsPrettyNameWithVersion(void)
         osNameVer.append("Server 2012 R2");
       break;
     case WindowsVersionWin10:
+    case WindowsVersionWin10_1607:
     case WindowsVersionWin10_1709:
     case WindowsVersionWin10_1803:
     case WindowsVersionWin10_1809:
     case WindowsVersionWin10_1903:
     case WindowsVersionWin10_1909:
     case WindowsVersionWin10_2004:
+    case WindowsVersionWin10_20H2:
+    case WindowsVersionWin10_21H1:
+    case WindowsVersionWin10_21H2:
+    case WindowsVersionWin10_22H2:
+
     case WindowsVersionWin10_Future:
       osNameVer.append("10");
       appendWindows10NameVersion(osNameVer);
       break;
-    case WindowsVersionWin11:
+    case WindowsVersionWin11_21H2:
+    case WindowsVersionWin11_22H2:
+    case WindowsVersionWin11_23H2:
+    case WindowsVersionWin11_24H2:
+    case WindowsVersionWin11_Future:
       osNameVer.append("11");
       appendWindows10NameVersion(osNameVer);
       break;
@@ -885,14 +939,14 @@ CSysInfo::WindowsVersion CSysInfo::GetWindowsVersion()
     OSVERSIONINFOEXW osvi = {};
     if (sysGetVersionExWByRef(osvi))
     {
-      if (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion == 1)
-        m_WinVer = WindowsVersionWin7;
-      else if (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion == 2)
-        m_WinVer = WindowsVersionWin8;
-      else if (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion == 3)
+      if (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion == 3)
         m_WinVer = WindowsVersionWin8_1;
-      else if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0 && osvi.dwBuildNumber < 16299)
+      else if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0 && osvi.dwBuildNumber < 14393)
         m_WinVer = WindowsVersionWin10;
+      else if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0 && osvi.dwBuildNumber == 14393)
+        m_WinVer = WindowsVersionWin10_1607;
+      else if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0 && osvi.dwBuildNumber == 15063)
+        m_WinVer = WindowsVersionWin10_1703;
       else if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0 && osvi.dwBuildNumber == 16299)
         m_WinVer = WindowsVersionWin10_1709;
       else if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0 && osvi.dwBuildNumber == 17134)
@@ -905,9 +959,25 @@ CSysInfo::WindowsVersion CSysInfo::GetWindowsVersion()
         m_WinVer = WindowsVersionWin10_1909;
       else if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0 && osvi.dwBuildNumber == 19041)
         m_WinVer = WindowsVersionWin10_2004;
-      else if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0 && osvi.dwBuildNumber >= 22000)
-        m_WinVer = WindowsVersionWin11;
-      else if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0 && osvi.dwBuildNumber > 19041)
+      else if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0 && osvi.dwBuildNumber == 19042)
+        m_WinVer = WindowsVersionWin10_20H2;
+      else if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0 && osvi.dwBuildNumber == 19043)
+        m_WinVer = WindowsVersionWin10_21H1;
+      else if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0 && osvi.dwBuildNumber == 19044)
+        m_WinVer = WindowsVersionWin10_21H2;
+      else if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0 && osvi.dwBuildNumber == 19045)
+        m_WinVer = WindowsVersionWin10_22H2;
+      else if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0 && osvi.dwBuildNumber == 22000)
+        m_WinVer = WindowsVersionWin11_21H2;
+      else if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0 && osvi.dwBuildNumber == 22621)
+        m_WinVer = WindowsVersionWin11_22H2;
+      else if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0 && osvi.dwBuildNumber == 22631)
+        m_WinVer = WindowsVersionWin11_23H2;
+      else if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0 && osvi.dwBuildNumber == 26100)
+        m_WinVer = WindowsVersionWin11_24H2;
+      else if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0 && osvi.dwBuildNumber > 26100)
+        m_WinVer = WindowsVersionWin11_Future;
+      else if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0 && osvi.dwBuildNumber > 19045)
         m_WinVer = WindowsVersionWin10_Future;
       /* Insert checks for new Windows versions here */
       else if ( (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion > 3) || osvi.dwMajorVersion > 10)
@@ -969,7 +1039,7 @@ int CSysInfo::GetKernelBitness(void)
       std::string machine(un.machine);
       if (machine == "x86_64" || machine == "amd64" || machine == "arm64" || machine == "aarch64" ||
           machine == "ppc64" || machine == "ppc64el" || machine == "ppc64le" || machine == "ia64" ||
-          machine == "mips64" || machine == "s390x" || machine == "riscv64")
+          machine == "loongarch64" || machine == "mips64" || machine == "s390x" || machine == "riscv64")
         kernelBitness = 64;
       else
         kernelBitness = 32;
@@ -1016,6 +1086,8 @@ const std::string& CSysInfo::GetKernelCpuFamily(void)
       std::string machine(un.machine);
       if (machine.compare(0, 3, "arm", 3) == 0 || machine.compare(0, 7, "aarch64", 7) == 0)
         kernelCpuFamily = "ARM";
+      else if (machine.compare(0, 9, "loongarch", 9) == 0 || machine.compare(0, 7, "loong64", 7) == 0)
+        kernelCpuFamily = "LoongArch";
       else if (machine.compare(0, 4, "mips", 4) == 0)
         kernelCpuFamily = "MIPS";
       else if (machine.compare(0, 4, "i686", 4) == 0 || machine == "i386" || machine == "amd64" ||  machine.compare(0, 3, "x86", 3) == 0)
@@ -1162,6 +1234,8 @@ std::string CSysInfo::GetUserAgent()
   std::string cpuFam(GetBuildTargetCpuFamily());
   if (cpuFam == "x86")
     result += "Intel ";
+  else if (cpuFam == "ARM")
+    result += "ARM ";
   result += "Mac OS X ";
   std::string OSXVersion(GetOsVersion());
   StringUtils::Replace(OSXVersion, '.', '_');
@@ -1253,14 +1327,12 @@ std::string CSysInfo::GetUserAgent()
 std::string CSysInfo::GetDeviceName()
 {
   std::string friendlyName = CServiceBroker::GetSettingsComponent()->GetSettings()->GetString(CSettings::SETTING_SERVICES_DEVICENAME);
-#if 0
   if (StringUtils::EqualsNoCase(friendlyName, CCompileInfo::GetAppName()))
   {
     std::string hostname("[unknown]");
     CServiceBroker::GetNetwork().GetHostName(hostname);
     return StringUtils::Format("{} ({})", friendlyName, hostname);
   }
-#endif
 
   return friendlyName;
 }
@@ -1309,6 +1381,8 @@ std::string CSysInfo::GetBuildTargetPlatformName(void)
   return "FreeBSD";
 #elif defined(TARGET_ANDROID)
   return "Android";
+#elif defined(TARGET_WEBOS)
+  return "webOS";
 #elif defined(TARGET_LINUX)
   return "Linux";
 #elif defined(TARGET_WINDOWS)
@@ -1400,6 +1474,8 @@ std::string CSysInfo::GetBuildTargetCpuFamily(void)
   return "ARM (Thumb)";
 #elif defined(__arm__) || defined(_M_ARM) || defined (__aarch64__)
   return "ARM";
+#elif defined(__loongarch__)
+  return "LoongArch";
 #elif defined(__mips__) || defined(mips) || defined(__mips)
   return "MIPS";
 #elif defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64) || defined(_M_X64) || defined(_M_AMD64) || \

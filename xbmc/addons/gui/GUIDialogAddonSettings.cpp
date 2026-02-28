@@ -13,6 +13,7 @@
 #include "GUIUserMessages.h"
 #include "ServiceBroker.h"
 #include "addons/AddonManager.h"
+#include "addons/addoninfo/AddonType.h"
 #include "addons/settings/AddonSettings.h"
 #include "dialogs/GUIDialogSelect.h"
 #include "dialogs/GUIDialogYesNo.h"
@@ -20,7 +21,8 @@
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
 #include "guilib/WindowIDs.h"
-#include "input/Key.h"
+#include "input/actions/Action.h"
+#include "input/actions/ActionIDs.h"
 #include "messaging/helpers/DialogOKHelper.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
@@ -143,6 +145,13 @@ bool CGUIDialogAddonSettings::ShowForAddon(const ADDON::AddonPtr& addon,
   {
     CLog::LogF(LOGERROR, "No addon given!");
     return false;
+  }
+
+  if (addon->Type() == ADDON::AddonType::GAME_CONTROLLER)
+  {
+    CServiceBroker::GetGUI()->GetWindowManager().ActivateWindow(WINDOW_DIALOG_GAME_CONTROLLERS,
+                                                                addon->ID());
+    return true;
   }
 
   if (!g_passwordManager.CheckMenuLock(WINDOW_ADDON_BROWSER))

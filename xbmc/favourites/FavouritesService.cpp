@@ -13,14 +13,14 @@
 #include "ServiceBroker.h"
 #include "Util.h"
 #include "favourites/FavouritesURL.h"
+#include "input/WindowTranslator.h"
 #include "profiles/ProfileManager.h"
 #include "settings/SettingsComponent.h"
 #include "utils/ContentUtils.h"
 #include "utils/FileUtils.h"
 #include "utils/URIUtils.h"
-#include "utils/XBMCTinyXML.h"
+#include "utils/XBMCTinyXML2.h"
 #include "utils/log.h"
-#include "utils/Variant.h"
 
 #include <mutex>
 
@@ -99,20 +99,20 @@ bool IsMediasourceOfFavItemUnlocked(const std::shared_ptr<CFileItem>& item)
 
 bool LoadFromFile(const std::string& strPath, CFileItemList& items)
 {
-  CXBMCTinyXML doc;
+  CXBMCTinyXML2 doc;
   if (!doc.LoadFile(strPath))
   {
-    CLog::Log(LOGERROR, "Unable to load {} (row {} column {})", strPath, doc.Row(), doc.Column());
+    CLog::Log(LOGERROR, "Unable to load {} (line {})", strPath, doc.ErrorLineNum());
     return false;
   }
-  TiXmlElement *root = doc.RootElement();
+  auto* root = doc.RootElement();
   if (!root || strcmp(root->Value(), "favourites"))
   {
     CLog::Log(LOGERROR, "Favourites.xml doesn't contain the <favourites> root element");
     return false;
   }
 
-  TiXmlElement *favourite = root->FirstChildElement("favourite");
+  auto* favourite = root->FirstChildElement("favourite");
   while (favourite)
   {
     // format:
@@ -147,8 +147,11 @@ CFavouritesService::CFavouritesService(std::string userDataFolder) : m_favourite
 
 void CFavouritesService::ReInit(std::string userDataFolder)
 {
+  std::unique_lock<CCriticalSection> lock(m_criticalSection);
+
   m_userDataFolder = std::move(userDataFolder);
   m_favourites.Clear();
+  m_targets.clear();
   m_favourites.SetContent("favourites");
 
   std::string favourites = "special://xbmc/system/favourites.xml";
@@ -166,21 +169,21 @@ void CFavouritesService::ReInit(std::string userDataFolder)
 
 bool CFavouritesService::Persist()
 {
-  CXBMCTinyXML doc;
-  TiXmlElement xmlRootElement("favourites");
-  TiXmlNode *rootNode = doc.InsertEndChild(xmlRootElement);
+  CXBMCTinyXML2 doc;
+  auto* element = doc.NewElement("favourites");
+  auto* rootNode = doc.InsertEndChild(element);
   if (!rootNode)
     return false;
 
   for (const auto& item : m_favourites)
   {
-    TiXmlElement favNode("favourite");
-    favNode.SetAttribute("name", item->GetLabel().c_str());
+    auto* favNode = doc.NewElement("favourite");
+    favNode->SetAttribute("name", item->GetLabel().c_str());
     if (item->HasArt("thumb"))
-      favNode.SetAttribute("thumb", item->GetArt("thumb").c_str());
+      favNode->SetAttribute("thumb", item->GetArt("thumb").c_str());
 
-    TiXmlText execute(CFavouritesURL(item->GetPath()).GetExecString());
-    favNode.InsertEndChild(execute);
+    auto* execute = doc.NewText(CFavouritesURL(item->GetPath()).GetExecString().c_str());
+    favNode->InsertEndChild(execute);
     rootNode->InsertEndChild(favNode);
   }
 
@@ -193,6 +196,7 @@ bool CFavouritesService::Save(const CFileItemList& items)
   {
     std::unique_lock<CCriticalSection> lock(m_criticalSection);
     m_favourites.Clear();
+    m_targets.clear();
     m_favourites.Copy(items);
     Persist();
   }
@@ -205,27 +209,29 @@ void CFavouritesService::OnUpdated()
   m_events.Publish(FavouritesUpdated{});
 }
 
-std::string CFavouritesService::GetFavouritesUrl(const CFileItem& item, int contextWindow) const
-{
-  return CFavouritesURL(item, contextWindow).GetURL();
-}
-
 bool CFavouritesService::AddOrRemove(const CFileItem& item, int contextWindow)
 {
-  auto favUrl = GetFavouritesUrl(item, contextWindow);
   {
     std::unique_lock<CCriticalSection> lock(m_criticalSection);
-    CFileItemPtr match = m_favourites.Get(favUrl);
+
+    const std::shared_ptr<CFileItem> match{GetFavourite(item, contextWindow)};
     if (match)
-    { // remove the item
+    {
+      // remove the item
+      const auto it = m_targets.find(match->GetPath());
+      if (it != m_targets.end())
+        m_targets.erase(it);
+
       m_favourites.Remove(match.get());
     }
     else
-    { // create our new favourite item
-      const CFileItemPtr favourite(std::make_shared<CFileItem>(item.GetLabel()));
+    {
+      // create our new favourite item
+      const auto favourite{std::make_shared<CFileItem>(item.GetLabel())};
       if (item.GetLabel().empty())
         favourite->SetLabel(CUtil::GetTitleFromPath(item.GetPath(), item.m_bIsFolder));
       favourite->SetArt("thumb", ContentUtils::GetPreferredArtImage(item));
+      const std::string favUrl{CFavouritesURL(item, contextWindow).GetURL()};
       favourite->SetPath(favUrl);
       m_favourites.Add(favourite);
     }
@@ -235,10 +241,82 @@ bool CFavouritesService::AddOrRemove(const CFileItem& item, int contextWindow)
   return true;
 }
 
-bool CFavouritesService::IsFavourited(const CFileItem& item, int contextWindow) const
+std::shared_ptr<CFileItem> CFavouritesService::GetFavourite(const CFileItem& item,
+                                                            int contextWindow) const
 {
   std::unique_lock<CCriticalSection> lock(m_criticalSection);
-  return m_favourites.Contains(GetFavouritesUrl(item, contextWindow));
+
+  const CFavouritesURL favURL{item, contextWindow};
+  const bool isVideoDb{URIUtils::IsVideoDb(favURL.GetTarget())};
+  const bool isMusicDb{URIUtils::IsMusicDb(favURL.GetTarget())};
+
+  for (const auto& favItem : m_favourites)
+  {
+    const CFavouritesURL favItemURL{*favItem, contextWindow};
+
+    // Compare the whole target URLs
+    if (favItemURL.GetTarget() == item.GetPath())
+      return favItem;
+
+    // Compare the target URLs ignoring optional parameters
+    if (favItemURL.GetAction() == favURL.GetAction() &&
+        (favItemURL.GetAction() != CFavouritesURL::Action::ACTIVATE_WINDOW ||
+         favItemURL.GetWindowID() == favURL.GetWindowID()))
+    {
+      if (favItemURL.GetTarget() == favURL.GetTarget())
+        return favItem;
+
+      // Check videodb and musicdb paths. Might be different strings pointing to same resource!
+      // Example: "musicdb://recentlyaddedalbums/4711/" and "musicdb://recentlyplayedalbums/4711/",
+      // both pointing to same album with db id 4711.
+      if ((isVideoDb && URIUtils::IsVideoDb(favItemURL.GetTarget())) ||
+          (isMusicDb && URIUtils::IsMusicDb(favItemURL.GetTarget())))
+      {
+        const std::shared_ptr<CFileItem> targetItem{ResolveFavourite(*favItem)};
+        if (targetItem && targetItem->IsSamePath(&item))
+          return favItem;
+      }
+    }
+  }
+  return {};
+}
+
+bool CFavouritesService::IsFavourited(const CFileItem& item, int contextWindow) const
+{
+  return (GetFavourite(item, contextWindow) != nullptr);
+}
+
+std::shared_ptr<CFileItem> CFavouritesService::ResolveFavourite(const CFileItem& item) const
+{
+  if (item.IsFavourite())
+  {
+    std::unique_lock<CCriticalSection> lock(m_criticalSection);
+
+    const auto it = m_targets.find(item.GetPath());
+    if (it != m_targets.end())
+      return (*it).second;
+
+    const CFavouritesURL favURL{item.GetPath()};
+    if (favURL.IsValid())
+    {
+      auto targetItem{std::make_shared<CFileItem>(favURL.GetTarget(), favURL.IsDir())};
+      targetItem->LoadDetails();
+      if (favURL.GetWindowID() != -1)
+      {
+        const std::string window{CWindowTranslator::TranslateWindow(favURL.GetWindowID())};
+        targetItem->SetProperty("targetwindow", CVariant{window});
+      }
+      m_targets.insert({item.GetPath(), targetItem});
+      return targetItem;
+    }
+  }
+  return {};
+}
+
+int CFavouritesService::Size() const
+{
+  std::unique_lock<CCriticalSection> lock(m_criticalSection);
+  return m_favourites.Size();
 }
 
 void CFavouritesService::GetAll(CFileItemList& items) const

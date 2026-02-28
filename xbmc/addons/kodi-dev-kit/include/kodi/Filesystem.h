@@ -135,7 +135,10 @@ public:
   uint32_t GetDeviceId() const { return m_cStructure->deviceId; }
 
   /// @brief Set the file serial number, which distinguishes this file from all other files on the same device.
-  void SetFileSerialNumber(uint64_t fileSerialNumber) { m_cStructure->fileSerialNumber = fileSerialNumber; }
+  void SetFileSerialNumber(uint64_t fileSerialNumber)
+  {
+    m_cStructure->fileSerialNumber = fileSerialNumber;
+  }
 
   /// @brief Get the file serial number, which distinguishes this file from all other files on the same device.
   uint64_t GetFileSerialNumber() const { return m_cStructure->fileSerialNumber; }
@@ -2016,6 +2019,32 @@ public:
   ///
   /// @param[out] line The buffer to store the data in.
   /// @return True when a line was read, false otherwise.
+  ///
+  /// ------------------------------------------------------------------------
+  ///
+  /// **Example:**
+  /// ~~~~~~~~~~~~~{.cpp}
+  /// #include <kodi/Filesystem.h>
+  ///
+  /// ...
+  ///
+  /// /* Create the needed file handle class */
+  /// kodi::vfs::CFile myFile;
+  ///
+  /// /* Open the wanted file */
+  /// if (myFile.OpenFile(kodi::addon::GetUserPath("/myFile.txt")))
+  /// {
+  ///   /* Read all lines inside file */
+  ///   while (1)
+  ///   {
+  ///     std::string line;
+  ///     if (!myFile.ReadLine(line))
+  ///       break;
+  ///     fprintf(stderr, "%s\n", line.c_str());
+  ///   }
+  /// }
+  ///
+  /// ~~~~~~~~~~~~~
   ///
   bool ReadLine(std::string& line)
   {

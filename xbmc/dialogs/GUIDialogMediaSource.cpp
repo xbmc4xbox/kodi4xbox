@@ -7,27 +7,30 @@
  */
 
 #include "GUIDialogMediaSource.h"
-#include "ServiceBroker.h"
-#include "guilib/GUIKeyboardFactory.h"
-#include "GUIDialogFileBrowser.h"
-#include "video/windows/GUIWindowVideoBase.h"
-#include "music/windows/GUIWindowMusicBase.h"
-#include "guilib/GUIComponent.h"
-#include "guilib/GUIWindowManager.h"
-#include "input/Key.h"
-#include "Util.h"
-#include "utils/URIUtils.h"
-#include "utils/StringUtils.h"
-#include "utils/Variant.h"
-#include "filesystem/Directory.h"
-#include "GUIDialogYesNo.h"
+
 #include "FileItem.h"
+#include "GUIDialogFileBrowser.h"
+#include "GUIDialogYesNo.h"
+#include "PasswordManager.h"
+#include "ServiceBroker.h"
+#include "URL.h"
+#include "Util.h"
+#include "filesystem/Directory.h"
+#include "filesystem/PVRDirectory.h"
+#include "guilib/GUIComponent.h"
+#include "guilib/GUIKeyboardFactory.h"
+#include "guilib/GUIWindowManager.h"
+#include "guilib/LocalizeStrings.h"
+#include "input/actions/ActionIDs.h"
+#include "music/windows/GUIWindowMusicBase.h"
+#include "pvr/recordings/PVRRecordingsPath.h"
 #include "settings/MediaSourceSettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
-#include "guilib/LocalizeStrings.h"
-#include "PasswordManager.h"
-#include "URL.h"
+#include "utils/StringUtils.h"
+#include "utils/URIUtils.h"
+#include "utils/Variant.h"
+#include "video/windows/GUIWindowVideoBase.h"
 
 #if defined(TARGET_ANDROID)
 #include "utils/FileUtils.h"
@@ -272,6 +275,20 @@ void CGUIDialogMediaSource::OnPathBrowse(int item)
     share1.m_ignore = true;
     extraShares.push_back(share1);
 
+    // add the recordings dir as needed
+    if (CPVRDirectory::HasRadioRecordings())
+    {
+      share1.strPath = PVR::CPVRRecordingsPath::PATH_ACTIVE_RADIO_RECORDINGS;
+      share1.strName = g_localizeStrings.Get(19017); // Recordings
+      extraShares.push_back(share1);
+    }
+    if (CPVRDirectory::HasDeletedRadioRecordings())
+    {
+      share1.strPath = PVR::CPVRRecordingsPath::PATH_DELETED_RADIO_RECORDINGS;
+      share1.strName = g_localizeStrings.Get(19184); // Deleted recordings
+      extraShares.push_back(share1);
+    }
+
     if (CServiceBroker::GetSettingsComponent()->GetSettings()->GetString(CSettings::SETTING_AUDIOCDS_RECORDINGPATH) != "")
     {
       share1.strPath = "special://recordings/";
@@ -310,6 +327,20 @@ void CGUIDialogMediaSource::OnPathBrowse(int item)
     share1.strPath = "special://videoplaylists/";
     share1.strName = g_localizeStrings.Get(20012);
     extraShares.push_back(share1);
+
+    // add the recordings dir as needed
+    if (CPVRDirectory::HasTVRecordings())
+    {
+      share1.strPath = PVR::CPVRRecordingsPath::PATH_ACTIVE_TV_RECORDINGS;
+      share1.strName = g_localizeStrings.Get(19017); // Recordings
+      extraShares.push_back(share1);
+    }
+    if (CPVRDirectory::HasDeletedTVRecordings())
+    {
+      share1.strPath = PVR::CPVRRecordingsPath::PATH_DELETED_TV_RECORDINGS;
+      share1.strName = g_localizeStrings.Get(19184); // Deleted recordings
+      extraShares.push_back(share1);
+    }
   }
   else if (m_type == "pictures")
   {

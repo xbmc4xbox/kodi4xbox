@@ -416,7 +416,7 @@ void CGUIDialogMediaFilter::InitializeSettings()
       }
     }
 
-    std::string settingId = StringUtils::Format("filter.{}.{}", filter.mediaType, static_cast<int>(filter.field));
+    std::string settingId = StringUtils::Format("filter.{}.{}", filter.mediaType, filter.field);
     if (filter.controlType == "edit")
     {
       CVariant data;
@@ -437,9 +437,9 @@ void CGUIDialogMediaFilter::InitializeSettings()
         value = filter.rule->m_operator == CDatabaseQueryRule::OPERATOR_TRUE ? CHECK_YES : CHECK_NO;
 
       TranslatableIntegerSettingOptions entries;
-      entries.push_back(TranslatableIntegerSettingOption(CHECK_LABEL_ALL, CHECK_ALL));
-      entries.push_back(TranslatableIntegerSettingOption(CHECK_LABEL_NO, CHECK_NO));
-      entries.push_back(TranslatableIntegerSettingOption(CHECK_LABEL_YES, CHECK_YES));
+      entries.emplace_back(CHECK_LABEL_ALL, CHECK_ALL);
+      entries.emplace_back(CHECK_LABEL_NO, CHECK_NO);
+      entries.emplace_back(CHECK_LABEL_YES, CHECK_YES);
 
       filter.setting = AddSpinner(group, settingId, filter.label, SettingLevel::Basic, value, entries, true);
     }
@@ -519,7 +519,7 @@ void CGUIDialogMediaFilter::InitializeSettings()
 
       CLog::Log(LOGWARNING,
                 "CGUIDialogMediaFilter: filter {} of media type {} with unknown control type '{}'",
-                static_cast<int>(filter.field), filter.mediaType, filter.controlType);
+                filter.field, filter.mediaType, filter.controlType);
       continue;
     }
 
@@ -531,7 +531,7 @@ void CGUIDialogMediaFilter::InitializeSettings()
       CLog::Log(LOGWARNING,
                 "CGUIDialogMediaFilter: failed to create filter {} of media type {} with control "
                 "type '{}'",
-                static_cast<int>(filter.field), filter.mediaType, filter.controlType);
+                filter.field, filter.mediaType, filter.controlType);
       continue;
     }
 
@@ -838,7 +838,7 @@ void CGUIDialogMediaFilter::GetRange(const Filter &filter, int &min, int &interv
 
     if (m_mediaType == "episodes")
     {
-      std::string field = StringUtils::Format("CAST(strftime(\"%{}\", c{:02}) AS INTEGER)",
+      std::string field = StringUtils::Format("CAST(strftime(\"%%s\", c{:02}) AS INTEGER)",
                                               VIDEODB_ID_EPISODE_AIRED);
 
       GetMinMax("episode_view", field, min, max);

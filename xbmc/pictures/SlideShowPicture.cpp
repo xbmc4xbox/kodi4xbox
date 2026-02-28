@@ -13,36 +13,16 @@
 #include "settings/AdvancedSettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
-#include "windowing/WindowingFactory.h"
-#include "guilib/GraphicContext.h"
+#include "windowing/GraphicContext.h"
+#include "windowing/WinSystem.h"
 
 #include <mutex>
 
 #ifndef _USE_MATH_DEFINES
 #define _USE_MATH_DEFINES
 #endif
-#include <math.h>
-
-#if defined(HAS_GL)
-#include "utils/GLUtils.h"
-#elif defined(HAS_GLES)
-#include "rendering/gles/RenderSystemGLES.h"
-#include "utils/GLUtils.h"
-#elif defined(TARGET_WINDOWS)
-#include "guilib/TextureDX.h"
-#include "rendering/dx/DeviceResources.h"
-#include "rendering/dx/RenderContext.h"
-
-#include <DirectXMath.h>
-using namespace DirectX;
-using namespace Microsoft::WRL;
-#endif
-
 #include <cstddef>
-
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
+#include <math.h>
 
 #define IMMEDIATE_TRANSITION_TIME          20
 
@@ -81,9 +61,6 @@ void CSlideShowPic::Close()
   m_bTransitionImmediately = false;
   m_bIsDirty = true;
   m_alpha = 0;
-#ifdef HAS_DX
-  m_vb = nullptr;
-#endif
 }
 
 void CSlideShowPic::Reset(DISPLAY_EFFECT dispEffect, TRANSITION_EFFECT transEffect)
@@ -129,12 +106,10 @@ void CSlideShowPic::SetTexture_Internal(int iSlideNumber,
   m_pImage = std::move(pTexture);
   m_fWidth = static_cast<float>(m_pImage->GetWidth());
   m_fHeight = static_cast<float>(m_pImage->GetHeight());
-#if 0
   if (CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(CSettings::SETTING_SLIDESHOW_HIGHQUALITYDOWNSCALING))
   { // activate mipmapping when high quality downscaling is 'on'
     m_pImage->SetMipmapping();
   }
-#endif
   // reset our counter
   m_iCounter = 0;
   // initialize our transition effect
@@ -156,7 +131,7 @@ void CSlideShowPic::SetTexture_Internal(int iSlideNumber,
   float fadeTime = 0.2f;
   if (m_displayEffect != EFFECT_NO_TIMEOUT)
     fadeTime = std::min(0.2f*CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_SLIDESHOW_STAYTIME), 3.0f);
-  m_transitionStart.length = (int)(g_graphicsContext.GetFPS() * fadeTime); // transition time in frames
+  m_transitionStart.length = (int)(CServiceBroker::GetWinSystem()->GetGfxContext().GetFPS() * fadeTime); // transition time in frames
   m_transitionEnd.type = transEffect;
   m_transitionEnd.length = m_transitionStart.length;
   m_transitionTemp.type = TRANSITION_NONE;
@@ -181,10 +156,10 @@ void CSlideShowPic::SetTexture_Internal(int iSlideNumber,
   m_fPosX = m_fPosY = 0.0f;
   m_fPosZ = 1.0f;
   m_fVelocityX = m_fVelocityY = m_fVelocityZ = 0.0f;
-  int iFrames = std::max((int)(g_graphicsContext.GetFPS() * CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_SLIDESHOW_STAYTIME)), 1);
+  int iFrames = std::max((int)(CServiceBroker::GetWinSystem()->GetGfxContext().GetFPS() * CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_SLIDESHOW_STAYTIME)), 1);
   if (m_displayEffect == EFFECT_PANORAMA)
   {
-    RESOLUTION_INFO res = g_graphicsContext.GetResInfo();
+    RESOLUTION_INFO res = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo();
     float fScreenWidth  = (float)res.Overscan.right  - res.Overscan.left;
     float fScreenHeight = (float)res.Overscan.bottom - res.Overscan.top;
 
@@ -288,8 +263,8 @@ void CSlideShowPic::UpdateVertices(float cur_x[4], float cur_y[4], const float n
   || memcmp(cur_y, new_y, count)
   || m_bIsDirty)
   {
-    dirtyregions.push_back(CDirtyRegion(GetRectangle(cur_x, cur_y)));
-    dirtyregions.push_back(CDirtyRegion(GetRectangle(new_x, new_y)));
+    dirtyregions.emplace_back(GetRectangle(cur_x, cur_y));
+    dirtyregions.emplace_back(GetRectangle(new_x, new_y));
     memcpy(cur_x, new_x, count);
     memcpy(cur_y, new_y, count);
   }
@@ -439,7 +414,7 @@ void CSlideShowPic::Process(unsigned int currentTime, CDirtyRegionList &dirtyreg
   if (m_iCounter > m_transitionEnd.start + m_transitionEnd.length)
     m_bIsFinished = true;
 
-  RESOLUTION_INFO info = g_graphicsContext.GetResInfo();
+  RESOLUTION_INFO info = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo();
 
   // calculate where we should render (and how large it should be)
   // calculate aspect ratio correction factor
@@ -720,7 +695,7 @@ void CSlideShowPic::Rotate(float fRotateAngle, bool immediate /* = false */)
   m_transitionTemp.length = IMMEDIATE_TRANSITION_TIME;
   m_fTransitionAngle = fRotateAngle / (float)m_transitionTemp.length;
   // reset the timer
-  m_transitionEnd.start = m_iCounter + m_transitionStart.length + (int)(g_graphicsContext.GetFPS() * CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_SLIDESHOW_STAYTIME));
+  m_transitionEnd.start = m_iCounter + m_transitionStart.length + (int)(CServiceBroker::GetWinSystem()->GetGfxContext().GetFPS() * CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_SLIDESHOW_STAYTIME));
 }
 
 void CSlideShowPic::Zoom(float fZoom, bool immediate /* = false */)
@@ -737,7 +712,7 @@ void CSlideShowPic::Zoom(float fZoom, bool immediate /* = false */)
   m_transitionTemp.length = IMMEDIATE_TRANSITION_TIME;
   m_fTransitionZoom = (fZoom - m_fZoomAmount) / (float)m_transitionTemp.length;
   // reset the timer
-  m_transitionEnd.start = m_iCounter + m_transitionStart.length + (int)(g_graphicsContext.GetFPS() * CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_SLIDESHOW_STAYTIME));
+  m_transitionEnd.start = m_iCounter + m_transitionStart.length + (int)(CServiceBroker::GetWinSystem()->GetGfxContext().GetFPS() * CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_SLIDESHOW_STAYTIME));
   // turn off the render effects until we're back down to normal zoom
   m_bNoEffect = true;
 }
@@ -747,7 +722,7 @@ void CSlideShowPic::Move(float fDeltaX, float fDeltaY)
   m_fZoomLeft += fDeltaX;
   m_fZoomTop += fDeltaY;
   // reset the timer
- // m_transitionEnd.start = m_iCounter + m_transitionStart.length + (int)(g_graphicsContext.GetFPS() * CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_SLIDESHOW_STAYTIME));
+ // m_transitionEnd.start = m_iCounter + m_transitionStart.length + (int)(CServiceBroker::GetWinSystem()->GetGfxContext().GetFPS() * CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_SLIDESHOW_STAYTIME));
 }
 
 void CSlideShowPic::Render()
@@ -762,238 +737,4 @@ void CSlideShowPic::Render()
   Render(m_bx, m_by, NULL, PICTURE_VIEW_BOX_BACKGROUND);
   Render(m_sx, m_sy, m_pImage.get(), 0xFFFFFFFF);
   Render(m_ox, m_oy, NULL, PICTURE_VIEW_BOX_COLOR);
-}
-
-#ifdef HAS_DX
-bool CSlideShowPic::UpdateVertexBuffer(Vertex* vertices)
-{
-  if (!m_vb) // create new
-  {
-    CD3D11_BUFFER_DESC desc(sizeof(Vertex) * 5, D3D11_BIND_VERTEX_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);
-    D3D11_SUBRESOURCE_DATA initData = {};
-    initData.pSysMem = vertices;
-    initData.SysMemPitch = sizeof(Vertex) * 5;
-    if (SUCCEEDED(DX::DeviceResources::Get()->GetD3DDevice()->CreateBuffer(&desc, &initData, m_vb.ReleaseAndGetAddressOf())))
-      return true;
-  }
-  else // update
-  {
-    ID3D11DeviceContext* pContext = DX::DeviceResources::Get()->GetD3DContext();
-    D3D11_MAPPED_SUBRESOURCE res;
-    if (SUCCEEDED(pContext->Map(m_vb.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &res)))
-    {
-      memcpy(res.pData, vertices, sizeof(Vertex) * 5);
-      pContext->Unmap(m_vb.Get(), 0);
-      return true;
-    }
-  }
-
-  return false;
-}
-#endif
-
-void CSlideShowPic::Render(float* x, float* y, CTexture* pTexture, UTILS::COLOR::Color color)
-{
-#ifdef HAS_DX
-  Vertex vertex[5];
-  for (int i = 0; i < 4; i++)
-  {
-    vertex[i].pos = XMFLOAT3( x[i], y[i], 0);
-    CD3DHelper::XMStoreColor(&vertex[i].color, color);
-    vertex[i].texCoord = XMFLOAT2(0.0f, 0.0f);
-    vertex[i].texCoord2 = XMFLOAT2(0.0f, 0.0f);
-  }
-
-  if (pTexture)
-  {
-    vertex[1].texCoord.x = vertex[2].texCoord.x = (float) pTexture->GetWidth() / pTexture->GetTextureWidth();
-    vertex[2].texCoord.y = vertex[3].texCoord.y = (float) pTexture->GetHeight() / pTexture->GetTextureHeight();
-  }
-  else
-  {
-    vertex[1].texCoord.x = vertex[2].texCoord.x = 1.0f;
-    vertex[2].texCoord.y = vertex[3].texCoord.y = 1.0f;
-  }
-  vertex[4] = vertex[0]; // Not used when pTexture != NULL
-
-  CGUIShaderDX* pGUIShader = DX::Windowing()->GetGUIShader();
-  pGUIShader->Begin(SHADER_METHOD_RENDER_TEXTURE_BLEND);
-
-  // Set state to render the image
-  if (pTexture)
-  {
-    pTexture->LoadToGPU();
-    CDXTexture* dxTexture = reinterpret_cast<CDXTexture*>(pTexture);
-    ID3D11ShaderResourceView* shaderRes = dxTexture->GetShaderResource();
-    pGUIShader->SetShaderViews(1, &shaderRes);
-    pGUIShader->DrawQuad(vertex[0], vertex[1], vertex[2], vertex[3]);
-  }
-  else
-  {
-    if (!UpdateVertexBuffer(vertex))
-      return;
-
-    ComPtr<ID3D11DeviceContext> pContext = DX::DeviceResources::Get()->GetD3DContext();
-
-    unsigned stride = sizeof(Vertex);
-    unsigned offset = 0;
-    pContext->IASetVertexBuffers(0, 1, m_vb.GetAddressOf(), &stride, &offset);
-    pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP);
-
-    pGUIShader->Draw(5, 0);
-    pGUIShader->RestoreBuffers();
-  }
-
-#elif defined(HAS_GL)
-  if (pTexture)
-  {
-    int unit = 0;
-    pTexture->LoadToGPU();
-    pTexture->BindToUnit(unit++);
-
-    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-    glEnable(GL_BLEND);          // Turn Blending On
-
-    // diffuse coloring
-    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
-    glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE);
-    glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_TEXTURE0);
-    glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR);
-    glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_PRIMARY_COLOR);
-    glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
-
-    if(g_Windowing.UseLimitedColor())
-    {
-      // compress range
-      pTexture->BindToUnit(unit++); // dummy bind
-      const GLfloat rgba1[4] = {(235.0 - 16.0f) / 255.0f, (235.0 - 16.0f) / 255.0f, (235.0 - 16.0f) / 255.0f, 1.0f};
-      glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE , GL_COMBINE);
-      glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, rgba1);
-      glTexEnvi (GL_TEXTURE_ENV, GL_COMBINE_RGB , GL_MODULATE);
-      glTexEnvi (GL_TEXTURE_ENV, GL_SOURCE0_RGB , GL_PREVIOUS);
-      glTexEnvi (GL_TEXTURE_ENV, GL_SOURCE1_RGB , GL_CONSTANT);
-      glTexEnvi (GL_TEXTURE_ENV, GL_OPERAND0_RGB , GL_SRC_COLOR);
-      glTexEnvi (GL_TEXTURE_ENV, GL_OPERAND1_RGB , GL_SRC_COLOR);
-      glTexEnvi (GL_TEXTURE_ENV, GL_COMBINE_ALPHA , GL_REPLACE);
-      glTexEnvi (GL_TEXTURE_ENV, GL_SOURCE0_ALPHA , GL_PREVIOUS);
-
-      // transition
-      pTexture->BindToUnit(unit++); // dummy bind
-      const GLfloat rgba2[4] = {16.0f / 255.0f, 16.0f / 255.0f, 16.0f / 255.0f, 0.0f};
-      glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE , GL_COMBINE);
-      glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, rgba2);
-      glTexEnvi (GL_TEXTURE_ENV, GL_COMBINE_RGB , GL_ADD);
-      glTexEnvi (GL_TEXTURE_ENV, GL_SOURCE0_RGB , GL_PREVIOUS);
-      glTexEnvi (GL_TEXTURE_ENV, GL_SOURCE1_RGB , GL_CONSTANT);
-      glTexEnvi (GL_TEXTURE_ENV, GL_OPERAND0_RGB , GL_SRC_COLOR);
-      glTexEnvi (GL_TEXTURE_ENV, GL_OPERAND1_RGB , GL_SRC_COLOR);
-      glTexEnvi (GL_TEXTURE_ENV, GL_COMBINE_ALPHA , GL_REPLACE);
-      glTexEnvi (GL_TEXTURE_ENV, GL_SOURCE0_ALPHA , GL_PREVIOUS);
-    }
-  }
-  else
-    glDisable(GL_TEXTURE_2D);
-  glPolygonMode(GL_FRONT_AND_BACK, pTexture ? GL_FILL : GL_LINE);
-
-  glBegin(GL_QUADS);
-  float u1 = 0, u2 = 1, v1 = 0, v2 = 1;
-  if (pTexture)
-  {
-    u2 = (float)pTexture->GetWidth() / pTexture->GetTextureWidth();
-    v2 = (float)pTexture->GetHeight() / pTexture->GetTextureHeight();
-  }
-
-  glColor4ub((GLubyte)GET_R(color), (GLubyte)GET_G(color), (GLubyte)GET_B(color), (GLubyte)GET_A(color));
-  glTexCoord2f(u1, v1);
-  glVertex3f(x[0], y[0], 0);
-
-  // Bottom-left vertex (corner)
-  glColor4ub((GLubyte)GET_R(color), (GLubyte)GET_G(color), (GLubyte)GET_B(color), (GLubyte)GET_A(color));
-  glTexCoord2f(u2, v1);
-  glVertex3f(x[1], y[1], 0);
-
-  // Bottom-right vertex (corner)
-  glColor4ub((GLubyte)GET_R(color), (GLubyte)GET_G(color), (GLubyte)GET_B(color), (GLubyte)GET_A(color));
-  glTexCoord2f(u2, v2);
-  glVertex3f(x[2], y[2], 0);
-
-  // Top-right vertex (corner)
-  glColor4ub((GLubyte)GET_R(color), (GLubyte)GET_G(color), (GLubyte)GET_B(color), (GLubyte)GET_A(color));
-  glTexCoord2f(u1, v2);
-  glVertex3f(x[3], y[3], 0);
-
-  glEnd();
-#elif defined(HAS_GLES)
-  CRenderSystemGLES *renderSystem = dynamic_cast<CRenderSystemGLES*>(CServiceBroker::GetRenderSystem());
-  if (pTexture)
-  {
-    pTexture->LoadToGPU();
-    pTexture->BindToUnit(0);
-
-    glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-    glEnable(GL_BLEND);          // Turn Blending On
-
-    renderSystem->EnableGUIShader(ShaderMethodGLES::SM_TEXTURE);
-  }
-  else
-  {
-    renderSystem->EnableGUIShader(ShaderMethodGLES::SM_DEFAULT);
-  }
-
-  float u1 = 0, u2 = 1, v1 = 0, v2 = 1;
-  if (pTexture)
-  {
-    u2 = (float)pTexture->GetWidth() / pTexture->GetTextureWidth();
-    v2 = (float)pTexture->GetHeight() / pTexture->GetTextureHeight();
-  }
-
-  GLubyte col[4];
-  GLfloat ver[4][3];
-  GLfloat tex[4][2];
-  GLubyte idx[4] = {0, 1, 3, 2};        //determines order of triangle strip
-
-  GLint posLoc  = renderSystem->GUIShaderGetPos();
-  GLint tex0Loc = renderSystem->GUIShaderGetCoord0();
-  GLint uniColLoc= renderSystem->GUIShaderGetUniCol();
-
-  glVertexAttribPointer(posLoc,  3, GL_FLOAT, 0, 0, ver);
-  glVertexAttribPointer(tex0Loc, 2, GL_FLOAT, 0, 0, tex);
-
-  glEnableVertexAttribArray(posLoc);
-  glEnableVertexAttribArray(tex0Loc);
-
-  // Setup Colour values
-  col[0] = KODI::UTILS::GL::GetChannelFromARGB(KODI::UTILS::GL::ColorChannel::R, color);
-  col[1] = KODI::UTILS::GL::GetChannelFromARGB(KODI::UTILS::GL::ColorChannel::G, color);
-  col[2] = KODI::UTILS::GL::GetChannelFromARGB(KODI::UTILS::GL::ColorChannel::B, color);
-  col[3] = KODI::UTILS::GL::GetChannelFromARGB(KODI::UTILS::GL::ColorChannel::A, color);
-
-  if (CServiceBroker::GetWinSystem()->UseLimitedColor())
-  {
-    col[0] = (235 - 16) * col[0] / 255 + 16;
-    col[1] = (235 - 16) * col[1] / 255 + 16;
-    col[2] = (235 - 16) * col[2] / 255 + 16;
-  }
-
-  for (int i=0; i<4; i++)
-  {
-    // Setup vertex position values
-    ver[i][0] = x[i];
-    ver[i][1] = y[i];
-    ver[i][2] = 0.0f;
-  }
-  // Setup texture coordinates
-  tex[0][0] = tex[3][0] = u1;
-  tex[0][1] = tex[1][1] = v1;
-  tex[1][0] = tex[2][0] = u2;
-  tex[2][1] = tex[3][1] = v2;
-
-  glUniform4f(uniColLoc,(col[0] / 255.0f), (col[1] / 255.0f), (col[2] / 255.0f), (col[3] / 255.0f));
-  glDrawElements(GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_BYTE, idx);
-
-  glDisableVertexAttribArray(posLoc);
-  glDisableVertexAttribArray(tex0Loc);
-
-  renderSystem->DisableGUIShader();
-#endif
 }

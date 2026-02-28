@@ -11,7 +11,7 @@
 #include "addons/Addon.h"
 #include "addons/gui/skin/SkinTimerManager.h"
 #include "guilib/GUIIncludes.h" // needed for the GUIInclude member
-#include "guilib/GraphicContext.h" // needed for the RESOLUTION members
+#include "windowing/GraphicContext.h" // needed for the RESOLUTION members
 
 #include <map>
 #include <memory>
@@ -283,7 +283,7 @@ protected:
   bool m_debugging;
 
   /*! Manager/Owner of skin timers */
-  CSkinTimerManager m_skinTimerManager;
+  std::unique_ptr<CSkinTimerManager> m_skinTimerManager;
 
 private:
   std::map<int, CSkinSettingStringPtr> m_strings;

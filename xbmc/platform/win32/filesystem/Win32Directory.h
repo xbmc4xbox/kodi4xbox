@@ -25,10 +25,6 @@ namespace XFILE
     bool RemoveRecursive(const CURL& url) override;
 
   private:
-#ifdef NXDK
-    bool Create(std::string path) const;
-#else
     bool Create(std::wstring path) const;
-#endif
   };
 }

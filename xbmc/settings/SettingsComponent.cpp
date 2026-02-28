@@ -23,6 +23,7 @@
 #include "profiles/ProfileManager.h"
 #include "settings/AdvancedSettings.h"
 #include "settings/Settings.h"
+#include "settings/SubtitlesSettings.h"
 #include "utils/StringUtils.h"
 #include "utils/URIUtils.h"
 #include "utils/log.h"
@@ -33,6 +34,7 @@
 CSettingsComponent::CSettingsComponent()
   : m_settings(new CSettings()),
     m_advancedSettings(new CAdvancedSettings()),
+    m_subtitlesSettings(new KODI::SUBTITLES::CSubtitlesSettings(m_settings)),
     m_profileManager(new CProfileManager())
 {
 }
@@ -53,8 +55,6 @@ void CSettingsComponent::Initialize()
       inited = InitDirectoriesOSX(params->HasPlatformDirectories());
     if (!inited)
       inited = InitDirectoriesWin32(params->HasPlatformDirectories());
-    if (!inited)
-      inited = InitDirectoriesXbox(true);
 
     m_settings->Initialize();
 
@@ -107,6 +107,8 @@ void CSettingsComponent::Deinitialize()
   {
     if (m_state == State::LOADED)
     {
+      m_subtitlesSettings.reset();
+
       m_settings->Unload();
 
       XFILE::IDirectory::UnregisterProfileManager();
@@ -130,6 +132,11 @@ std::shared_ptr<CSettings> CSettingsComponent::GetSettings()
 std::shared_ptr<CAdvancedSettings> CSettingsComponent::GetAdvancedSettings()
 {
   return m_advancedSettings;
+}
+
+std::shared_ptr<KODI::SUBTITLES::CSubtitlesSettings> CSettingsComponent::GetSubtitlesSettings()
+{
+  return m_subtitlesSettings;
 }
 
 std::shared_ptr<CProfileManager> CSettingsComponent::GetProfileManager()
@@ -361,29 +368,6 @@ bool CSettingsComponent::InitDirectoriesWin32(bool bPlatformDirectories)
   CSpecialProtocol::SetTempPath(URIUtils::AddFileToFolder(strWin32UserFolder,"cache"));
 
   CEnvironment::setenv("KODI_PROFILE_USERDATA", CSpecialProtocol::TranslatePath("special://masterprofile/"));
-
-  CreateUserDirs();
-
-  return true;
-#else
-  return false;
-#endif
-}
-
-bool CSettingsComponent::InitDirectoriesXbox(bool bPlatformDirectories)
-{
-#ifdef _XBOX
-  // TODO: set XBMC path to be parent path of XBE path (or make sure that Q:\\ is mounted to dir where XBE is located)
-  std::string xbmcPath = "Q:\\";
-  CSpecialProtocol::SetXBMCBinPath(xbmcPath);
-  CSpecialProtocol::SetXBMCPath(xbmcPath);
-  CSpecialProtocol::SetXBMCBinAddonPath(xbmcPath + "addons");
-
-  std::string strWin32UserFolder = "E:\\UDATA\\Kodi\\";
-  CSpecialProtocol::SetLogPath(strWin32UserFolder);
-  CSpecialProtocol::SetHomePath(strWin32UserFolder);
-  CSpecialProtocol::SetMasterProfilePath(URIUtils::AddFileToFolder(strWin32UserFolder, "userdata"));
-  CSpecialProtocol::SetTempPath("Z:\\");
 
   CreateUserDirs();
 

@@ -15,6 +15,7 @@
 #include "GUIControlBuiltins.h"
 #include "LibraryBuiltins.h"
 #include "OpticalBuiltins.h"
+#include "PVRBuiltins.h"
 #include "PictureBuiltins.h"
 #include "PlayerBuiltins.h"
 #include "ProfileBuiltins.h"
@@ -23,6 +24,7 @@
 #include "SystemBuiltins.h"
 #include "WeatherBuiltins.h"
 #include "input/InputManager.h"
+#include "powermanagement/PowerTypes.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 #include "utils/ExecString.h"
@@ -49,6 +51,7 @@ CBuiltins::CBuiltins()
   RegisterCommands<CPictureBuiltins>();
   RegisterCommands<CPlayerBuiltins>();
   RegisterCommands<CProfileBuiltins>();
+  RegisterCommands<CPVRBuiltins>();
   RegisterCommands<CSkinBuiltins>();
   RegisterCommands<CSystemBuiltins>();
   RegisterCommands<CWeatherBuiltins>();
@@ -112,7 +115,6 @@ bool CBuiltins::IsSystemPowerdownCommand(const std::string& execString)
   }
   else if (execute == "shutdown")
   {
-#if 0
     switch (CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_POWERMANAGEMENT_SHUTDOWNSTATE))
     {
       case POWERSTATE_SHUTDOWN:
@@ -123,7 +125,6 @@ bool CBuiltins::IsSystemPowerdownCommand(const std::string& execString)
       default:
         return false;
     }
-#endif
   }
   return false;
 }

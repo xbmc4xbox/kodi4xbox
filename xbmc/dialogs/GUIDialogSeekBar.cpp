@@ -8,7 +8,6 @@
 
 #include "GUIDialogSeekBar.h"
 
-#include "ServiceBroker.h"
 #include "GUIInfoManager.h"
 #include "SeekHandler.h"
 #include "application/ApplicationComponents.h"

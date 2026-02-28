@@ -17,6 +17,8 @@
 #include <stdint.h>
 #include <vector>
 
+class CEventLog;
+class CEventLogManager;
 class CSettings;
 class TiXmlNode;
 
@@ -184,6 +186,9 @@ public:
   // uses HasSlashAtEnd to determine if a directory or file was meant
   std::string GetUserDataItem(const std::string& strFile) const;
 
+  // Event log access
+  CEventLog &GetEventLog();
+
 protected:
   // implementation of ISettingCallback
   void OnSettingAction(const std::shared_ptr<const CSetting>& setting) override;
@@ -211,4 +216,7 @@ private:
   int m_nextProfileId =
       0; // for tracking the next available id to give to a new profile to ensure id's are not re-used
   mutable CCriticalSection m_critical;
+
+  // Event properties
+  std::unique_ptr<CEventLogManager> m_eventLogs;
 };

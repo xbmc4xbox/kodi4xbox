@@ -35,7 +35,7 @@
   #define UTF32_CHARSET "UTF-32" ENDIAN_SUFFIX
   #define UTF8_SOURCE "UTF-8-MAC"
   #define WCHAR_CHARSET UTF32_CHARSET
-#elif defined(TARGET_WINDOWS) || defined(_XBOX)
+#elif defined(TARGET_WINDOWS)
   #define WCHAR_IS_UTF16 1
   #define UTF16_CHARSET "UTF-16" ENDIAN_SUFFIX
   #define UTF32_CHARSET "UTF-32" ENDIAN_SUFFIX
@@ -462,7 +462,7 @@ bool CCharsetConverter::CInnerConverter::convert(iconv_t type, int multiplier, c
   const typename OUTPUT::size_type sizeInChars = (typename OUTPUT::size_type) (outBufSize - outBytesAvail) / sizeof(typename OUTPUT::value_type);
   typename OUTPUT::const_pointer strPtr = (typename OUTPUT::const_pointer) outBuf;
   /* Make sure that all buffer is assigned and string is stopped at end of buffer */
-  if (strPtr[sizeInChars-1] == 0 && strSource[strSource.length()-1] != 0)
+  if (sizeInChars > 0 && strPtr[sizeInChars - 1] == 0 && strSource[strSource.length() - 1] != 0)
     strDest.assign(strPtr, sizeInChars-1);
   else
     strDest.assign(strPtr, sizeInChars);

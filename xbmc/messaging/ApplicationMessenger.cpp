@@ -8,12 +8,11 @@
 
 #include "ApplicationMessenger.h"
 
-#include "ServiceBroker.h"
 #include "guilib/GUIMessage.h"
 #include "messaging/IMessageTarget.h"
 #include "threads/SingleLock.h"
 #include "utils/log.h"
-#include "guilib/GraphicContext.h"
+#include "windowing/GraphicContext.h"
 
 #include <memory>
 #include <mutex>
@@ -97,7 +96,7 @@ int CApplicationMessenger::SendMsg(ThreadMessage&& message, bool wait)
     // forever!
     if (m_guiThreadId != CThread::GetCurrentThreadId())
     {
-      message.waitEvent.reset(new CEvent(true));
+      message.waitEvent = std::make_shared<CEvent>(true);
       waitEvent = message.waitEvent;
       result = message.result;
     }
@@ -131,17 +130,14 @@ int CApplicationMessenger::SendMsg(ThreadMessage&& message, bool wait)
   if (waitEvent) // ... it just so happens we have a spare reference to the
                  //  waitEvent ... just for such contingencies :)
   {
-#ifndef _XBOX
-    /* On Xbox we always have window */
     // ensure the thread doesn't hold the graphics lock
     CWinSystemBase* winSystem = CServiceBroker::GetWinSystem();
     //! @todo This won't really help as winSystem can die every single
     // moment on shutdown. A shared ptr would be a more valid solution
     // depending on the design dependencies.
     if (winSystem)
-#endif
     {
-      CSingleExit exit(g_graphicsContext);
+      CSingleExit exit(winSystem->GetGfxContext());
       waitEvent->Wait();
     }
     return *result;

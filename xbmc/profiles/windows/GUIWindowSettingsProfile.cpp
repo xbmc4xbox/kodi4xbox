@@ -17,7 +17,7 @@
 #include "guilib/GUIMessage.h"
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
-#include "input/Key.h"
+#include "input/actions/ActionIDs.h"
 #include "messaging/ApplicationMessenger.h"
 #include "profiles/Profile.h"
 #include "profiles/ProfileManager.h"
@@ -25,6 +25,7 @@
 #include "settings/SettingsComponent.h"
 #include "utils/URIUtils.h"
 #include "utils/Variant.h"
+#include "windows/GUIWindowFileManager.h"
 
 using namespace XFILE;
 

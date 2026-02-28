@@ -76,7 +76,7 @@ private:
   static std::map<std::string, std::string> m_pathMap;
 };
 
-#if defined(TARGET_WINDOWS) || defined(_XBOX)
+#ifdef TARGET_WINDOWS
 #define PATH_SEPARATOR_CHAR '\\'
 #define PATH_SEPARATOR_STRING "\\"
 #else

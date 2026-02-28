@@ -9,13 +9,13 @@
 #include "GUIWindowHome.h"
 
 #include "ServiceBroker.h"
-#include "application/Application.h"
 #include "application/ApplicationComponents.h"
 #include "application/ApplicationPlayer.h"
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIWindowManager.h"
 #include "guilib/WindowIDs.h"
-#include "input/Key.h"
+#include "input/actions/Action.h"
+#include "input/actions/ActionIDs.h"
 #include "interfaces/AnnouncementManager.h"
 #include "settings/AdvancedSettings.h"
 #include "settings/SettingsComponent.h"
@@ -47,9 +47,11 @@ bool CGUIWindowHome::OnAction(const CAction &action)
   {
     const auto& components = CServiceBroker::GetAppComponents();
     const auto appPlayer = components.GetComponent<CApplicationPlayer>();
-    if (appPlayer->IsPlaying())
+    if (appPlayer->IsPlaying() && (!appPlayer->IsRemotePlaying() || appPlayer->HasAudio()))
     {
-      g_application.SwitchToFullScreen();
+      CGUIComponent* gui = CServiceBroker::GetGUI();
+      if (gui)
+        gui->GetWindowManager().SwitchToFullScreen();
 
       return true;
     }

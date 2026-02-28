@@ -14,7 +14,7 @@
 #include "utils/StringUtils.h"
 #include "utils/URIUtils.h"
 #include "view/ViewState.h"
-#include "guilib/GraphicContext.h"
+#include "windowing/GraphicContext.h"
 
 using namespace XFILE;
 using namespace ADDON;

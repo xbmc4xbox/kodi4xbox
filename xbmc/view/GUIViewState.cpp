@@ -21,7 +21,9 @@
 #include "addons/addoninfo/AddonType.h"
 #include "addons/gui/GUIViewStateAddonBrowser.h"
 #include "dialogs/GUIDialogSelect.h"
+#include "events/windows/GUIViewStateEventLog.h"
 #include "favourites/GUIViewStateFavourites.h"
+#include "games/windows/GUIViewStateWindowGames.h"
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
@@ -30,13 +32,14 @@
 #include "pictures/GUIViewStatePictures.h"
 #include "profiles/ProfileManager.h"
 #include "programs/GUIViewStatePrograms.h"
+#include "pvr/windows/GUIViewStatePVR.h"
 #include "settings/MediaSourceSettings.h"
-#include "settings/SettingUtils.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 #include "settings/lib/Setting.h"
 #include "utils/URIUtils.h"
 #include "video/GUIViewStateVideo.h"
+#include "video/VideoUtils.h"
 #include "view/ViewState.h"
 
 #define PROPERTY_SORT_ORDER         "sort.order"
@@ -44,15 +47,10 @@
 
 using namespace KODI;
 using namespace ADDON;
+using namespace PVR;
 
 std::string CGUIViewState::m_strPlaylistDirectory;
 VECSOURCES CGUIViewState::m_sources;
-
-static const int SETTING_AUTOPLAYNEXT_MUSICVIDEOS = 0;
-static const int SETTING_AUTOPLAYNEXT_TVSHOWS = 1;
-static const int SETTING_AUTOPLAYNEXT_EPISODES = 2;
-static const int SETTING_AUTOPLAYNEXT_MOVIES = 3;
-static const int SETTING_AUTOPLAYNEXT_UNCATEGORIZED = 4;
 
 CGUIViewState* CGUIViewState::GetViewState(int windowId, const CFileItemList& items)
 {
@@ -111,6 +109,9 @@ CGUIViewState* CGUIViewState::GetViewState(int windowId, const CFileItemList& it
   if (url.IsProtocol("androidapp"))
     return new CGUIViewStateWindowPrograms(items);
 
+  if (url.IsProtocol("activities"))
+    return new CGUIViewStateEventLog(items);
+
   if (windowId == WINDOW_MUSIC_NAV)
     return new CGUIViewStateWindowMusicNav(items);
 
@@ -126,14 +127,56 @@ CGUIViewState* CGUIViewState::GetViewState(int windowId, const CFileItemList& it
   if (windowId == WINDOW_VIDEO_PLAYLIST)
     return new CGUIViewStateWindowVideoPlaylist(items);
 
+  if (windowId == WINDOW_TV_CHANNELS)
+    return new CGUIViewStateWindowPVRChannels(windowId, items);
+
+  if (windowId == WINDOW_TV_RECORDINGS)
+    return new CGUIViewStateWindowPVRRecordings(windowId, items);
+
+  if (windowId == WINDOW_TV_GUIDE)
+    return new CGUIViewStateWindowPVRGuide(windowId, items);
+
+  if (windowId == WINDOW_TV_TIMERS)
+    return new CGUIViewStateWindowPVRTimers(windowId, items);
+
+  if (windowId == WINDOW_TV_TIMER_RULES)
+    return new CGUIViewStateWindowPVRTimers(windowId, items);
+
+  if (windowId == WINDOW_TV_SEARCH)
+    return new CGUIViewStateWindowPVRSearch(windowId, items);
+
+  if (windowId == WINDOW_RADIO_CHANNELS)
+      return new CGUIViewStateWindowPVRChannels(windowId, items);
+
+  if (windowId == WINDOW_RADIO_RECORDINGS)
+    return new CGUIViewStateWindowPVRRecordings(windowId, items);
+
+  if (windowId == WINDOW_RADIO_GUIDE)
+    return new CGUIViewStateWindowPVRGuide(windowId, items);
+
+  if (windowId == WINDOW_RADIO_TIMERS)
+    return new CGUIViewStateWindowPVRTimers(windowId, items);
+
+  if (windowId == WINDOW_RADIO_TIMER_RULES)
+    return new CGUIViewStateWindowPVRTimers(windowId, items);
+
+  if (windowId == WINDOW_RADIO_SEARCH)
+    return new CGUIViewStateWindowPVRSearch(windowId, items);
+
   if (windowId == WINDOW_PICTURES)
     return new CGUIViewStateWindowPictures(items);
 
   if (windowId == WINDOW_PROGRAMS)
     return new CGUIViewStateWindowPrograms(items);
 
+  if (windowId == WINDOW_GAMES)
+    return new GAME::CGUIViewStateWindowGames(items);
+
   if (windowId == WINDOW_ADDON_BROWSER)
     return new CGUIViewStateAddonBrowser(items);
+
+  if (windowId == WINDOW_EVENT_LOG)
+    return new CGUIViewStateEventLog(items);
 
   if (windowId == WINDOW_FAVOURITES)
     return new CGUIViewStateFavourites(items);
@@ -238,6 +281,7 @@ void CGUIViewState::GetSortMethodLabelMasks(LABEL_MASKS& masks) const
 std::vector<SortDescription> CGUIViewState::GetSortDescriptions() const
 {
   std::vector<SortDescription> descriptions;
+  descriptions.reserve(m_sortMethods.size());
   for (const auto& desc : m_sortMethods)
   {
     descriptions.emplace_back(desc.m_sortDescription);
@@ -419,7 +463,7 @@ VECSOURCES& CGUIViewState::GetSources()
 void CGUIViewState::AddLiveTVSources()
 {
   VECSOURCES *sources = CMediaSourceSettings::GetInstance().GetSources("video");
-  for (IVECSOURCES it = sources->begin(); it != sources->end(); it++)
+  for (IVECSOURCES it = sources->begin(); it != sources->end(); ++it)
   {
     if (URIUtils::IsLiveTV((*it).strPath))
     {
@@ -450,24 +494,7 @@ bool CGUIViewState::AutoPlayNextVideoItem() const
   if (GetPlaylist() != PLAYLIST::TYPE_VIDEO)
     return false;
 
-  int settingValue(-1);
-  if (m_items.GetContent() == "musicvideos")
-    settingValue = SETTING_AUTOPLAYNEXT_MUSICVIDEOS;
-  else if (m_items.GetContent() == "tvshows")
-    settingValue = SETTING_AUTOPLAYNEXT_TVSHOWS;
-  else if (m_items.GetContent() == "episodes")
-    settingValue = SETTING_AUTOPLAYNEXT_EPISODES;
-  else if (m_items.GetContent() == "movies")
-    settingValue = SETTING_AUTOPLAYNEXT_MOVIES;
-  else
-    settingValue = SETTING_AUTOPLAYNEXT_UNCATEGORIZED;
-
-  const auto setting = std::dynamic_pointer_cast<CSettingList>(
-      CServiceBroker::GetSettingsComponent()->GetSettings()->GetSetting(
-          CSettings::SETTING_VIDEOPLAYER_AUTOPLAYNEXTITEM));
-
-  return settingValue >= 0 && setting != nullptr &&
-         CSettingUtils::FindIntInList(setting, settingValue);
+  return VIDEO_UTILS::IsAutoPlayNextItem(m_items.GetContent());
 }
 
 void CGUIViewState::LoadViewState(const std::string &path, int windowID)

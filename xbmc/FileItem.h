@@ -42,6 +42,24 @@ namespace MUSIC_INFO
 class CVideoInfoTag;
 class CPictureInfoTag;
 
+namespace KODI
+{
+namespace GAME
+{
+  class CGameInfoTag;
+}
+}
+
+namespace PVR
+{
+class CPVRChannel;
+class CPVRChannelGroupMember;
+class CPVREpgInfoTag;
+class CPVREpgSearchFilter;
+class CPVRRecording;
+class CPVRTimerInfoTag;
+}
+
 class CAlbum;
 class CArtist;
 class CSong;
@@ -53,6 +71,9 @@ class CVariant;
 class CFileItemList;
 class CCueDocument;
 typedef std::shared_ptr<CCueDocument> CCueDocumentPtr;
+
+class IEvent;
+typedef std::shared_ptr<const IEvent> EventPtr;
 
 /* special startoffset used to indicate that we wish to resume */
 #define STARTOFFSET_RESUME (-1)
@@ -97,8 +118,14 @@ public:
   explicit CFileItem(const CGenre& genre);
   explicit CFileItem(const MUSIC_INFO::CMusicInfoTag& music);
   explicit CFileItem(const CVideoInfoTag& movie);
+  explicit CFileItem(const std::shared_ptr<PVR::CPVREpgInfoTag>& tag);
+  explicit CFileItem(const std::shared_ptr<PVR::CPVREpgSearchFilter>& filter);
+  explicit CFileItem(const std::shared_ptr<PVR::CPVRChannelGroupMember>& channelGroupMember);
+  explicit CFileItem(const std::shared_ptr<PVR::CPVRRecording>& record);
+  explicit CFileItem(const std::shared_ptr<PVR::CPVRTimerInfoTag>& timer);
   explicit CFileItem(const CMediaSource& share);
   explicit CFileItem(std::shared_ptr<const ADDON::IAddon> addonInfo);
+  explicit CFileItem(const EventPtr& eventLogEntry);
 
   ~CFileItem(void) override;
   CGUIListItem* Clone() const override { return new CFileItem(*this); }
@@ -187,6 +214,7 @@ public:
   bool IsAddonsPath() const;
   bool IsSourcesPath() const;
   bool IsNFO() const;
+  bool IsVideoExtras() const;
   bool IsDiscImage() const;
   bool IsOpticalMediaFile() const;
   bool IsDVDFile(bool bVobs = true, bool bIfos = true) const;
@@ -234,6 +262,9 @@ public:
   bool IsRSS() const;
   bool IsAndroidApp() const;
 
+  bool HasVideoVersions() const;
+  bool HasVideoExtras() const;
+
   void RemoveExtension();
   void CleanString();
   void FillInDefaultIcon();
@@ -266,26 +297,52 @@ public:
 
   inline bool HasEPGInfoTag() const
   {
-    return false;
+    return m_epgInfoTag.get() != NULL;
   }
 
-  bool HasEPGSearchFilter() const { return false; }
+  inline const std::shared_ptr<PVR::CPVREpgInfoTag> GetEPGInfoTag() const
+  {
+    return m_epgInfoTag;
+  }
+
+  bool HasEPGSearchFilter() const { return m_epgSearchFilter != nullptr; }
+
+  const std::shared_ptr<PVR::CPVREpgSearchFilter> GetEPGSearchFilter() const
+  {
+    return m_epgSearchFilter;
+  }
 
   inline bool HasPVRChannelGroupMemberInfoTag() const
   {
-    return false;
+    return m_pvrChannelGroupMemberInfoTag.get() != nullptr;
+  }
+
+  inline const std::shared_ptr<PVR::CPVRChannelGroupMember> GetPVRChannelGroupMemberInfoTag() const
+  {
+    return m_pvrChannelGroupMemberInfoTag;
   }
 
   bool HasPVRChannelInfoTag() const;
+  const std::shared_ptr<PVR::CPVRChannel> GetPVRChannelInfoTag() const;
 
   inline bool HasPVRRecordingInfoTag() const
   {
-    return false;
+    return m_pvrRecordingInfoTag.get() != NULL;
+  }
+
+  inline const std::shared_ptr<PVR::CPVRRecording> GetPVRRecordingInfoTag() const
+  {
+    return m_pvrRecordingInfoTag;
   }
 
   inline bool HasPVRTimerInfoTag() const
   {
-    return false;
+    return m_pvrTimerInfoTag != NULL;
+  }
+
+  inline const std::shared_ptr<PVR::CPVRTimerInfoTag> GetPVRTimerInfoTag() const
+  {
+    return m_pvrTimerInfoTag;
   }
 
   /*!
@@ -316,7 +373,9 @@ public:
 
   /*!
    * \brief Test if this item type can be resumed.
-   * \return True if this item can be resumed, false otherwise.
+   * \return True if this item is a folder and has at least one child with a partway resume bookmark
+   * or at least one unwatched child or if it is not a folder, if it has a partway resume bookmark,
+   * false otherwise.
    */
   bool IsResumable() const;
 
@@ -361,7 +420,14 @@ public:
 
   inline bool HasGameInfoTag() const
   {
-    return false;
+    return m_gameInfoTag != NULL;
+  }
+
+  KODI::GAME::CGameInfoTag* GetGameInfoTag();
+
+  inline const KODI::GAME::CGameInfoTag* GetGameInfoTag() const
+  {
+    return m_gameInfoTag;
   }
 
   CPictureInfoTag* GetPictureInfoTag();
@@ -574,11 +640,22 @@ private:
    */
   void Initialize();
 
+  /*! \brief Recalculate item's MIME type if it is not set or is set to "application/octet-stream".
+   Resolve the MIME type based on file extension or a web lookup.
+   \sa FillInMimeType
+   */
+  void UpdateMimeType(bool lookup = true);
+
   /*!
    \brief Return the current resume point for this item.
    \return The resume point.
    */
   CBookmark GetResumePoint() const;
+
+  /*!
+   \brief Fill item's music tag from given epg tag.
+   */
+  void FillMusicInfoTag(const std::shared_ptr<const PVR::CPVREpgInfoTag>& tag);
 
   std::string m_strPath;            ///< complete path to item
   std::string m_strDynPath;
@@ -592,8 +669,15 @@ private:
   bool m_doContentLookup;
   MUSIC_INFO::CMusicInfoTag* m_musicInfoTag;
   CVideoInfoTag* m_videoInfoTag;
+  std::shared_ptr<PVR::CPVREpgInfoTag> m_epgInfoTag;
+  std::shared_ptr<PVR::CPVREpgSearchFilter> m_epgSearchFilter;
+  std::shared_ptr<PVR::CPVRRecording> m_pvrRecordingInfoTag;
+  std::shared_ptr<PVR::CPVRTimerInfoTag> m_pvrTimerInfoTag;
+  std::shared_ptr<PVR::CPVRChannelGroupMember> m_pvrChannelGroupMemberInfoTag;
   CPictureInfoTag* m_pictureInfoTag;
   std::shared_ptr<const ADDON::IAddon> m_addonInfo;
+  KODI::GAME::CGameInfoTag* m_gameInfoTag;
+  EventPtr m_eventLogEntry;
   bool m_bIsAlbum;
   int64_t m_lStartOffset;
   int64_t m_lEndOffset;

@@ -5,7 +5,7 @@
 
 #include "JpegParse.h"
 
-#if defined(TARGET_WINDOWS) || defined(NXDK)
+#ifdef TARGET_WINDOWS
 #include <windows.h>
 #else
 #include <memory.h>

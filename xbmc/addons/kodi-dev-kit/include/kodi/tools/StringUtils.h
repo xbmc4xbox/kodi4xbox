@@ -62,7 +62,7 @@
 // macros for VC
 // VC check parameters only when "Code Analysis" is called
 #ifndef PRINTF_FORMAT_STRING
-#if defined(_MSC_VER) && !defined(NXDK)
+#ifdef _MSC_VER
 #include <sal.h>
 
 // for use in any function that take printf format string and parameters
@@ -581,7 +581,6 @@ public:
   ///                Additional arguments are ignored by the function.
   /// @return Formatted string
   ///
-#if 0
   inline static std::wstring Format(const wchar_t* fmt, ...)
   {
     va_list args;
@@ -591,7 +590,6 @@ public:
 
     return str;
   }
-#endif
   //----------------------------------------------------------------------------
 
   //============================================================================
@@ -657,7 +655,6 @@ public:
   ///                 with `va_start`.
   /// @return Formatted string
   ///
-#if 0
   inline static std::wstring FormatV(PRINTF_FORMAT_STRING const wchar_t* fmt, va_list args)
   {
     if (!fmt || !fmt[0])
@@ -702,7 +699,6 @@ public:
 
     return L"";
   }
-#endif
   //----------------------------------------------------------------------------
 
   //============================================================================
@@ -1382,14 +1378,16 @@ public:
 
     safeUrl.reserve(str.size());
 
-    std::transform(str.begin(), str.end(), std::back_inserter(safeUrl), [](char c) {
-      if (('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9') || c == '-' ||
-          c == '.' || c == '_' || c == '~')
-      {
-        return c;
-      }
-      return '_';
-    });
+    std::transform(str.begin(), str.end(), std::back_inserter(safeUrl),
+                   [](char c)
+                   {
+                     if (('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') ||
+                         ('0' <= c && c <= '9') || c == '-' || c == '.' || c == '_' || c == '~')
+                     {
+                       return c;
+                     }
+                     return '_';
+                   });
 
     return safeUrl;
   }
@@ -1410,12 +1408,14 @@ public:
 
     safeString.reserve(str.size());
 
-    std::transform(str.begin(), str.end(), std::back_inserter(safeString), [](char c) {
-      if (c < 0x20)
-        return ' ';
+    std::transform(str.begin(), str.end(), std::back_inserter(safeString),
+                   [](char c)
+                   {
+                     if (c < 0x20)
+                       return ' ';
 
-      return c;
-    });
+                     return c;
+                   });
 
     return safeString;
   }
@@ -1453,7 +1453,10 @@ public:
   /// EXPECT_STREQ(refstr.c_str(), varstr.c_str());
   /// ~~~~~~~~~~~~~
   ///
-  inline static void RemoveCRLF(std::string& strLine) { StringUtils::TrimRight(strLine, "\n\r"); }
+  inline static void RemoveCRLF(std::string& strLine)
+  {
+    StringUtils::TrimRight(strLine, "\n\r");
+  }
   //----------------------------------------------------------------------------
 
   //============================================================================
@@ -2025,7 +2028,10 @@ public:
   /// @param[in] c Character to check
   /// @return true if space, false otherwise
   ///
-  inline static int IsSpace(char c) { return (c & 0x80) == 0 && ::isspace(c); }
+  inline static int IsSpace(char c)
+  {
+    return (c & 0x80) == 0 && ::isspace(c);
+  }
   //----------------------------------------------------------------------------
 
   //============================================================================

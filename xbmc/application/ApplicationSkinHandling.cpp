@@ -32,6 +32,7 @@
 #include "guilib/GUIFontManager.h"
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
+#include "guilib/StereoscopicsManager.h"
 #include "messaging/ApplicationMessenger.h"
 #include "messaging/helpers/DialogHelper.h"
 #include "settings/Settings.h"
@@ -95,7 +96,7 @@ bool CApplicationSkinHandling::LoadSkin(const std::string& skinID)
     }
   }
 
-  std::unique_lock<CCriticalSection> lock(g_graphicsContext);
+  std::unique_lock<CCriticalSection> lock(CServiceBroker::GetWinSystem()->GetGfxContext());
 
   // store current active window with its focused control
   int currentWindowID = CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindow();
@@ -126,7 +127,7 @@ bool CApplicationSkinHandling::LoadSkin(const std::string& skinID)
   g_SkinInfo = skin;
 
   CLog::Log(LOGINFO, "  load fonts for skin...");
-  g_graphicsContext.SetMediaDir(skin->Path());
+  CServiceBroker::GetWinSystem()->GetGfxContext().SetMediaDir(skin->Path());
   g_directoryCache.ClearSubPaths(skin->Path());
 
   const std::shared_ptr<CSettings> settings = CServiceBroker::GetSettingsComponent()->GetSettings();
@@ -161,6 +162,8 @@ bool CApplicationSkinHandling::LoadSkin(const std::string& skinID)
   CServiceBroker::GetGUI()->GetWindowManager().AddMsgTarget(m_msgCb);
   CServiceBroker::GetGUI()->GetWindowManager().AddMsgTarget(&CServiceBroker::GetPlaylistPlayer());
   CServiceBroker::GetGUI()->GetWindowManager().AddMsgTarget(&g_fontManager);
+  CServiceBroker::GetGUI()->GetWindowManager().AddMsgTarget(
+      &CServiceBroker::GetGUI()->GetStereoscopicsManager());
   CServiceBroker::GetGUI()->GetWindowManager().SetCallback(*m_wCb);
 
   //@todo should be done by GUIComponents
@@ -356,9 +359,7 @@ bool CApplicationSkinHandling::LoadCustomWindows()
             continue;
           }
 
-#if 0
           pWindow->SetCustom(true);
-#endif
 
           // Determining whether our custom dialog is modeless (visible condition is present)
           // will be done on load. Therefore we need to initialize the custom dialog on gui init.
@@ -473,15 +474,24 @@ bool CApplicationSkinHandling::OnSettingChanged(const CSetting& setting)
       std::shared_ptr<CSettingString> skinColorsSetting = std::static_pointer_cast<CSettingString>(
           CServiceBroker::GetSettingsComponent()->GetSettings()->GetSetting(
               CSettings::SETTING_LOOKANDFEEL_SKINCOLORS));
+      std::shared_ptr<CSettingString> skinFontSetting = std::static_pointer_cast<CSettingString>(
+          CServiceBroker::GetSettingsComponent()->GetSettings()->GetSetting(
+              CSettings::SETTING_LOOKANDFEEL_FONT));
       m_ignoreSkinSettingChanges = true;
 
-      // we also need to adjust the skin color setting
-      std::string colorTheme = static_cast<const CSettingString&>(setting).GetValue();
-      URIUtils::RemoveExtension(colorTheme);
-      if (setting.IsDefault() || StringUtils::EqualsNoCase(colorTheme, "Textures"))
+      // we also need to adjust the skin color theme and fontset
+      std::string theme = static_cast<const CSettingString&>(setting).GetValue();
+      if (setting.IsDefault() || StringUtils::EqualsNoCase(theme, "Textures.xbt"))
+      {
         skinColorsSetting->Reset();
+        skinFontSetting->Reset();
+      }
       else
-        skinColorsSetting->SetValue(colorTheme);
+      {
+        URIUtils::RemoveExtension(theme);
+        skinColorsSetting->SetValue(theme);
+        skinFontSetting->SetValue(theme);
+      }
     }
 
     m_ignoreSkinSettingChanges = false;

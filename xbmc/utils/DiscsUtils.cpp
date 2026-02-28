@@ -11,9 +11,7 @@
 #include "FileItem.h"
 //! @todo it's wrong to include videoplayer scoped files, refactor
 // dvd inputstream so they can be used by other components. Or just use libdvdnav directly.
-#if 0
 #include "cores/VideoPlayer/DVDInputStreams/DVDInputStreamNavigator.h"
-#endif
 #ifdef HAVE_LIBBLURAY
 //! @todo it's wrong to include vfs scoped files in a utils class, refactor
 // to use libbluray directly.
@@ -39,7 +37,6 @@ UTILS::DISCS::DiscInfo UTILS::DISCS::ProbeDVDDiscInfo(const std::string& mediaPa
 {
   DiscInfo info;
   CFileItem item{mediaPath, false};
-#if 0
   CDVDInputStreamNavigator dvdNavigator{nullptr, item};
   if (dvdNavigator.Open())
   {
@@ -52,7 +49,6 @@ UTILS::DISCS::DiscInfo UTILS::DISCS::ProbeDVDDiscInfo(const std::string& mediaPa
     }
     info.serial = dvdNavigator.GetDVDSerialString();
   }
-#endif
   return info;
 }
 

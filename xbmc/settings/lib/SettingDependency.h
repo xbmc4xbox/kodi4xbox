@@ -10,6 +10,7 @@
 
 #include "SettingConditions.h"
 #include "utils/BooleanLogic.h"
+#include "utils/logtypes.h"
 
 #include <list>
 #include <set>
@@ -70,6 +71,8 @@ private:
 
   SettingDependencyTarget m_target = SettingDependencyTarget::Unknown;
   SettingDependencyOperator m_operator = SettingDependencyOperator::Equals;
+
+  static Logger s_logger;
 };
 
 using CSettingDependencyConditionPtr = std::shared_ptr<CSettingDependencyCondition>;
@@ -124,6 +127,8 @@ private:
   bool setType(const std::string &type);
 
   SettingDependencyType m_type = SettingDependencyType::Unknown;
+
+  static Logger s_logger;
 };
 
 using SettingDependencies = std::list<CSettingDependency>;

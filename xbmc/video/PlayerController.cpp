@@ -19,11 +19,14 @@
 #include "guilib/GUISliderControl.h"
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
+#include "input/actions/Action.h"
+#include "input/actions/ActionIDs.h"
 #include "settings/AdvancedSettings.h"
 #include "settings/DisplaySettings.h"
 #include "settings/MediaSettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
+#include "settings/SubtitlesSettings.h"
 #include "utils/LangCodeExpander.h"
 #include "utils/StringUtils.h"
 #include "utils/Variant.h"
@@ -334,7 +337,6 @@ bool CPlayerController::OnAction(const CAction &action)
         return true;
       }
 
-#if 0
       case ACTION_SUBTITLE_VSHIFT_UP:
       {
         const auto settings{CServiceBroker::GetSettingsComponent()->GetSubtitlesSettings()};
@@ -420,7 +422,6 @@ bool CPlayerController::OnAction(const CAction &action)
             g_localizeStrings.Get(21461 + static_cast<int>(align)), TOAST_DISPLAY_TIME, false);
         return true;
       }
-#endif
 
       case ACTION_VOLAMP_UP:
       case ACTION_VOLAMP_DOWN:
@@ -488,7 +489,6 @@ bool CPlayerController::OnAction(const CAction &action)
         return true;
       }
 
-#if 0
       case ACTION_PLAYER_RESOLUTION_SELECT:
       {
         std::vector<CVariant> indexList = CServiceBroker::GetSettingsComponent()->GetSettings()->GetList(CSettings::SETTING_VIDEOSCREEN_WHITELIST);
@@ -498,11 +498,11 @@ bool CPlayerController::OnAction(const CAction &action)
         {
           int current = 0;
           int idx = 0;
-          auto currentRes = g_graphicsContext.GetVideoResolution();
+          auto currentRes = CServiceBroker::GetWinSystem()->GetGfxContext().GetVideoResolution();
           for (const CVariant &mode : indexList)
           {
             auto res = CDisplaySettings::GetInstance().GetResFromString(mode.asString());
-            const RESOLUTION_INFO info = g_graphicsContext.GetResInfo(res);
+            const RESOLUTION_INFO info = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo(res);
             dialog->Add(info.strMode);
             if (res == currentRes)
               current = idx;
@@ -520,7 +520,6 @@ bool CPlayerController::OnAction(const CAction &action)
         }
         return true;
       }
-#endif
 
       default:
         break;

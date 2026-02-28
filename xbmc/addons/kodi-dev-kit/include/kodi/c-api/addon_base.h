@@ -18,13 +18,11 @@
 #include <stdint.h>
 
 #ifndef TARGET_WINDOWS
-#ifndef _XBOX
 #ifndef __cdecl
 #define __cdecl
 #endif
 #ifndef __declspec
 #define __declspec(X)
-#endif
 #endif
 #endif
 
@@ -272,7 +270,8 @@ extern "C"
 
     KODI_ADDON_INSTANCE_HDL hdl;
     struct KODI_ADDON_INSTANCE_FUNC* functions;
-    union {
+    union
+    {
       KODI_ADDON_FUNC_DUMMY dummy;
       struct AddonInstance_AudioDecoder* audiodecoder;
       struct AddonInstance_AudioEncoder* audioencoder;

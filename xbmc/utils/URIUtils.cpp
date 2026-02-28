@@ -6,12 +6,14 @@
  *  See LICENSES/README.md for more information.
  */
 
+#include "network/Network.h"
 #include "URIUtils.h"
 #include "FileItem.h"
 #include "filesystem/MultiPathDirectory.h"
 #include "filesystem/SpecialProtocol.h"
 #include "filesystem/StackDirectory.h"
 #include "network/DNSNameCache.h"
+#include "pvr/channels/PVRChannelsPath.h"
 #include "settings/AdvancedSettings.h"
 #include "URL.h"
 #include "utils/FileExtensionProvider.h"
@@ -25,13 +27,10 @@
 
 #include <algorithm>
 #include <cassert>
-#ifdef NXDK
-#include <lwip/netdb.h>
-#else
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#endif
 
+using namespace PVR;
 using namespace XFILE;
 
 const CAdvancedSettings* URIUtils::m_advancedSettings = nullptr;
@@ -196,6 +195,19 @@ std::string URIUtils::GetFileName(const std::string& strFileNameAndPath)
   return strFileNameAndPath.substr(slash+1);
 }
 
+std::string URIUtils::GetFileOrFolderName(const std::string& path)
+{
+  std::string temp = path;
+
+  char ch = path[path.size() - 1];
+  if (ch == '/' || ch == '\\')
+  {
+    temp = path.substr(0, path.size() - 1);
+  }
+
+  return temp.substr(temp.find_last_of("/\\") + 1);
+}
+
 void URIUtils::Split(const std::string& strFileNameAndPath,
                      std::string& strPath, std::string& strFileName)
 {
@@ -231,7 +243,7 @@ void URIUtils::Split(const std::string& strFileNameAndPath,
       else i--;
     }
     if (i > 0)
-      strFileName = strFileName.substr(0, i);
+      strFileName.resize(i);
   }
 }
 
@@ -640,16 +652,16 @@ bool URIUtils::IsOnDVD(const std::string& strFile)
   return false;
 }
 
-bool URIUtils::IsOnLAN(const std::string& strPath)
+bool URIUtils::IsOnLAN(const std::string& strPath, LanCheckMode lanCheckMode)
 {
   if(IsMultiPath(strPath))
-    return IsOnLAN(CMultiPathDirectory::GetFirstPath(strPath));
+    return IsOnLAN(CMultiPathDirectory::GetFirstPath(strPath), lanCheckMode);
 
   if(IsStack(strPath))
-    return IsOnLAN(CStackDirectory::GetFirstStackedFile(strPath));
+    return IsOnLAN(CStackDirectory::GetFirstStackedFile(strPath), lanCheckMode);
 
   if(IsSpecial(strPath))
-    return IsOnLAN(CSpecialProtocol::TranslatePath(strPath));
+    return IsOnLAN(CSpecialProtocol::TranslatePath(strPath), lanCheckMode);
 
   if(IsPlugin(strPath))
     return false;
@@ -659,14 +671,14 @@ bool URIUtils::IsOnLAN(const std::string& strPath)
 
   CURL url(strPath);
   if (HasParentInHostname(url))
-    return IsOnLAN(url.GetHostName());
+    return IsOnLAN(url.GetHostName(), lanCheckMode);
 
   if(!IsRemote(strPath))
     return false;
 
   const std::string& host = url.GetHostName();
 
-  return IsHostOnLAN(host);
+  return IsHostOnLAN(host, lanCheckMode);
 }
 
 static bool addr_match(uint32_t addr, const char* target, const char* submask)
@@ -676,7 +688,7 @@ static bool addr_match(uint32_t addr, const char* target, const char* submask)
   return (addr & mask) == (addr2 & mask);
 }
 
-bool URIUtils::IsHostOnLAN(const std::string& host, bool offLineCheck)
+bool URIUtils::IsHostOnLAN(const std::string& host, LanCheckMode lanCheckMode)
 {
   if(host.length() == 0)
     return false;
@@ -696,7 +708,9 @@ bool URIUtils::IsHostOnLAN(const std::string& host, bool offLineCheck)
 
   if(address != INADDR_NONE)
   {
-    if (offLineCheck) // check if in private range, ref https://en.wikipedia.org/wiki/Private_network
+    if (lanCheckMode ==
+        LanCheckMode::
+            ANY_PRIVATE_SUBNET) // check if in private range, ref https://en.wikipedia.org/wiki/Private_network
     {
       if (
         addr_match(address, "192.168.0.0", "255.255.0.0") ||
@@ -706,13 +720,11 @@ bool URIUtils::IsHostOnLAN(const std::string& host, bool offLineCheck)
         return true;
     }
     // check if we are on the local subnet
-#if 0
     if (!CServiceBroker::GetNetwork().GetFirstConnectedInterface())
       return false;
 
     if (CServiceBroker::GetNetwork().HasInterfaceForIP(address))
       return true;
-#endif
   }
 
   return false;
@@ -847,6 +859,16 @@ bool URIUtils::IsArchive(const std::string& strFile)
   return HasExtension(strFile, ".zip|.rar|.apk|.cbz|.cbr");
 }
 
+bool URIUtils::IsDiscImage(const std::string& file)
+{
+  return HasExtension(file, ".img|.iso|.nrg|.udf");
+}
+
+bool URIUtils::IsDiscImageStack(const std::string& file)
+{
+  return IsStack(file) && IsDiscImage(CStackDirectory::GetFirstStackedFile(file));
+}
+
 bool URIUtils::IsSpecial(const std::string& strFile)
 {
   if (IsStack(strFile))
@@ -971,7 +993,7 @@ bool URIUtils::IsPVRChannel(const std::string& strFile)
   if (IsStack(strFile))
     return IsPVRChannel(CStackDirectory::GetFirstStackedFile(strFile));
 
-  return IsProtocol(strFile, "pvr")/* && CPVRChannelsPath(strFile).IsChannel()*/;
+  return IsProtocol(strFile, "pvr") && CPVRChannelsPath(strFile).IsChannel();
 }
 
 bool URIUtils::IsPVRChannelGroup(const std::string& strFile)
@@ -979,7 +1001,7 @@ bool URIUtils::IsPVRChannelGroup(const std::string& strFile)
   if (IsStack(strFile))
     return IsPVRChannelGroup(CStackDirectory::GetFirstStackedFile(strFile));
 
-  return IsProtocol(strFile, "pvr")/* && CPVRChannelsPath(strFile).IsChannelGroup()*/;
+  return IsProtocol(strFile, "pvr") && CPVRChannelsPath(strFile).IsChannelGroup();
 }
 
 bool URIUtils::IsPVRGuideItem(const std::string& strFile)

@@ -18,6 +18,7 @@
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
+#include "guilib/StereoscopicsManager.h"
 #include "input/WindowTranslator.h"
 #include "input/actions/Action.h"
 #include "input/actions/ActionIDs.h"
@@ -26,11 +27,17 @@
 #include "settings/AdvancedSettings.h"
 #include "settings/SettingsComponent.h"
 #include "utils/AlarmClock.h"
+#include "utils/RssManager.h"
+#include "utils/Screenshot.h"
 #include "utils/StringUtils.h"
 #include "utils/URIUtils.h"
 #include "utils/log.h"
 #include "windows/GUIMediaWindow.h"
 
+using namespace KODI;
+
+namespace
+{
 /*! \brief Execute a GUI action.
  *  \param params The parameters.
  *  \details params[0] = Action to execute.
@@ -38,9 +45,9 @@
  */
 static int Action(const std::vector<std::string>& params)
 {
-  // try translating the action from our ButtonTranslator
+  // try translating the action from our ActionTranslator
   unsigned int actionID;
-  if (CActionTranslator::TranslateString(params[0], actionID))
+  if (ACTION::CActionTranslator::TranslateString(params[0], actionID))
   {
     int windowID = params.size() == 2 ? CWindowTranslator::TranslateWindow(params[1]) : WINDOW_INVALID;
     CServiceBroker::GetAppMessenger()->SendMsg(TMSG_GUI_ACTION, windowID, -1,
@@ -141,7 +148,7 @@ static int ActivateAndFocus(const std::vector<std::string>& params)
       unsigned int iPtr = 1;
       while (params.size() > iPtr + 1)
       {
-        CGUIMessage msg(GUI_MSG_SETFOCUS, CServiceBroker::GetGUI()->GetWindowManager().GetFocusedWindow(),
+        CGUIMessage msg(GUI_MSG_SETFOCUS, CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindowOrDialog(),
                         atol(params[iPtr].c_str()),
                         (params.size() >= iPtr + 2) ? atol(params[iPtr + 1].c_str())+1 : 0);
         CServiceBroker::GetGUI()->GetWindowManager().SendMessage(msg);
@@ -232,7 +239,7 @@ static int CancelAlarm(const std::vector<std::string>& params)
  */
 static int ClearProperty(const std::vector<std::string>& params)
 {
-  CGUIWindow *window = CServiceBroker::GetGUI()->GetWindowManager().GetWindow(params.size() > 1 ? CWindowTranslator::TranslateWindow(params[1]) : CServiceBroker::GetGUI()->GetWindowManager().GetFocusedWindow());
+  CGUIWindow *window = CServiceBroker::GetGUI()->GetWindowManager().GetWindow(params.size() > 1 ? CWindowTranslator::TranslateWindow(params[1]) : CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindowOrDialog());
   if (window)
     window->SetProperty(params[0],"");
 
@@ -290,9 +297,7 @@ static int Notification(const std::vector<std::string>& params)
  */
 static int RefreshRSS(const std::vector<std::string>& params)
 {
-#if 0
   CRssManager::GetInstance().Reload();
-#endif
 
   return 0;
 }
@@ -304,7 +309,6 @@ static int RefreshRSS(const std::vector<std::string>& params)
  */
 static int Screenshot(const std::vector<std::string>& params)
 {
-#if 0
   if (!params.empty())
   {
     // get the parameters
@@ -335,7 +339,6 @@ static int Screenshot(const std::vector<std::string>& params)
   }
   else
     CScreenShot::TakeScreenshot();
-#endif
 
   return 0;
 }
@@ -359,7 +362,7 @@ static int SetLanguage(const std::vector<std::string>& params)
  */
 static int SetProperty(const std::vector<std::string>& params)
 {
-  CGUIWindow *window = CServiceBroker::GetGUI()->GetWindowManager().GetWindow(params.size() > 2 ? CWindowTranslator::TranslateWindow(params[2]) : CServiceBroker::GetGUI()->GetWindowManager().GetFocusedWindow());
+  CGUIWindow *window = CServiceBroker::GetGUI()->GetWindowManager().GetWindow(params.size() > 2 ? CWindowTranslator::TranslateWindow(params[2]) : CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindowOrDialog());
   if (window)
     window->SetProperty(params[0],params[1]);
 
@@ -372,7 +375,6 @@ static int SetProperty(const std::vector<std::string>& params)
  */
 static int SetStereoMode(const std::vector<std::string>& params)
 {
-#if 0
   CAction action = CStereoscopicsManager::ConvertActionCommandToAction("SetStereoMode", params[0]);
   if (action.GetID() != ACTION_NONE)
     CServiceBroker::GetAppMessenger()->SendMsg(TMSG_GUI_ACTION, WINDOW_INVALID, -1,
@@ -382,7 +384,6 @@ static int SetStereoMode(const std::vector<std::string>& params)
     CLog::Log(LOGERROR, "Builtin 'SetStereoMode' called with unknown parameter: {}", params[0]);
     return -2;
   }
-#endif
 
   return 0;
 }
@@ -396,6 +397,7 @@ static int ToggleDirty(const std::vector<std::string>&)
 
   return 0;
 }
+} // namespace
 
 // Note: For new Texts with comma add a "\" before!!! Is used for table text.
 //

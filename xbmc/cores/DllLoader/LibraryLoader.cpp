@@ -1,74 +1,46 @@
 /*
- *      Copyright (C) 2005-2013 Team XBMC
- *      http://xbmc.org
+ *  Copyright (C) 2005-2018 Team Kodi
+ *  This file is part of Kodi - https://kodi.tv
  *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with XBMC; see the file COPYING.  If not, see
- *  <http://www.gnu.org/licenses/>.
- *
+ *  SPDX-License-Identifier: GPL-2.0-or-later
+ *  See LICENSES/README.md for more information.
  */
 
 #include "LibraryLoader.h"
-#include <string.h>
+
+#include "utils/log.h"
+
 #include <stdlib.h>
+#include <string.h>
 
-LibraryLoader::LibraryLoader(const char* libraryFile)
+LibraryLoader::LibraryLoader(const std::string& libraryFile):
+  m_fileName(libraryFile)
 {
-  m_sFileName = strdup(libraryFile);
-
-  char* sPath = strrchr(m_sFileName, '\\');
-  if (!sPath) sPath = strrchr(m_sFileName, '/');
-  if (sPath)
-  {
-    sPath++;
-    m_sPath=(char*)malloc(sPath - m_sFileName+1);
-    strncpy(m_sPath, m_sFileName, sPath - m_sFileName);
-    m_sPath[sPath - m_sFileName] = 0;
-  }
-  else
-    m_sPath=NULL;
+  size_t pos = m_fileName.find_last_of("\\/");
+  if (pos != std::string::npos)
+    m_path = m_fileName.substr(0, pos);
 
   m_iRefCount = 1;
 }
 
-LibraryLoader::~LibraryLoader()
+LibraryLoader::~LibraryLoader() = default;
+
+const char *LibraryLoader::GetName() const
 {
-  free(m_sFileName);
-  free(m_sPath);
+  size_t pos = m_fileName.find_last_of('/');
+  if (pos != std::string::npos)
+    return &m_fileName.at(pos + 1); // don't include /
+  return m_fileName.c_str();
 }
 
-char* LibraryLoader::GetName()
+const char *LibraryLoader::GetFileName() const
 {
-  if (m_sFileName)
-  {
-    char* sName = strrchr(m_sFileName, '/');
-	if (!sName) sName = strrchr(m_sFileName, '\\');
-    if (sName) return sName + 1;
-    else return m_sFileName;
-  }
-  return (char*)"";
+  return m_fileName.c_str();
 }
 
-char* LibraryLoader::GetFileName()
+const char *LibraryLoader::GetPath() const
 {
-  if (m_sFileName) return m_sFileName;
-  return (char*)"";
-}
-
-char* LibraryLoader::GetPath()
-{
-  if (m_sPath) return m_sPath;
-  return (char*)"";
+  return m_path.c_str();
 }
 
 int LibraryLoader::IncrRef()
@@ -81,4 +53,10 @@ int LibraryLoader::DecrRef()
 {
   m_iRefCount--;
   return m_iRefCount;
+}
+
+int LibraryLoader::ResolveOrdinal(unsigned long ordinal, void** ptr)
+{
+  CLog::Log(LOGWARNING, "{} - Unable to resolve {} in dll {}", __FUNCTION__, ordinal, GetName());
+  return 0;
 }

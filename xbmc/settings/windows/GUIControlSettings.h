@@ -24,6 +24,7 @@ class CGUIButtonControl;
 class CGUIRadioButtonControl;
 class CGUISettingsSliderControl;
 class CGUILabelControl;
+class CGUIColorButtonControl;
 
 class CSetting;
 class CSettingControlSlider;
@@ -90,8 +91,8 @@ protected:
   int m_id;
   std::shared_ptr<CSetting> m_pSetting;
   ILocalizer* m_localizer;
-  bool m_delayed;
-  bool m_valid;
+  bool m_delayed = false;
+  bool m_valid = true;
 };
 
 class CGUIControlRadioButtonSetting : public CGUIControlBaseSetting
@@ -115,6 +116,29 @@ protected:
 
 private:
   CGUIRadioButtonControl* m_pRadioButton;
+};
+
+class CGUIControlColorButtonSetting : public CGUIControlBaseSetting
+{
+public:
+  CGUIControlColorButtonSetting(CGUIColorButtonControl* pColorControl,
+                                int id,
+                                const std::shared_ptr<CSetting>& pSetting,
+                                ILocalizer* localizer);
+  ~CGUIControlColorButtonSetting() override;
+
+  void Select(bool bSelect);
+
+  CGUIControl* GetControl() override { return reinterpret_cast<CGUIControl*>(m_pColorButton); }
+  bool OnClick() override;
+  void Clear() override { m_pColorButton = nullptr; }
+
+protected:
+  // specialization of CGUIControlBaseSetting
+  void Update(bool fromControl, bool updateDisplayOnly) override;
+
+private:
+  CGUIColorButtonControl* m_pColorButton;
 };
 
 class CGUIControlSpinExSetting : public CGUIControlBaseSetting
