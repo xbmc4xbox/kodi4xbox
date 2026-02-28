@@ -17,8 +17,6 @@
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 
-#include <memory>
-
 using namespace XFILE::MUSICDATABASEDIRECTORY;
 
 bool CMusicFileItemListModifier::CanModify(const CFileItemList &items) const
@@ -76,7 +74,7 @@ void CMusicFileItemListModifier::AddQueuingFolder(CFileItemList& items)
   switch (nodeChildType)
   {
   case NODE_TYPE_ARTIST:
-    pItem = std::make_shared<CFileItem>(g_localizeStrings.Get(15103)); // "All Artists"
+    pItem.reset(new CFileItem(g_localizeStrings.Get(15103)));  // "All Artists"
     musicUrl.AppendPath("-1/");
     pItem->SetPath(musicUrl.ToString());
     break;
@@ -86,14 +84,14 @@ void CMusicFileItemListModifier::AddQueuingFolder(CFileItemList& items)
   case NODE_TYPE_ALBUM_RECENTLY_PLAYED:
   case NODE_TYPE_ALBUM_RECENTLY_ADDED:
   case NODE_TYPE_ALBUM_TOP100:
-    pItem = std::make_shared<CFileItem>(g_localizeStrings.Get(15102)); // "All Albums"
+    pItem.reset(new CFileItem(g_localizeStrings.Get(15102)));  // "All Albums"
     musicUrl.AppendPath("-1/");
     pItem->SetPath(musicUrl.ToString());
     break;
 
   //  Disc node
   case NODE_TYPE_DISC:
-    pItem = std::make_shared<CFileItem>(g_localizeStrings.Get(38075)); // "All Discs"
+    pItem.reset(new CFileItem(g_localizeStrings.Get(38075)));  // "All Discs"
     musicUrl.AppendPath("-1/");
     pItem->SetPath(musicUrl.ToString());
     break;

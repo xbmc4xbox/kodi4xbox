@@ -9,11 +9,7 @@
 #include "GUIButtonControl.h"
 
 #include "GUIFontManager.h"
-#include "input/actions/Action.h"
-#include "input/actions/ActionIDs.h"
-#include "input/mouse/MouseEvent.h"
-
-using namespace KODI;
+#include "input/Key.h"
 
 CGUIButtonControl::CGUIButtonControl(int parentID,
                                      int controlID,
@@ -339,7 +335,7 @@ CRect CGUIButtonControl::CalcRenderRegion() const
   return buttonRect;
 }
 
-EVENT_RESULT CGUIButtonControl::OnMouseEvent(const CPoint& point, const MOUSE::CMouseEvent& event)
+EVENT_RESULT CGUIButtonControl::OnMouseEvent(const CPoint &point, const CMouseEvent &event)
 {
   if (event.m_id == ACTION_MOUSE_LEFT_CLICK)
   {

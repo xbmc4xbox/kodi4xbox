@@ -15,18 +15,12 @@
 class CAction;
 class CApplication;
 class CCriticalSection;
-
-namespace KODI
-{
-namespace ACTION
-{
 class IActionListener;
-} // namespace ACTION
-} // namespace KODI
 
 /*!
  * \brief Class handling application support for action listeners.
  */
+
 class CApplicationActionListeners : public IApplicationComponent
 {
   friend class CApplication;
@@ -38,12 +32,12 @@ public:
    \brief Register an action listener.
    \param listener The listener to register
    */
-  void RegisterActionListener(KODI::ACTION::IActionListener* listener);
+  void RegisterActionListener(IActionListener* listener);
   /*!
    \brief Unregister an action listener.
    \param listener The listener to unregister
    */
-  void UnregisterActionListener(KODI::ACTION::IActionListener* listener);
+  void UnregisterActionListener(IActionListener* listener);
 
 protected:
   /*!
@@ -53,7 +47,7 @@ protected:
    */
   bool NotifyActionListeners(const CAction& action) const;
 
-  std::vector<KODI::ACTION::IActionListener*> m_actionListeners;
+  std::vector<IActionListener*> m_actionListeners;
 
   CCriticalSection& m_critSection;
 };

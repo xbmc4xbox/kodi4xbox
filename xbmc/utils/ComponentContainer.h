@@ -30,7 +30,11 @@ public:
   template<class T>
   std::shared_ptr<T> GetComponent()
   {
+#if __cplusplus >= 202002L
     return std::const_pointer_cast<T>(std::as_const(*this).template GetComponent<T>());
+#else
+    return std::const_pointer_cast<T>(const_cast<const CComponentContainer&>(*this).template GetComponent<T>());
+#endif
   }
 
   //! \brief Obtain a component.

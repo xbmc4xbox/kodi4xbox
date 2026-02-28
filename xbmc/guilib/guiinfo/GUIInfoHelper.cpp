@@ -48,7 +48,7 @@ std::string GetPlaylistLabel(int item, PLAYLIST::Id playlistId /* = TYPE_NONE */
     }
     case PLAYLIST_POSITION:
     {
-      int currentSong = player.GetCurrentItemIdx();
+      int currentSong = player.GetCurrentSong();
       if (currentSong > -1)
         return std::to_string(currentSong + 1);
       break;
@@ -159,12 +159,9 @@ CGUIControl* GetActiveContainer(int containerId, int contextWindow)
   return nullptr;
 }
 
-std::shared_ptr<CGUIListItem> GetCurrentListItem(int contextWindow,
-                                                 int containerId /* = 0 */,
-                                                 int itemOffset /* = 0 */,
-                                                 unsigned int itemFlags /* = 0 */)
+CGUIListItemPtr GetCurrentListItem(int contextWindow, int containerId /* = 0 */, int itemOffset /* = 0 */, unsigned int itemFlags /* = 0 */)
 {
-  std::shared_ptr<CGUIListItem> item;
+  CGUIListItemPtr item;
 
   if (containerId == 0  &&
       itemOffset == 0 &&

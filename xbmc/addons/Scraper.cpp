@@ -30,7 +30,6 @@
 #include "settings/SettingsComponent.h"
 #include "settings/SettingsValueFlatJsonSerializer.h"
 #include "utils/CharsetConverter.h"
-#include "utils/JSONVariantWriter.h"
 #include "utils/ScraperParser.h"
 #include "utils/ScraperUrl.h"
 #include "utils/StringUtils.h"
@@ -123,7 +122,10 @@ static void CheckScraperError(const TiXmlElement *pxeRoot)
 }
 
 CScraper::CScraper(const AddonInfoPtr& addonInfo, AddonType addonType)
-  : CAddon(addonInfo, addonType)
+  : CAddon(addonInfo, addonType),
+    m_fLoaded(false),
+    m_requiressettings(false),
+    m_pathContent(CONTENT_NONE)
 {
   m_requiressettings = addonInfo->Type(addonType)->GetValue("@requiressettings").asBoolean();
 
@@ -732,10 +734,10 @@ static std::string ParseFanart(const CFileItem &item, int nFanart, const std::st
 }
 
 template<class T>
-static bool DetailsFromFileItem(const CFileItem&, T&);
+static void DetailsFromFileItem(const CFileItem &, T &);
 
 template<>
-bool DetailsFromFileItem<CAlbum>(const CFileItem& item, CAlbum& album)
+void DetailsFromFileItem<CAlbum>(const CFileItem &item, CAlbum &album)
 {
   album.strAlbum = item.GetLabel();
   album.strMusicBrainzAlbumID = FromString(item, "album.musicbrainzid");
@@ -778,11 +780,10 @@ bool DetailsFromFileItem<CAlbum>(const CFileItem& item, CAlbum& album)
 
   int nThumbs = item.GetProperty("album.thumbs").asInteger32();
   ParseThumbs(album.thumbURL, item, nThumbs, "album.thumb");
-  return true;
 }
 
 template<>
-bool DetailsFromFileItem<CArtist>(const CFileItem& item, CArtist& artist)
+void DetailsFromFileItem<CArtist>(const CFileItem &item, CArtist &artist)
 {
   artist.strArtist = item.GetLabel();
   artist.strMusicBrainzArtistID = FromString(item, "artist.musicbrainzid");
@@ -818,23 +819,6 @@ bool DetailsFromFileItem<CArtist>(const CFileItem& item, CArtist& artist)
     artist.discography.emplace_back(discoAlbum);
   }
 
-  const int numvideolinks = item.GetProperty("artist.videolinks").asInteger32();
-  if (numvideolinks > 0)
-  {
-    artist.videolinks.reserve(numvideolinks);
-    for (int i = 1; i <= numvideolinks; ++i)
-    {
-      std::stringstream prefix;
-      prefix << "artist.videolink" << i;
-      ArtistVideoLinks videoLink;
-      videoLink.title = FromString(item, prefix.str() + ".title");
-      videoLink.mbTrackID = FromString(item, prefix.str() + ".mbtrackid");
-      videoLink.videoURL = FromString(item, prefix.str() + ".url");
-      videoLink.thumbURL = FromString(item, prefix.str() + ".thumb");
-      artist.videolinks.emplace_back(std::move(videoLink));
-    }
-  }
-
   int nThumbs = item.GetProperty("artist.thumbs").asInteger32();
   ParseThumbs(artist.thumbURL, item, nThumbs, "artist.thumb");
 
@@ -848,58 +832,34 @@ bool DetailsFromFileItem<CArtist>(const CFileItem& item, CArtist& artist)
     for (unsigned int i = 0; i < fanart.GetNumFanarts(); i++)
       artist.thumbURL.AddParsedUrl(fanart.GetImageURL(i), "fanart", fanart.GetPreviewURL(i));
   }
-  return true;
 }
 
 template<>
-bool DetailsFromFileItem<CVideoInfoTag>(const CFileItem& item, CVideoInfoTag& tag)
+void DetailsFromFileItem<CVideoInfoTag>(const CFileItem &item, CVideoInfoTag &tag)
 {
   if (item.HasVideoInfoTag())
-  {
     tag = *item.GetVideoInfoTag();
-    return true;
-  }
-  return false;
 }
 
 template<class T>
-static bool PythonDetails(const std::string& ID,
-                          const std::string& key,
-                          const std::string& url,
-                          const std::string& action,
-                          const std::string& pathSettings,
-                          const std::unordered_map<std::string, std::string>& uniqueIDs,
-                          T& result)
+static bool PythonDetails(const std::string &ID,
+                          const std::string &key,
+                          const std::string &url,
+                          const std::string &action,
+                          const std::string &pathSettings,
+                          T &result)
 {
-  CVariant ids;
-  for (const auto& [identifierType, identifier] : uniqueIDs)
-    ids[identifierType] = identifier;
-  std::string uids;
-  CJSONVariantWriter::Write(ids, uids, true);
   std::stringstream str;
   str << "plugin://" << ID << "?action=" << action << "&" << key << "=" << CURL::Encode(url);
   str << "&pathSettings=" << CURL::Encode(pathSettings);
-  if (!uniqueIDs.empty())
-    str << "&uniqueIDs=" << CURL::Encode(uids);
 
   CFileItem item(url, false);
 
   if (!XFILE::CPluginDirectory::GetPluginResult(str.str(), item, false))
     return false;
 
-  return DetailsFromFileItem(item, result);
-}
-
-template<class T>
-static bool PythonDetails(const std::string& ID,
-                          const std::string& key,
-                          const std::string& url,
-                          const std::string& action,
-                          const std::string& pathSettings,
-                          T& result)
-{
-  const std::unordered_map<std::string, std::string> ids;
-  return PythonDetails(ID, key, url, action, pathSettings, ids, result);
+  DetailsFromFileItem(item, result);
+  return true;
 }
 
 // fetch list of matching movies sorted by relevance (may be empty);
@@ -1350,11 +1310,10 @@ EPISODELIST CScraper::GetEpisodeList(XFILE::CCurlFile &fcurl, const CScraperUrl 
 }
 
 // takes URL; returns true and populates video details on success, false otherwise
-bool CScraper::GetVideoDetails(XFILE::CCurlFile& fcurl,
-                               const std::unordered_map<std::string, std::string>& uniqueIDs,
-                               const CScraperUrl& scurl,
+bool CScraper::GetVideoDetails(XFILE::CCurlFile &fcurl,
+                               const CScraperUrl &scurl,
                                bool fMovie /*else episode*/,
-                               CVideoInfoTag& video)
+                               CVideoInfoTag &video)
 {
   CLog::Log(LOGDEBUG,
             "{}: Reading {} '{}' using {} scraper "
@@ -1366,8 +1325,7 @@ bool CScraper::GetVideoDetails(XFILE::CCurlFile& fcurl,
 
   if (m_isPython)
     return PythonDetails(ID(), "url", scurl.GetFirstThumbUrl(),
-                         fMovie ? "getdetails" : "getepisodedetails", GetPathSettingsAsJSON(),
-                         uniqueIDs, video);
+      fMovie ? "getdetails" : "getepisodedetails", GetPathSettingsAsJSON(), video);
 
   std::string sFunc = fMovie ? "GetDetails" : "GetEpisodeDetails";
   std::vector<std::string> vcsIn;

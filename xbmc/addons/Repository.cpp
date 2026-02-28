@@ -20,7 +20,6 @@
 #include "filesystem/CurlFile.h"
 #include "filesystem/File.h"
 #include "filesystem/ZipFile.h"
-#include "games/GameServices.h"
 #include "messaging/helpers/DialogHelper.h"
 #include "utils/Base64.h"
 #include "utils/Digest.h"
@@ -131,9 +130,9 @@ CRepository::CRepository(const AddonInfoPtr& addonInfo) : CAddon(addonInfo, Addo
   if (m_dirs.empty())
   {
     CLog::Log(LOGERROR,
-              "Repository add-on {} does not have any directory matching {} and won't be able to "
-              "update/serve addons! Please fix the addon.xml definition",
-              ID(), version.asString());
+              "Repository add-on {} does not have any directory and won't be able to update/serve "
+              "addons! Please fix the addon.xml definition",
+              ID());
   }
 
   for (auto const& dir : m_dirs)
@@ -148,13 +147,6 @@ CRepository::CRepository(const AddonInfoPtr& addonInfo) : CAddon(addonInfo, Addo
       CLog::Log(LOGWARNING, "Repository add-on {} disabled peer verification for add-on downloads in path {} - this is insecure and will make your Kodi installation vulnerable to attacks if enabled!", ID(), datadir.GetRedacted());
     }
   }
-}
-
-void CRepository::OnPostInstall(bool update, bool modal)
-{
-  // The repo may contain game add-ons, which can introduce new file
-  // extensions to the list of known game extensions
-  CServiceBroker::GetGameServices().OnAddonRepoInstalled();
 }
 
 bool CRepository::FetchChecksum(const std::string& url,
@@ -178,7 +170,7 @@ bool CRepository::FetchChecksum(const std::string& url,
   std::size_t pos = checksum.find_first_of(" \n");
   if (pos != std::string::npos)
   {
-    checksum.resize(pos);
+    checksum = checksum.substr(0, pos);
   }
 
   // Determine update interval from (potential) HTTP response

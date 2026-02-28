@@ -27,8 +27,6 @@
 #include "dialogs/GUIDialogKaiToast.h"
 #include "dialogs/GUIDialogProgress.h"
 #include "dialogs/GUIDialogSelect.h"
-#include "events/EventLog.h"
-#include "events/NotificationEvent.h"
 #include "filesystem/Directory.h"
 #include "filesystem/DirectoryCache.h"
 #include "filesystem/File.h"
@@ -43,8 +41,6 @@
 #include "music/MusicDbUrl.h"
 #include "music/MusicLibraryQueue.h"
 #include "music/tags/MusicInfoTag.h"
-#include "network/Network.h"
-#include "network/cddb.h"
 #include "playlists/SmartPlayList.h"
 #include "profiles/ProfileManager.h"
 #include "settings/AdvancedSettings.h"
@@ -74,7 +70,7 @@ using KODI::MESSAGING::HELPERS::DialogResponse;
 #define RECENTLY_PLAYED_LIMIT 25
 #define MIN_FULL_SEARCH_LENGTH 3
 
-#ifdef HAS_OPTICAL_DRIVE
+#ifdef HAS_DVD_DRIVE
 using namespace CDDB;
 using namespace MEDIA_DETECT;
 #endif
@@ -203,7 +199,6 @@ void CMusicDatabase::CreateTables()
               " comment text, mood text, iBPM INTEGER NOT NULL DEFAULT 0, "
               " iBitRate INTEGER NOT NULL DEFAULT 0, "
               " iSampleRate INTEGER NOT NULL DEFAULT 0, iChannels INTEGER NOT NULL DEFAULT 0, "
-              " strVideoURL TEXT, "
               " strReplayGain text, "
               " dateAdded TEXT, dateNew TEXT, dateModified TEXT)");
   CLog::Log(LOGINFO, "create song_artist table");
@@ -453,7 +448,6 @@ void CMusicDatabase::CreateViews()
               "        iBitRate, "
               "        iSampleRate, "
               "        iChannels, "
-              "        song.strVideoURL as strVideoURL, "
               "        album.iAlbumDuration AS iAlbumDuration, "
               "        album.iDiscTotal as iDiscTotal, "
               "        song.dateAdded as dateAdded, "
@@ -771,7 +765,6 @@ bool CMusicDatabase::AddAlbum(CAlbum& album, int idSource)
                            song->userrating, //
                            song->votes, //
                            song->iBPM, song->iBitRate, song->iSampleRate, song->iChannels, //
-                           song->songVideoURL, //
                            song->replayGain);
 
     // Song must have at least one artist so set artist to [Missing]
@@ -1022,7 +1015,6 @@ int CMusicDatabase::AddSong(const int idSong,
                             int iBitRate,
                             int iSampleRate,
                             int iChannels,
-                            const std::string& songVideoURL,
                             const ReplayGain& replayGain)
 {
   int idNew = -1;
@@ -1150,7 +1142,7 @@ int CMusicDatabase::AddSong(const int idSong,
                  dtLastPlayed, //
                  rating, userrating, votes, //
                  replayGain, //
-                 iBPM, iBitRate, iSampleRate, iChannels, songVideoURL);
+                 iBPM, iBitRate, iSampleRate, iChannels);
     }
     if (!strThumb.empty())
       SetArtForItem(idNew, MediaTypeSong, "thumb", strThumb);
@@ -1242,8 +1234,7 @@ bool CMusicDatabase::UpdateSong(CSong& song, bool bArtists /*= true*/, bool bArt
                           song.lastPlayed, //
                           song.rating, song.userrating, song.votes, //
                           song.replayGain, //
-                          song.iBPM, song.iBitRate, song.iSampleRate, song.iChannels, //
-                          song.songVideoURL);
+                          song.iBPM, song.iBitRate, song.iSampleRate, song.iChannels);
   if (result < 0)
     return false;
 
@@ -1302,8 +1293,7 @@ int CMusicDatabase::UpdateSong(int idSong,
                                int iBPM,
                                int iBitRate,
                                int iSampleRate,
-                               int iChannels,
-                               const std::string& songVideoURL)
+                               int iChannels)
 {
   if (idSong < 0)
     return -1;
@@ -1325,7 +1315,7 @@ int CMusicDatabase::UpdateSong(int idSong,
       " strTitle = '%s', iTrack = %i, iDuration = %i, "
       "strReleaseDate = '%s', strOrigReleaseDate = '%s', strDiscSubtitle = '%s', "
       "strFileName = '%s', iBPM = %i, iBitrate = %i, iSampleRate = %i, iChannels = %i, "
-      "dateAdded = '%s', strVideoURL = '%s'",
+      "dateAdded = '%s'",
       idPath, artistDisp.c_str(),
       StringUtils::Join(
           genres,
@@ -1333,7 +1323,7 @@ int CMusicDatabase::UpdateSong(int idSong,
           .c_str(),
       strTitle.c_str(), iTrack, iDuration, strRelease.c_str(), strOriginal.c_str(),
       strDiscSubtitle.c_str(), strFileName.c_str(), iBPM, iBitRate, iSampleRate, iChannels,
-      strDateMedia.c_str(), songVideoURL.c_str());
+      strDateMedia.c_str());
   if (strMusicBrainzTrackID.empty())
     strSQL += PrepareSQL(", strMusicBrainzTrackID = NULL");
   else
@@ -1762,11 +1752,6 @@ bool CMusicDatabase::UpdateArtist(const CArtist& artist)
     AddArtistDiscography(artist.idArtist, disc);
   }
 
-  if (!DeleteArtistVideoLinks(artist.idArtist))
-    CLog::Log(LOGERROR, "MusicDatabase:  Error deleting ArtistVideoLinks");
-
-  AddArtistVideoLinks(artist);
-
   // Set current artwork (held in art table)
   if (!artist.art.empty())
     SetArtForItem(artist.idArtist, MediaTypeArtist, artist.art);
@@ -2048,8 +2033,6 @@ bool CMusicDatabase::GetArtist(int idArtist, CArtist& artist, bool fetchAll /* =
       return false;
     if (nullptr == m_pDS)
       return false;
-    if (nullptr == m_pDS2)
-      return false;
 
     if (idArtist == -1)
       return false; // not in the database
@@ -2070,7 +2053,7 @@ bool CMusicDatabase::GetArtist(int idArtist, CArtist& artist, bool fetchAll /* =
       m_pDS->close();
       return false;
     }
-    std::string debugSQL = strSQL + " - ";
+
     int discographyOffset = artist_enumCount;
 
     artist.discography.clear();
@@ -2090,36 +2073,12 @@ bool CMusicDatabase::GetArtist(int idArtist, CArtist& artist, bool fetchAll /* =
     }
     m_pDS->close(); // cleanup recordset data
 
-    artist.videolinks.clear();
-    if (fetchAll)
-    {
-      strSQL = PrepareSQL("SELECT idSong, strTitle, strMusicBrainzTrackID, strVideoURL, url "
-                          "FROM song JOIN album_artist ON song.idAlbum = album_artist.idAlbum "
-                          "LEFT JOIN art ON art.media_id = song.idSong AND art.type = 'videothumb' "
-                          "WHERE album_artist.idArtist = %i AND "
-                          "song.strVideoURL is not NULL GROUP by song.strVideoURL ORDER BY idSong",
-                          idArtist);
-      debugSQL += strSQL;
-      m_pDS->query(strSQL);
-      while (!m_pDS->eof())
-      {
-        const dbiplus::sql_record* const record = m_pDS->get_sql_record();
-        ArtistVideoLinks videoLink;
-        videoLink.title = record->at(1).get_asString();
-        videoLink.mbTrackID = record->at(2).get_asString();
-        videoLink.videoURL = record->at(3).get_asString();
-        videoLink.thumbURL = record->at(4).get_asString();
-
-        artist.videolinks.emplace_back(std::move(videoLink));
-        m_pDS->next();
-      }
-      m_pDS->close();
-    }
-
     auto end = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-    CLog::LogF(LOGDEBUG, "{} - took {} ms", debugSQL, duration.count());
+    CLog::Log(LOGDEBUG, LOGDATABASE, "{0}({1}) - took {2} ms", __FUNCTION__, strSQL,
+              duration.count());
+
     return true;
   }
   catch (...)
@@ -2214,92 +2173,6 @@ bool CMusicDatabase::ClearArtistLastScrapedTime(int idArtist)
 {
   std::string strSQL =
       PrepareSQL("UPDATE artist SET lastScraped = NULL WHERE idArtist = %i", idArtist);
-  return ExecuteQuery(strSQL);
-}
-
-bool CMusicDatabase::AddArtistVideoLinks(const CArtist& artist)
-{
-  auto start = std::chrono::steady_clock::now();
-  std::string dbSong;
-
-  try
-  {
-    if (nullptr == m_pDB || nullptr == m_pDS || nullptr == m_pDS2)
-      return false;
-
-    for (const auto& videoURL : artist.videolinks)
-    {
-      dbSong = videoURL.title;
-      std::string strSQL = PrepareSQL(
-          "SELECT idSong, strTitle FROM song WHERE strMusicBrainzTrackID = '%s' OR (EXISTS "
-          "(SELECT 1 FROM album_artist WHERE album_artist.idAlbum = song.idAlbum AND "
-          "album_artist.idArtist = '%i' AND song.strTitle LIKE '%%%s%%'))",
-          videoURL.mbTrackID.c_str(), artist.idArtist, videoURL.title.c_str());
-
-      if (!m_pDS->query(strSQL))
-        return false;
-      if (m_pDS->num_rows() == 0)
-        continue;
-
-      while (!m_pDS->eof())
-      {
-        const int songId = m_pDS->fv(0).get_asInt();
-        std::string strSQL2 = PrepareSQL("UPDATE song SET strVideoURL='%s' WHERE idSong = %i",
-                                         videoURL.videoURL.c_str(), songId);
-        CLog::Log(LOGDEBUG, "Adding videolink for song {} with id {}", dbSong, songId);
-        m_pDS2->exec(strSQL2);
-
-        if (!videoURL.thumbURL.empty())
-        { // already have a videothumb for this song ?
-          strSQL2 = PrepareSQL("SELECT art_id FROM art "
-                               "WHERE media_id=%i AND media_type='%s' AND type='videothumb'",
-                               songId, MediaTypeSong);
-          m_pDS2->query(strSQL2);
-          if (!m_pDS2->eof())
-          { // update existing thumb
-            const int artId = m_pDS2->fv(0).get_asInt();
-            m_pDS2->close();
-            strSQL2 = PrepareSQL("UPDATE art SET url='%s' where art_id=%d",
-                                 videoURL.thumbURL.c_str(), artId);
-            m_pDS2->exec(strSQL2);
-          }
-          else
-          { // insert new thumb
-            m_pDS2->close();
-            strSQL2 = PrepareSQL("INSERT INTO art(media_id, media_type, type, url) "
-                                 "VALUES (%d, '%s', '%s', '%s')",
-                                 songId, MediaTypeSong, "videothumb", videoURL.thumbURL.c_str());
-            m_pDS2->exec(strSQL2);
-          }
-          m_pDS2->close();
-        }
-        m_pDS->next();
-      }
-      m_pDS->close();
-    }
-    auto end = std::chrono::steady_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-    CLog::LogF(LOGDEBUG, "Time to store videolinks {}ms ", duration.count());
-    return true;
-  }
-  catch (...)
-  {
-    CLog::Log(LOGERROR, "MusicDatabase: Unable to add videolink for song ({})", dbSong);
-    return false;
-  }
-}
-
-bool CMusicDatabase::DeleteArtistVideoLinks(const int idArtist)
-{
-  std::string strSQL = PrepareSQL("UPDATE song SET strVideoURL = NULL WHERE idAlbum IN "
-                                  "(SELECT idAlbum FROM album_artist WHERE idArtist = %i)",
-                                  idArtist);
-  if (!ExecuteQuery(strSQL))
-    return false;
-  strSQL = PrepareSQL(
-      "DELETE FROM art WHERE art.type = 'videothumb' AND art.media_id IN (SELECT idSong FROM song "
-      "JOIN album_artist ON song.idAlbum = album_artist.idAlbum WHERE album_artist.idArtist = %i)",
-      idArtist);
   return ExecuteQuery(strSQL);
 }
 
@@ -3117,7 +2990,6 @@ CSong CMusicDatabase::GetSongFromDataset(const dbiplus::sql_record* const record
   song.iBitRate = record->at(offset + song_iBitRate).get_asInt();
   song.iSampleRate = record->at(offset + song_iSampleRate).get_asInt();
   song.iChannels = record->at(offset + song_iChannels).get_asInt();
-  song.songVideoURL = record->at(offset + song_songVideoURL).get_asString();
   return song;
 }
 
@@ -3180,7 +3052,6 @@ void CMusicDatabase::GetFileItemFromDataset(const dbiplus::sql_record* const rec
   replaygain.Set(record->at(song_strReplayGain).get_asString());
   item->GetMusicInfoTag()->SetReplayGain(replaygain);
   item->GetMusicInfoTag()->SetTotalDiscs(record->at(song_iDiscTotal).get_asInt());
-  item->GetMusicInfoTag()->SetSongVideoURL(record->at(song_songVideoURL).get_asString());
 
   item->GetMusicInfoTag()->SetLoaded(true);
   // Get filename with full path
@@ -4725,19 +4596,19 @@ bool CMusicDatabase::TrimImageURLs(std::string& strImage, const size_t space)
 {
   if (strImage.length() > space)
   {
-    strImage.resize(space);
+    strImage = strImage.substr(0, space);
     // Tidy to last </thumb> tag
     size_t iPos = strImage.rfind("</thumb>");
     if (iPos == std::string::npos)
       return false;
-    strImage.resize(iPos + 8);
+    strImage = strImage.substr(0, iPos + 8);
   }
   return true;
 }
 
 bool CMusicDatabase::LookupCDDBInfo(bool bRequery /*=false*/)
 {
-#ifdef HAS_OPTICAL_DRIVE
+#ifdef HAS_DVD_DRIVE
   if (!CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(
           CSettings::SETTING_AUDIOCDS_USECDDB))
     return false;
@@ -4858,7 +4729,7 @@ bool CMusicDatabase::LookupCDDBInfo(bool bRequery /*=false*/)
 
 void CMusicDatabase::DeleteCDDBInfo()
 {
-#ifdef HAS_OPTICAL_DRIVE
+#ifdef HAS_DVD_DRIVE
   CFileItemList items;
   if (!CDirectory::GetDirectory(m_profileManager.GetCDDBFolder(), items, ".cddb",
                                 DIR_FLAG_NO_FILE_DIRS))
@@ -7706,7 +7577,6 @@ static const translateJSONField JSONtoDBSong[] = {
   { "bitrate",                  "integer", true,  "iBitRate",               "" },
   { "samplerate",               "integer", true,  "iSampleRate",            "" },
   { "channels",                 "integer", true,  "iChannels",              "" },
-  { "songvideourl",              "string", true,  "strVideoURL",            "" },
 
   // JOIN fields (multivalue), same order as _JoinToSongFields
   { "albumartistid",              "array", false, "idAlbumArtist",          "album_artist.idArtist AS idAlbumArtist" },
@@ -9417,10 +9287,6 @@ void CMusicDatabase::UpdateTables(int version)
     m_pDS->exec("DROP TABLE artist");
     m_pDS->exec("ALTER TABLE artist_new RENAME TO artist");
   }
-
-  if (version < 83)
-    m_pDS->exec("ALTER TABLE song ADD strVideoURL TEXT");
-
   // Set the version of tag scanning required.
   // Not every schema change requires the tags to be rescanned, set to the highest schema version
   // that needs this. Forced rescanning (of music files that have not changed since they were
@@ -9441,7 +9307,7 @@ void CMusicDatabase::UpdateTables(int version)
 
 int CMusicDatabase::GetSchemaVersion() const
 {
-  return 83;
+  return 82;
 }
 
 int CMusicDatabase::GetMusicNeedsTagScan()
@@ -12743,10 +12609,6 @@ bool CMusicDatabase::ImportSongHistory(const std::string& xmlFile,
     std::string strLine =
         StringUtils::Format(g_localizeStrings.Get(38353), total - unmatched, total);
 
-    auto eventLog = CServiceBroker::GetEventLog();
-    if (eventLog)
-      eventLog->Add(EventPtr(new CNotificationEvent(20197, strLine, EventLevel::Information)));
-
     return true;
   }
   catch (...)
@@ -13599,7 +13461,7 @@ bool CMusicDatabase::GetFilter(CDbUrl& musicUrl, Filter& filter, SortDescription
       songArtistSub.AppendJoin("JOIN artist ON artist.idArtist = song_artist.idArtist");
       songArtistSub.AppendWhere(PrepareSQL("artist.strArtist like '%s'", artistname.c_str()));
 
-      albumArtistSub.AppendJoin("JOIN artist ON artist.idArtist = album_artist.idArtist");
+      albumArtistSub.AppendJoin("JOIN artist ON artist.idArtist = song_artist.idArtist");
       albumArtistSub.AppendWhere(PrepareSQL("artist.strArtist like '%s'", artistname.c_str()));
     }
     if (idRole > 0)

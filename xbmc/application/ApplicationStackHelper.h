@@ -13,7 +13,6 @@
 
 #include <map>
 #include <memory>
-#include <optional>
 #include <string>
 
 class CFileItem;
@@ -37,9 +36,8 @@ public:
   /*!
   \brief Initialize stack times for each part, start & end, total time, and current part number if resume offset is specified.
   \param item the FileItem object that is the stack
-  \returns the part offset if available, nullopt in case of errors
   */
-  std::optional<int> InitializeStackStartPartAndOffset(const CFileItem& item);
+  int InitializeStackStartPartAndOffset(const CFileItem& item);
 
   /*!
   \brief returns the current part number

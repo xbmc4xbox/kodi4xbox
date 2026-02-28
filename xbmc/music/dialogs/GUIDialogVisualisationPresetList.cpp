@@ -12,9 +12,12 @@
 #include "GUIUserMessages.h"
 #include "ServiceBroker.h"
 #include "guilib/GUIComponent.h"
+#if 0
 #include "guilib/GUIVisualisationControl.h"
+#endif
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
+#include "input/Key.h"
 #include "utils/StringUtils.h"
 #include "utils/Variant.h"
 
@@ -37,16 +40,21 @@ bool CGUIDialogVisualisationPresetList::OnMessage(CGUIMessage &message)
 
 void CGUIDialogVisualisationPresetList::OnSelect(int idx)
 {
+#if 0
   if (m_viz)
     m_viz->SetPreset(idx);
+#endif
 }
 
 void CGUIDialogVisualisationPresetList::ClearVisualisation()
 {
+#if 0
   m_viz = nullptr;
+#endif
   Reset();
 }
 
+#if 0
 void CGUIDialogVisualisationPresetList::SetVisualisation(CGUIVisualisationControl* vis)
 {
   m_viz = vis;
@@ -81,12 +89,15 @@ void CGUIDialogVisualisationPresetList::SetVisualisation(CGUIVisualisationContro
     }
   }
 }
+#endif
 
 void CGUIDialogVisualisationPresetList::OnInitWindow()
 {
   CGUIMessage msg(GUI_MSG_GET_VISUALISATION, 0, 0);
   CServiceBroker::GetGUI()->GetWindowManager().SendMessage(msg);
+#if 0
   SetVisualisation(static_cast<CGUIVisualisationControl*>(msg.GetPointer()));
+#endif
   CGUIDialogSelect::OnInitWindow();
 }
 

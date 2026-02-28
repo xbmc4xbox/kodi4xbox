@@ -15,7 +15,6 @@
 class CFileItemList;
 class CProfileManager;
 class CURL;
-class CFileItem;
 
 namespace XFILE
 {
@@ -97,13 +96,6 @@ public:
   virtual bool Remove(const CURL& url) { return false; }
 
   /*!
-  \brief Provided a path, attempts to resolve to a mount point
-  \param path Path to resolve
-  \return Returns the mountpoint if found, else the provided path
-  */
-  virtual std::string ResolveMountPoint(const std::string& path) const { return path; }
-
-  /*!
   \brief Recursively removes the directory
   \param url Directory to remove.
   \return Returns \e false if not successful
@@ -140,14 +132,6 @@ public:
    \sa GetKeyboardInput, SetErrorDialog, RequireAuthentication
    */
   bool ProcessRequirements();
-
-  /*!
-  \brief Resolves a given item to a playable item
-  \note Some directories (e.g. dvd, bluray, plugins etc) need to be translated/resolved to the actual playback url
-  \param item The item being manipulated (which the path points to a vfs protocol implementation)
-  \return true if the item was resolved, false if it failed to resolve
-  */
-  virtual bool Resolve(CFileItem& item) const { return true; };
 
 protected:
   /*! \brief Prompt the user for some keyboard input

@@ -8,45 +8,12 @@
 
 #include "GUISettingsSliderControl.h"
 
-#include "input/actions/Action.h"
-#include "input/actions/ActionIDs.h"
-#include "input/mouse/MouseEvent.h"
+#include "input/Key.h"
 
-using namespace KODI;
-
-CGUISettingsSliderControl::CGUISettingsSliderControl(int parentID,
-                                                     int controlID,
-                                                     float posX,
-                                                     float posY,
-                                                     float width,
-                                                     float height,
-                                                     float sliderWidth,
-                                                     float sliderHeight,
-                                                     const CTextureInfo& textureFocus,
-                                                     const CTextureInfo& textureNoFocus,
-                                                     const CTextureInfo& backGroundTexture,
-                                                     const CTextureInfo& backGroundTextureDisabled,
-                                                     const CTextureInfo& nibTexture,
-                                                     const CTextureInfo& nibTextureFocus,
-                                                     const CTextureInfo& nibTextureDisabled,
-                                                     const CLabelInfo& labelInfo,
-                                                     int iType)
-  : CGUISliderControl(parentID,
-                      controlID,
-                      posX,
-                      posY,
-                      sliderWidth,
-                      sliderHeight,
-                      backGroundTexture,
-                      backGroundTextureDisabled,
-                      nibTexture,
-                      nibTextureFocus,
-                      nibTextureDisabled,
-                      iType,
-                      HORIZONTAL),
-    m_buttonControl(
-        parentID, controlID, posX, posY, width, height, textureFocus, textureNoFocus, labelInfo),
-    m_label(posX, posY, width, height, labelInfo)
+CGUISettingsSliderControl::CGUISettingsSliderControl(int parentID, int controlID, float posX, float posY, float width, float height, float sliderWidth, float sliderHeight, const CTextureInfo &textureFocus, const CTextureInfo &textureNoFocus, const CTextureInfo& backGroundTexture, const CTextureInfo& nibTexture, const CTextureInfo& nibTextureFocus, const CLabelInfo &labelInfo, int iType)
+    : CGUISliderControl(parentID, controlID, posX, posY, sliderWidth, sliderHeight, backGroundTexture, nibTexture,nibTextureFocus, iType, HORIZONTAL)
+    , m_buttonControl(parentID, controlID, posX, posY, width, height, textureFocus, textureNoFocus, labelInfo)
+    , m_label(posX, posY, width, height, labelInfo)
 {
   m_label.SetAlign((labelInfo.align & XBFONT_CENTER_Y) | XBFONT_RIGHT);
   ControlType = GUICONTROL_SETTINGS_SLIDER;
@@ -127,8 +94,7 @@ void CGUISettingsSliderControl::OnUnFocus()
   m_active = false;
 }
 
-EVENT_RESULT CGUISettingsSliderControl::OnMouseEvent(const CPoint& point,
-                                                     const MOUSE::CMouseEvent& event)
+EVENT_RESULT CGUISettingsSliderControl::OnMouseEvent(const CPoint &point, const CMouseEvent &event)
 {
   SetActive();
   return CGUISliderControl::OnMouseEvent(point, event);

@@ -11,7 +11,6 @@
 #include "FileItem.h"
 #include "URL.h"
 #include "Util.h"
-#include "cores/VideoPlayer/DVDFileInfo.h"
 #include "filesystem/StackDirectory.h"
 #include "utils/URIUtils.h"
 #include "utils/log.h"
@@ -75,12 +74,12 @@ bool CApplicationStackHelper::InitializeStack(const CFileItem & item)
     SetRegisteredStack(GetStackPartFileItem(i), stack);
     SetRegisteredStackPartNumber(GetStackPartFileItem(i), i);
   }
-  m_currentStackIsDiscImageStack = URIUtils::IsDiscImageStack(item.GetDynPath());
+  m_currentStackIsDiscImageStack = CFileItem(CStackDirectory::GetFirstStackedFile(item.GetPath()), false).IsDiscImage();
 
   return true;
 }
 
-std::optional<int> CApplicationStackHelper::InitializeStackStartPartAndOffset(const CFileItem& item)
+int CApplicationStackHelper::InitializeStackStartPartAndOffset(const CFileItem& item)
 {
   CVideoDatabase dbs;
   int64_t startoffset = 0;
@@ -158,16 +157,20 @@ std::optional<int> CApplicationStackHelper::InitializeStackStartPartAndOffset(co
       }
       else
       {
+#if 0
         int duration;
         if (!CDVDFileInfo::GetFileDuration(GetStackPartFileItem(i).GetPath(), duration))
         {
           m_currentStack->Clear();
-          return std::nullopt;
+          return false;
         }
         totalTimeMs += duration;
         // set end time in every part
         GetStackPartFileItem(i).SetEndOffset(totalTimeMs);
         times.push_back(totalTimeMs);
+#else
+        return false;
+#endif
       }
       // set start time in every part
       SetRegisteredStackPartStartTimeMs(GetStackPartFileItem(i), GetStackPartStartTimeMs(i));

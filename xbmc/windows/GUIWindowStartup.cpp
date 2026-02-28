@@ -12,7 +12,7 @@
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIWindowManager.h"
 #include "guilib/WindowIDs.h"
-#include "input/actions/Action.h"
+#include "input/Key.h"
 
 CGUIWindowStartup::CGUIWindowStartup(void)
     : CGUIWindow(WINDOW_STARTUP_ANIM, "Startup.xml")

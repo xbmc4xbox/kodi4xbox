@@ -69,6 +69,7 @@ public:
   }
   /*! \endcond */
 
+
   /// @defgroup cpp_kodi_addon_pvr_Defs_epg_PVREPGTag_Help Value Help
   /// @ingroup cpp_kodi_addon_pvr_Defs_epg_PVREPGTag
   ///

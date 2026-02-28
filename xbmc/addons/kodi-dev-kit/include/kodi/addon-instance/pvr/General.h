@@ -382,7 +382,8 @@ public:
   /// --------------------------------------------------------------------------
   ///
   /// @copydetails cpp_kodi_addon_pvr_Defs_PVRTypeIntValue_Help
-  void SetRecordingsLifetimeValues(const std::vector<PVRTypeIntValue>& recordingsLifetimeValues)
+  void SetRecordingsLifetimeValues(
+      const std::vector<PVRTypeIntValue>& recordingsLifetimeValues)
   {
     m_capabilities->iRecordingsLifetimesSize = 0;
     for (unsigned int i = 0; i < recordingsLifetimeValues.size() &&

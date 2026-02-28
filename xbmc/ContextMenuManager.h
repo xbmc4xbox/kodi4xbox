@@ -21,11 +21,6 @@ struct AddonEvent;
 class CAddonMgr;
 } // namespace ADDON
 
-namespace PVR
-{
-  struct PVRContextMenuEvent;
-}
-
 using ContextMenuView = std::vector<std::shared_ptr<const IContextMenuItem>>;
 
 class CContextMenuManager
@@ -40,35 +35,9 @@ public:
   void Init();
   void Deinit();
 
-  /*! \brief Checks whether context menu items are available for a file item.
-   \param fileItem the file item
-   \param root the root context menu item
-   \return true if any items are present, false otherwise
-   */
-  bool HasItems(const CFileItem& fileItem, const CContextMenuItem& root) const;
+  ContextMenuView GetItems(const CFileItem& item, const CContextMenuItem& root = MAIN) const;
 
-  /*! \brief Gets the context menu items available for a file item.
-   \param fileItem the file item
-   \param root the root context menu item
-   \return the items
-   \sa ContextMenuView
-   */
-  ContextMenuView GetItems(const CFileItem& fileItem, const CContextMenuItem& root) const;
-
-  /*! \brief Checks whether addon context menu items are available for a file item.
-   \param fileItem the file item
-   \param root the root context menu item
-   \return true if any items are present, false otherwise
-   */
-  bool HasAddonItems(const CFileItem& fileItem, const CContextMenuItem& root) const;
-
-  /*! \brief Gets the addon context menu items available for a file item.
-   \param fileItem the file item
-   \param root the root context menu item
-   \return the items
-   \sa ContextMenuView
-   */
-  ContextMenuView GetAddonItems(const CFileItem& fileItem, const CContextMenuItem& root) const;
+  ContextMenuView GetAddonItems(const CFileItem& item, const CContextMenuItem& root = MAIN) const;
 
 private:
   CContextMenuManager(const CContextMenuManager&) = delete;
@@ -82,8 +51,6 @@ private:
   void ReloadAddonItems();
   void OnEvent(const ADDON::AddonEvent& event);
 
-  void OnPVREvent(const PVR::PVRContextMenuEvent& event);
-
   ADDON::CAddonMgr& m_addonMgr;
 
   mutable CCriticalSection m_criticalSection;
@@ -93,24 +60,14 @@ private:
 
 namespace CONTEXTMENU
 {
-/*! \brief Checks whether any context menu items are available for a file item.
- \param fileItem the file item
- \param root the root context menu item
- \return true if any items are present, false otherwise
- */
-bool HasAnyMenuItemsFor(const std::shared_ptr<CFileItem>& fileItem, const CContextMenuItem& root);
+  /*!
+   * Starts the context menu loop for a file item.
+   * */
+bool ShowFor(const std::shared_ptr<CFileItem>& fileItem,
+             const CContextMenuItem& root = CContextMenuManager::MAIN);
 
-/*! \brief Starts the context menu loop for a file item.
- \param fileItem the file item
- \param root the root context menu item
- \return true on success, false otherwise
- */
-bool ShowFor(const std::shared_ptr<CFileItem>& fileItem, const CContextMenuItem& root);
-
-/*! \brief Shortcut for continuing the context menu loop from an existing menu item.
- \param menu the menu item
- \param fileItem the file item
- \return true on success, false otherwise
- */
+/*!
+   * Shortcut for continuing the context menu loop from an existing menu item.
+   */
 bool LoopFrom(const IContextMenuItem& menu, const std::shared_ptr<CFileItem>& fileItem);
 }

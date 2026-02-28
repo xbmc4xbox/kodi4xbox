@@ -17,6 +17,10 @@
 #include "utils/XTimeUtils.h"
 #include "utils/log.h"
 
+#ifdef NXDK
+#include "PlatformDefs.h" // unlink
+#endif
+
 #include <iostream>
 #include <map>
 #include <sstream>
@@ -370,7 +374,7 @@ bool SqliteDatabase::exists(void)
 
   // performing a select all on the sqlite_master will return rows if there are tables
   // defined indicating it's not empty and therefore must "exist".
-  snprintf(sqlcmd, sizeof(sqlcmd), "SELECT * FROM sqlite_master");
+  sprintf(sqlcmd, "SELECT * FROM sqlite_master");
   if ((last_err = sqlite3_exec(getHandle(), sqlcmd, &callback, &res, NULL)) == SQLITE_OK)
   {
     bRet = (res.records.size() > 0);
@@ -450,43 +454,39 @@ int SqliteDatabase::drop_analytics(void)
   result_set res;
 
   CLog::Log(LOGDEBUG, "Cleaning indexes from database {} at {}", db, host);
-  snprintf(sqlcmd, sizeof(sqlcmd),
-           "SELECT name FROM sqlite_master WHERE type == 'index' AND sql IS NOT NULL");
+  sprintf(sqlcmd, "SELECT name FROM sqlite_master WHERE type == 'index' AND sql IS NOT NULL");
   if ((last_err = sqlite3_exec(conn, sqlcmd, &callback, &res, NULL)) != SQLITE_OK)
     return DB_UNEXPECTED_RESULT;
 
   for (size_t i = 0; i < res.records.size(); i++)
   {
-    snprintf(sqlcmd, sizeof(sqlcmd), "DROP INDEX '%s'",
-             res.records[i]->at(0).get_asString().c_str());
+    sprintf(sqlcmd, "DROP INDEX '%s'", res.records[i]->at(0).get_asString().c_str());
     if ((last_err = sqlite3_exec(conn, sqlcmd, NULL, NULL, NULL)) != SQLITE_OK)
       return DB_UNEXPECTED_RESULT;
   }
   res.clear();
 
   CLog::Log(LOGDEBUG, "Cleaning views from database {} at {}", db, host);
-  snprintf(sqlcmd, sizeof(sqlcmd), "SELECT name FROM sqlite_master WHERE type == 'view'");
+  sprintf(sqlcmd, "SELECT name FROM sqlite_master WHERE type == 'view'");
   if ((last_err = sqlite3_exec(conn, sqlcmd, &callback, &res, NULL)) != SQLITE_OK)
     return DB_UNEXPECTED_RESULT;
 
   for (size_t i = 0; i < res.records.size(); i++)
   {
-    snprintf(sqlcmd, sizeof(sqlcmd), "DROP VIEW '%s'",
-             res.records[i]->at(0).get_asString().c_str());
+    sprintf(sqlcmd, "DROP VIEW '%s'", res.records[i]->at(0).get_asString().c_str());
     if ((last_err = sqlite3_exec(conn, sqlcmd, NULL, NULL, NULL)) != SQLITE_OK)
       return DB_UNEXPECTED_RESULT;
   }
   res.clear();
 
   CLog::Log(LOGDEBUG, "Cleaning triggers from database {} at {}", db, host);
-  snprintf(sqlcmd, sizeof(sqlcmd), "SELECT name FROM sqlite_master WHERE type == 'trigger'");
+  sprintf(sqlcmd, "SELECT name FROM sqlite_master WHERE type == 'trigger'");
   if ((last_err = sqlite3_exec(conn, sqlcmd, &callback, &res, NULL)) != SQLITE_OK)
     return DB_UNEXPECTED_RESULT;
 
   for (size_t i = 0; i < res.records.size(); i++)
   {
-    snprintf(sqlcmd, sizeof(sqlcmd), "DROP TRIGGER '%s'",
-             res.records[i]->at(0).get_asString().c_str());
+    sprintf(sqlcmd, "DROP TRIGGER '%s'", res.records[i]->at(0).get_asString().c_str());
     if ((last_err = sqlite3_exec(conn, sqlcmd, NULL, NULL, NULL)) != SQLITE_OK)
       return DB_UNEXPECTED_RESULT;
   }
@@ -843,7 +843,7 @@ int SqliteDataset::exec(const std::string& sql)
     pos = qry.find(" ON ", pos + 1);
 
     if (pos != std::string::npos)
-      qry.resize(pos);
+      qry = qry.substr(0, pos);
   }
 
   char* errmsg;
@@ -915,12 +915,10 @@ bool SqliteDataset::query(const std::string& query)
           v.set_asDouble(sqlite3_column_double(stmt, i));
           break;
         case SQLITE_TEXT:
-          v.set_asString(reinterpret_cast<const char*>(sqlite3_column_text(stmt, i)),
-                         sqlite3_column_bytes(stmt, i));
+          v.set_asString((const char*)sqlite3_column_text(stmt, i));
           break;
         case SQLITE_BLOB:
-          v.set_asString(reinterpret_cast<const char*>(sqlite3_column_text(stmt, i)),
-                         sqlite3_column_bytes(stmt, i));
+          v.set_asString((const char*)sqlite3_column_text(stmt, i));
           break;
         case SQLITE_NULL:
         default:

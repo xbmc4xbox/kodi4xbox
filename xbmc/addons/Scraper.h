@@ -131,11 +131,8 @@ public:
     XFILE::CCurlFile &fcurl, const std::string &sArtist);
   VIDEO::EPISODELIST GetEpisodeList(XFILE::CCurlFile &fcurl, const CScraperUrl &scurl);
 
-  bool GetVideoDetails(XFILE::CCurlFile& fcurl,
-                       const std::unordered_map<std::string, std::string>& uniqueIDs,
-                       const CScraperUrl& scurl,
-                       bool fMovie /*else episode*/,
-                       CVideoInfoTag& video);
+  bool GetVideoDetails(XFILE::CCurlFile &fcurl, const CScraperUrl &scurl,
+    bool fMovie/*else episode*/, CVideoInfoTag &video);
   bool GetAlbumDetails(XFILE::CCurlFile &fcurl, const CScraperUrl &scurl,
     CAlbum &album);
   bool GetArtistDetails(XFILE::CCurlFile &fcurl, const CScraperUrl &scurl,
@@ -173,11 +170,11 @@ private:
                          XFILE::CCurlFile& http,
                          const std::vector<std::string>* extras);
 
-  bool m_fLoaded = false;
+  bool m_fLoaded;
   bool m_isPython = false;
-  bool m_requiressettings = false;
+  bool m_requiressettings;
   CDateTimeSpan m_persistence;
-  CONTENT_TYPE m_pathContent = CONTENT_NONE;
+  CONTENT_TYPE m_pathContent;
   CScraperParser m_parser;
 };
 

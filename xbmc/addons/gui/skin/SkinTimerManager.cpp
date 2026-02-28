@@ -9,38 +9,36 @@
 #include "SkinTimerManager.h"
 
 #include "GUIInfoManager.h"
+#include "ServiceBroker.h"
 #include "guilib/GUIAction.h"
 #include "guilib/GUIComponent.h"
 #include "utils/StringUtils.h"
-#include "utils/XBMCTinyXML2.h"
+#include "utils/XBMCTinyXML.h"
 #include "utils/log.h"
 
 #include <chrono>
+#include <mutex>
 
 using namespace std::chrono_literals;
 
-CSkinTimerManager::CSkinTimerManager(CGUIInfoManager& infoMgr) : m_infoMgr{infoMgr}
-{
-}
-
 void CSkinTimerManager::LoadTimers(const std::string& path)
 {
-  CXBMCTinyXML2 doc;
+  CXBMCTinyXML doc;
   if (!doc.LoadFile(path))
   {
-    CLog::LogF(LOGWARNING, "Could not load timers file {}: {} (Line: {})", path, doc.ErrorStr(),
-               doc.ErrorLineNum());
+    CLog::LogF(LOGWARNING, "Could not load timers file {}: {} (row: {}, col: {})", path,
+               doc.ErrorDesc(), doc.ErrorRow(), doc.ErrorCol());
     return;
   }
 
-  auto* root = doc.RootElement();
+  TiXmlElement* root = doc.RootElement();
   if (!root || !StringUtils::EqualsNoCase(root->Value(), "timers"))
   {
     CLog::LogF(LOGERROR, "Error loading timers file {}: Root element <timers> required.", path);
     return;
   }
 
-  const auto* timerNode = root->FirstChildElement("timer");
+  const TiXmlElement* timerNode = root->FirstChildElement("timer");
   while (timerNode)
   {
     LoadTimerInternal(timerNode);
@@ -48,16 +46,17 @@ void CSkinTimerManager::LoadTimers(const std::string& path)
   }
 }
 
-void CSkinTimerManager::LoadTimerInternal(const tinyxml2::XMLNode* node)
+void CSkinTimerManager::LoadTimerInternal(const TiXmlElement* node)
 {
-  if ((!node->FirstChildElement("name") || !node->FirstChildElement("name")->FirstChild()))
+  if ((!node->FirstChild("name") || !node->FirstChild("name")->FirstChild() ||
+       node->FirstChild("name")->FirstChild()->ValueStr().empty()))
   {
-    CLog::LogF(LOGERROR, "Missing required field 'name' for valid skin timer. Ignoring timer.");
+    CLog::LogF(LOGERROR, "Missing required field name for valid skin. Ignoring timer.");
     return;
   }
 
-  std::string timerName = node->FirstChildElement("name")->FirstChild()->Value();
-  if (TimerExists(timerName))
+  std::string timerName = node->FirstChild("name")->FirstChild()->Value();
+  if (m_timers.count(timerName) > 0)
   {
     CLog::LogF(LOGWARNING,
                "Ignoring timer with name {} - another timer with the same name already exists",
@@ -68,9 +67,11 @@ void CSkinTimerManager::LoadTimerInternal(const tinyxml2::XMLNode* node)
   // timer start
   INFO::InfoPtr startInfo{nullptr};
   bool resetOnStart{false};
-  if (node->FirstChildElement("start") && node->FirstChildElement("start")->FirstChild())
+  if (node->FirstChild("start") && node->FirstChild("start")->FirstChild() &&
+      !node->FirstChild("start")->FirstChild()->ValueStr().empty())
   {
-    startInfo = m_infoMgr.Register(node->FirstChildElement("start")->FirstChild()->Value());
+    startInfo = CServiceBroker::GetGUI()->GetInfoManager().Register(
+        node->FirstChild("start")->FirstChild()->ValueStr());
     // check if timer needs to be reset after start
     if (node->FirstChildElement("start")->Attribute("reset") &&
         StringUtils::EqualsNoCase(node->FirstChildElement("start")->Attribute("reset"), "true"))
@@ -81,21 +82,25 @@ void CSkinTimerManager::LoadTimerInternal(const tinyxml2::XMLNode* node)
 
   // timer reset
   INFO::InfoPtr resetInfo{nullptr};
-  if (node->FirstChildElement("reset") && node->FirstChildElement("reset")->FirstChild())
+  if (node->FirstChild("reset") && node->FirstChild("reset")->FirstChild() &&
+      !node->FirstChild("reset")->FirstChild()->ValueStr().empty())
   {
-    resetInfo = m_infoMgr.Register(node->FirstChildElement("reset")->FirstChild()->Value());
+    resetInfo = CServiceBroker::GetGUI()->GetInfoManager().Register(
+        node->FirstChild("reset")->FirstChild()->ValueStr());
   }
   // timer stop
   INFO::InfoPtr stopInfo{nullptr};
-  if (node->FirstChildElement("stop") && node->FirstChildElement("stop")->FirstChild())
+  if (node->FirstChild("stop") && node->FirstChild("stop")->FirstChild() &&
+      !node->FirstChild("stop")->FirstChild()->ValueStr().empty())
   {
-    stopInfo = m_infoMgr.Register(node->FirstChildElement("stop")->FirstChild()->Value());
+    stopInfo = CServiceBroker::GetGUI()->GetInfoManager().Register(
+        node->FirstChild("stop")->FirstChild()->ValueStr());
   }
 
   // process onstart actions
   CGUIAction startActions;
   startActions.EnableSendThreadMessageMode();
-  const auto* onStartElement = node->FirstChildElement("onstart");
+  const TiXmlElement* onStartElement = node->FirstChildElement("onstart");
   while (onStartElement)
   {
     if (onStartElement->FirstChild())
@@ -112,7 +117,7 @@ void CSkinTimerManager::LoadTimerInternal(const tinyxml2::XMLNode* node)
   // process onstop actions
   CGUIAction stopActions;
   stopActions.EnableSendThreadMessageMode();
-  const auto* onStopElement = node->FirstChildElement("onstop");
+  const TiXmlElement* onStopElement = node->FirstChildElement("onstop");
   while (onStopElement)
   {
     if (onStopElement->FirstChild())
@@ -132,61 +137,42 @@ void CSkinTimerManager::LoadTimerInternal(const tinyxml2::XMLNode* node)
 
 bool CSkinTimerManager::TimerIsRunning(const std::string& timer) const
 {
-  if (auto iter = m_timers.find(timer); iter != m_timers.end())
+  if (m_timers.count(timer) == 0)
   {
-    return iter->second->IsRunning();
+    CLog::LogF(LOGERROR, "Couldn't find Skin Timer with name: {}", timer);
+    return false;
   }
-  CLog::LogF(LOGERROR, "Couldn't find Skin Timer with name: {}", timer);
-  return false;
+  return m_timers.at(timer)->IsRunning();
 }
 
 float CSkinTimerManager::GetTimerElapsedSeconds(const std::string& timer) const
 {
-  if (auto iter = m_timers.find(timer); iter != m_timers.end())
+  if (m_timers.count(timer) == 0)
   {
-    return iter->second->GetElapsedSeconds();
+    CLog::LogF(LOGERROR, "Couldn't find Skin Timer with name: {}", timer);
+    return 0;
   }
-  CLog::LogF(LOGERROR, "Couldn't find Skin Timer with name: {}", timer);
-  return 0;
+  return m_timers.at(timer)->GetElapsedSeconds();
 }
 
 void CSkinTimerManager::TimerStart(const std::string& timer) const
 {
-  if (auto iter = m_timers.find(timer); iter != m_timers.end())
+  if (m_timers.count(timer) == 0)
   {
-    return iter->second->Start();
+    CLog::LogF(LOGERROR, "Couldn't find Skin Timer with name: {}", timer);
+    return;
   }
-  CLog::LogF(LOGERROR, "Couldn't find Skin Timer with name: {}", timer);
+  m_timers.at(timer)->Start();
 }
 
 void CSkinTimerManager::TimerStop(const std::string& timer) const
 {
-  if (auto iter = m_timers.find(timer); iter != m_timers.end())
+  if (m_timers.count(timer) == 0)
   {
-    return iter->second->Stop();
+    CLog::LogF(LOGERROR, "Couldn't find Skin Timer with name: {}", timer);
+    return;
   }
-  CLog::LogF(LOGERROR, "Couldn't find Skin Timer with name: {}", timer);
-}
-
-size_t CSkinTimerManager::GetTimerCount() const
-{
-  return m_timers.size();
-}
-
-bool CSkinTimerManager::TimerExists(const std::string& timer) const
-{
-  return m_timers.count(timer) != 0;
-}
-
-std::unique_ptr<CSkinTimer> CSkinTimerManager::GrabTimer(const std::string& timer)
-{
-  if (auto iter = m_timers.find(timer); iter != m_timers.end())
-  {
-    auto timerInstance = std::move(iter->second);
-    m_timers.erase(iter);
-    return timerInstance;
-  }
-  return {};
+  m_timers.at(timer)->Stop();
 }
 
 void CSkinTimerManager::Stop()
@@ -201,15 +187,15 @@ void CSkinTimerManager::Stop()
     const std::unique_ptr<CSkinTimer>::pointer timer = val.get();
     if (timer->GetStartCondition())
     {
-      m_infoMgr.UnRegister(timer->GetStartCondition());
+      CServiceBroker::GetGUI()->GetInfoManager().UnRegister(timer->GetStartCondition());
     }
     if (timer->GetStopCondition())
     {
-      m_infoMgr.UnRegister(timer->GetStopCondition());
+      CServiceBroker::GetGUI()->GetInfoManager().UnRegister(timer->GetStopCondition());
     }
     if (timer->GetResetCondition())
     {
-      m_infoMgr.UnRegister(timer->GetResetCondition());
+      CServiceBroker::GetGUI()->GetInfoManager().UnRegister(timer->GetResetCondition());
     }
   }
   m_timers.clear();

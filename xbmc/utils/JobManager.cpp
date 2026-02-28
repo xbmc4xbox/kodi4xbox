@@ -118,9 +118,9 @@ bool CJobQueue::AddJob(CJob *job)
   }
 
   if (m_lifo)
-    m_jobQueue.emplace_back(job);
+    m_jobQueue.push_back(CJobPointer(job));
   else
-    m_jobQueue.emplace_front(job);
+    m_jobQueue.push_front(CJobPointer(job));
   QueueNextJob();
 
   return true;

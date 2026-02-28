@@ -30,10 +30,9 @@ public:
   const std::string& GetType() const { return m_type; }
   void AppendPath(const std::string &subPath);
 
-  using CUrlOptions::GetOption;
+  using CUrlOptions::HasOption;
   using CUrlOptions::GetOptions;
   using CUrlOptions::GetOptionsString;
-  using CUrlOptions::HasOption;
 
   void AddOption(const std::string &key, const char *value) override;
   void AddOption(const std::string &key, const std::string &value) override;

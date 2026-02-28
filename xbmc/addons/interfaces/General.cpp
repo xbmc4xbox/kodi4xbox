@@ -18,8 +18,8 @@
 #include "application/ApplicationComponents.h"
 #include "application/ApplicationPowerHandling.h"
 #include "dialogs/GUIDialogKaiToast.h"
-#include "input/keyboard/KeyboardLayout.h"
-#include "input/keyboard/KeyboardLayoutManager.h"
+#include "input/KeyboardLayout.h"
+#include "input/KeyboardLayoutManager.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 #include "utils/CharsetConverter.h"
@@ -32,8 +32,7 @@
 #include <string.h>
 
 using namespace kodi; // addon-dev-kit namespace
-using namespace KODI;
-using UTILITY::CDigest;
+using KODI::UTILITY::CDigest;
 
 namespace ADDON
 {
@@ -403,17 +402,17 @@ bool Interface_General::get_keyboard_layout(void* kodiBase, char** layout_name, 
 
   std::string activeLayout = CServiceBroker::GetSettingsComponent()->GetSettings()->GetString(CSettings::SETTING_LOCALE_ACTIVEKEYBOARDLAYOUT);
 
-  KEYBOARD::CKeyboardLayout layout;
+  CKeyboardLayout layout;
   if (!CServiceBroker::GetKeyboardLayoutManager()->GetLayout(activeLayout, layout))
     return false;
 
   *layout_name = strdup(layout.GetName().c_str());
 
-  unsigned int modifiers = KEYBOARD::CKeyboardLayout::ModifierKeyNone;
+  unsigned int modifiers = CKeyboardLayout::ModifierKeyNone;
   if (modifier_key & STD_KB_MODIFIER_KEY_SHIFT)
-    modifiers |= KEYBOARD::CKeyboardLayout::ModifierKeyShift;
+    modifiers |= CKeyboardLayout::ModifierKeyShift;
   if (modifier_key & STD_KB_MODIFIER_KEY_SYMBOL)
-    modifiers |= KEYBOARD::CKeyboardLayout::ModifierKeySymbol;
+    modifiers |= CKeyboardLayout::ModifierKeySymbol;
 
   for (unsigned int row = 0; row < STD_KB_BUTTONS_MAX_ROWS; row++)
   {
@@ -437,11 +436,10 @@ bool Interface_General::change_keyboard_layout(void* kodiBase, char** layout_nam
     return false;
   }
 
-  std::vector<KEYBOARD::CKeyboardLayout> layouts;
+  std::vector<CKeyboardLayout> layouts;
   unsigned int currentLayout = 0;
 
-  const KEYBOARD::KeyboardLayouts& keyboardLayouts =
-      CServiceBroker::GetKeyboardLayoutManager()->GetLayouts();
+  const KeyboardLayouts& keyboardLayouts = CServiceBroker::GetKeyboardLayoutManager()->GetLayouts();
   const std::shared_ptr<CSettings> settings = CServiceBroker::GetSettingsComponent()->GetSettings();
   std::vector<CVariant> layoutNames = settings->GetList(CSettings::SETTING_LOCALE_KEYBOARDLAYOUTS);
   std::string activeLayout = settings->GetString(CSettings::SETTING_LOCALE_ACTIVEKEYBOARDLAYOUT);
@@ -460,8 +458,7 @@ bool Interface_General::change_keyboard_layout(void* kodiBase, char** layout_nam
   currentLayout++;
   if (currentLayout >= layouts.size())
     currentLayout = 0;
-  KEYBOARD::CKeyboardLayout layout =
-      layouts.empty() ? KEYBOARD::CKeyboardLayout() : layouts[currentLayout];
+  CKeyboardLayout layout = layouts.empty() ? CKeyboardLayout() : layouts[currentLayout];
   CServiceBroker::GetSettingsComponent()->GetSettings()->SetString(CSettings::SETTING_LOCALE_ACTIVEKEYBOARDLAYOUT, layout.GetName());
 
   *layout_name = strdup(layout.GetName().c_str());

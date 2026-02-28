@@ -40,9 +40,6 @@ namespace XFILE
 /* indicate that caller want to reopen a file if its already open  */
   static const unsigned int READ_REOPEN = 0x100;
 
-/* indicate that caller want open a file without intermediate buffer regardless to file type */
-  static const unsigned int READ_NO_BUFFER = 0x200;
-
 struct SNativeIoControl
 {
   unsigned long int   request;
@@ -51,20 +48,10 @@ struct SNativeIoControl
 
 struct SCacheStatus
 {
-  uint64_t maxforward; /**< forward cache max capacity in bytes */
   uint64_t forward; /**< number of bytes cached forward of current position */
   uint32_t maxrate; /**< maximum allowed read(fill) rate (bytes/second) */
   uint32_t currate; /**< average read rate (bytes/second) since last position change */
   uint32_t lowrate; /**< low speed read rate (bytes/second) (if any, else 0) */
-};
-
-enum CACHE_BUFFER_MODES
-{
-  CACHE_BUFFER_MODE_INTERNET = 0,
-  CACHE_BUFFER_MODE_ALL = 1,
-  CACHE_BUFFER_MODE_TRUE_INTERNET = 2,
-  CACHE_BUFFER_MODE_NONE = 3,
-  CACHE_BUFFER_MODE_NETWORK = 4,
 };
 
 typedef enum {
@@ -90,7 +77,7 @@ enum CURLOPTIONTYPE
  * accept-charset: Set the "accept-charset" header
  * acceptencoding or encoding: Set the "accept-encoding" header
  * active-remote: Set the "active-remote" header
- * auth: Set the authentication method. Possible values: any, anysafe, digest, ntlm, basic
+ * auth: Set the authentication method. Possible values: any, anysafe, digest, ntlm
  * connection-timeout: Set the connection timeout in seconds
  * cookie: Set the "cookie" header
  * customrequest: Set a custom HTTP request like DELETE

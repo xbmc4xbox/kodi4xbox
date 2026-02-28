@@ -15,14 +15,10 @@
 #include "guilib/LocalizeStrings.h"
 #include "guilib/WindowIDs.h"
 #include "guilib/guiinfo/GUIInfoLabels.h"
-#include "pvr/PVRManager.h"
 #include "storage/MediaManager.h"
 #include "utils/CPUInfo.h"
 #include "utils/StringUtils.h"
 #include "utils/SystemInfo.h"
-
-constexpr int CONTROL_TEXT_START = 2;
-constexpr int CONTROL_TEXT_END = 13; // 12 lines
 
 #define CONTROL_TB_POLICY   30
 #define CONTROL_BT_STORAGE  94
@@ -33,14 +29,8 @@ constexpr int CONTROL_TEXT_END = 13; // 12 lines
 #define CONTROL_BT_PVR      99
 #define CONTROL_BT_POLICY   100
 
-constexpr int CONTROL_BT_DONATE = 101;
-constexpr int CONTROL_GROUP_DONATE = 102;
-constexpr int CONTROL_MULTI_IMAGE_DONATE = 103;
-
-constexpr int CONTROL_GROUP_SYSTEM_BAR = 104;
-
-constexpr int CONTROL_START = CONTROL_BT_STORAGE;
-constexpr int CONTROL_END = CONTROL_BT_DONATE;
+#define CONTROL_START       CONTROL_BT_STORAGE
+#define CONTROL_END         CONTROL_BT_POLICY
 
 CGUIWindowSystemInfo::CGUIWindowSystemInfo(void) :
     CGUIWindow(WINDOW_SYSTEM_INFORMATION, "SettingsSystemInfo.xml")
@@ -60,7 +50,7 @@ bool CGUIWindowSystemInfo::OnMessage(CGUIMessage& message)
       CGUIWindow::OnMessage(message);
       SET_CONTROL_LABEL(52, CSysInfo::GetAppName() + " " + CSysInfo::GetVersion());
       SET_CONTROL_LABEL(53, CSysInfo::GetBuildDate());
-      CONTROL_ENABLE_ON_CONDITION(CONTROL_BT_PVR, CServiceBroker::GetPVRManager().IsStarted());
+      CONTROL_ENABLE_ON_CONDITION(CONTROL_BT_PVR, false);
       return true;
     }
     break;
@@ -69,7 +59,6 @@ bool CGUIWindowSystemInfo::OnMessage(CGUIMessage& message)
     {
       CGUIWindow::OnMessage(message);
       m_diskUsage.clear();
-      m_privacyPolicyLoaded = false;
       return true;
     }
     break;
@@ -84,23 +73,12 @@ bool CGUIWindowSystemInfo::OnMessage(CGUIMessage& message)
         m_section = focusedControl;
       }
       if (m_section >= CONTROL_BT_STORAGE && m_section <= CONTROL_BT_PVR)
-      {
         SET_CONTROL_HIDDEN(CONTROL_TB_POLICY);
-        SET_CONTROL_HIDDEN(CONTROL_GROUP_DONATE);
-        SET_CONTROL_VISIBLE(CONTROL_GROUP_SYSTEM_BAR);
-      }
       else if (m_section == CONTROL_BT_POLICY)
       {
-        LoadPrivacyPolicy();
+        SET_CONTROL_LABEL(CONTROL_TB_POLICY, CServiceBroker::GetGUI()->GetInfoManager().GetLabel(
+                                                 SYSTEM_PRIVACY_POLICY, INFO::DEFAULT_CONTEXT));
         SET_CONTROL_VISIBLE(CONTROL_TB_POLICY);
-        SET_CONTROL_HIDDEN(CONTROL_GROUP_DONATE);
-        SET_CONTROL_VISIBLE(CONTROL_GROUP_SYSTEM_BAR);
-      }
-      else if (m_section == CONTROL_BT_DONATE)
-      {
-        SET_CONTROL_HIDDEN(CONTROL_TB_POLICY);
-        SET_CONTROL_VISIBLE(CONTROL_GROUP_DONATE);
-        SET_CONTROL_HIDDEN(CONTROL_GROUP_SYSTEM_BAR);
       }
       return true;
     }
@@ -111,7 +89,7 @@ bool CGUIWindowSystemInfo::OnMessage(CGUIMessage& message)
 
 void CGUIWindowSystemInfo::FrameMove()
 {
-  int i = CONTROL_TEXT_START;
+  int i = 2;
   if (m_section == CONTROL_BT_DEFAULT)
   {
     SET_CONTROL_LABEL(40, g_localizeStrings.Get(20154));
@@ -130,7 +108,7 @@ void CGUIWindowSystemInfo::FrameMove()
     if (m_diskUsage.empty())
       m_diskUsage = CServiceBroker::GetMediaManager().GetDiskUsage();
 
-    for (size_t d = 0; d < m_diskUsage.size() && d <= CONTROL_TEXT_END - CONTROL_TEXT_START; ++d)
+    for (size_t d = 0; d < m_diskUsage.size(); d++)
     {
       SET_CONTROL_LABEL(i++, m_diskUsage[d]);
     }
@@ -239,7 +217,7 @@ void CGUIWindowSystemInfo::FrameMove()
   else if (m_section == CONTROL_BT_PVR)
   {
     SET_CONTROL_LABEL(40, g_localizeStrings.Get(19166));
-    int i = CONTROL_TEXT_START;
+    int i = 2;
 
     SetControlLabel(i++, "{}: {}", 19120, PVR_BACKEND_NUMBER);
     i++;  // empty line
@@ -265,14 +243,11 @@ void CGUIWindowSystemInfo::FrameMove()
 
 void CGUIWindowSystemInfo::ResetLabels()
 {
-  for (int i = CONTROL_TEXT_START; i <= CONTROL_TEXT_END; ++i)
+  for (int i = 2; i < 13; i++)
   {
     SET_CONTROL_LABEL(i, "");
   }
-
-  // Reset the multiimage to the beginning
-  CGUIMessage msg{GUI_MSG_RESET_MULTI_IMAGE, GetID(), CONTROL_MULTI_IMAGE_DONATE};
-  OnMessage(msg);
+  SET_CONTROL_LABEL(CONTROL_TB_POLICY, "");
 }
 
 void CGUIWindowSystemInfo::SetControlLabel(int id, const char *format, int label, int info)
@@ -281,14 +256,4 @@ void CGUIWindowSystemInfo::SetControlLabel(int id, const char *format, int label
       format, g_localizeStrings.Get(label),
       CServiceBroker::GetGUI()->GetInfoManager().GetLabel(info, INFO::DEFAULT_CONTEXT));
   SET_CONTROL_LABEL(id, tmpStr);
-}
-
-void CGUIWindowSystemInfo::LoadPrivacyPolicy()
-{
-  if (!m_privacyPolicyLoaded)
-  {
-    m_privacyPolicyLoaded = true;
-    SET_CONTROL_LABEL(CONTROL_TB_POLICY, CServiceBroker::GetGUI()->GetInfoManager().GetLabel(
-                                             SYSTEM_PRIVACY_POLICY, INFO::DEFAULT_CONTEXT));
-  }
 }

@@ -22,8 +22,7 @@
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
-#include "input/actions/Action.h"
-#include "input/actions/ActionIDs.h"
+#include "input/Key.h"
 #include "messaging/helpers/DialogOKHelper.h"
 #include "music/MusicDatabase.h"
 #include "music/MusicLibraryQueue.h"
@@ -1040,5 +1039,5 @@ void CGUIDialogMusicInfo::ShowFor(CFileItem* pItem)
 void CGUIDialogMusicInfo::OnPlayItem(const std::shared_ptr<CFileItem>& item)
 {
   Close(true);
-  MUSIC_UTILS::PlayItem(item, "");
+  MUSIC_UTILS::PlayItem(item);
 }

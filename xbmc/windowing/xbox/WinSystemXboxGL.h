@@ -33,7 +33,11 @@ public:
   CWinSystemXboxGL();
   virtual ~CWinSystemXboxGL();
 
+  static void Register();
+  static std::unique_ptr<CWinSystemBase> CreateWinSystem();
+
   // CWinSystemBase
+  CRenderSystemBase *GetRenderSystem() override { return this; }
   bool InitWindowSystem() override;
   bool DestroyWindowSystem() override;
   bool CreateNewWindow(const std::string& name, bool fullScreen, RESOLUTION_INFO& res) override;
@@ -50,8 +54,5 @@ protected:
 private:
   RESOLUTION_INFO GetResolutionInfo(RESOLUTION res);
 };
-
-XBMC_GLOBAL_REF(CWinSystemXboxGL,g_Windowing);
-#define g_Windowing XBMC_GLOBAL_USE(CWinSystemXboxGL)
 
 #endif

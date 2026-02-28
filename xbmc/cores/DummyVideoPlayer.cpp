@@ -85,22 +85,22 @@ void CDummyVideoPlayer::Process()
     }
     m_lastTime = std::chrono::steady_clock::now();
     Sleep(std::chrono::milliseconds(0));
-    g_graphicsContext.Lock();
-    if (g_graphicsContext.IsFullScreenVideo())
+    CServiceBroker::GetWinSystem()->GetGfxContext().Lock();
+    if (CServiceBroker::GetWinSystem()->GetGfxContext().IsFullScreenVideo())
     {
 #if 0
-      g_graphicsContext.Get3DDevice()->BeginScene();
+      CServiceBroker::GetWinSystem()->GetGfxContext().Get3DDevice()->BeginScene();
 #endif
-      g_graphicsContext.Clear();
-      g_graphicsContext.SetRenderingResolution(g_graphicsContext.GetResInfo(), false);
+      CServiceBroker::GetWinSystem()->GetGfxContext().Clear();
+      CServiceBroker::GetWinSystem()->GetGfxContext().SetRenderingResolution(CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo(), false);
       Render();
 #if 0
       if (g_application.NeedRenderFullScreen())
         g_application.RenderFullScreen();
-      g_graphicsContext.Get3DDevice()->EndScene();
+      CServiceBroker::GetWinSystem()->GetGfxContext().Get3DDevice()->EndScene();
 #endif
     }
-    g_graphicsContext.Unlock();
+    CServiceBroker::GetWinSystem()->GetGfxContext().Unlock();
   }
   if (m_bStop)
     m_callback.OnPlayBackEnded();
@@ -273,18 +273,18 @@ bool CDummyVideoPlayer::SetPlayerState(std::string state)
 
 void CDummyVideoPlayer::Render()
 {
-  const CRect vw = g_graphicsContext.GetViewWindow();
+  const CRect vw = CServiceBroker::GetWinSystem()->GetGfxContext().GetViewWindow();
 #if 0
   D3DVIEWPORT8 newviewport;
   D3DVIEWPORT8 oldviewport;
-  g_graphicsContext.Get3DDevice()->GetViewport(&oldviewport);
+  CServiceBroker::GetWinSystem()->GetGfxContext().Get3DDevice()->GetViewport(&oldviewport);
   newviewport.MinZ = 0.0f;
   newviewport.MaxZ = 1.0f;
   newviewport.X = (DWORD)vw.x1;
   newviewport.Y = (DWORD)vw.y1;
   newviewport.Width = (DWORD)vw.Width();
   newviewport.Height = (DWORD)vw.Height();
-  g_graphicsContext.SetClipRegion(vw.x1, vw.y1, vw.Width(), vw.Height());
+  CServiceBroker::GetWinSystem()->GetGfxContext().SetClipRegion(vw.x1, vw.y1, vw.Width(), vw.Height());
   CGUIFont *font = g_fontManager.GetFont("font13");
   if (font)
   {
@@ -300,5 +300,5 @@ void CDummyVideoPlayer::Render()
     CGUITextLayout::DrawText(font, posX, posY, 0xffffffff, 0, currentTime, XBFONT_CENTER_X | XBFONT_CENTER_Y);
   }
 #endif
-  g_graphicsContext.RestoreClipRegion();
+  CServiceBroker::GetWinSystem()->GetGfxContext().RestoreClipRegion();
 }

@@ -94,6 +94,7 @@ namespace controls
 /// ~~~~~~~~~~~~
 ///
 
+
 //==============================================================================
 /// @ingroup cpp_kodi_gui_windows_controls_CSpin
 /// @anchor AddonGUISpinControlType

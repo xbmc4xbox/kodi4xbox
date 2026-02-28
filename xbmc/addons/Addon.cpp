@@ -372,12 +372,11 @@ bool CAddon::HasSettingsToSave(AddonInstanceId id /* = ADDON_SETTINGS_ID */) con
   return SettingsLoaded(id);
 }
 
-bool CAddon::SaveSettings(AddonInstanceId id /* = ADDON_SETTINGS_ID */)
+void CAddon::SaveSettings(AddonInstanceId id /* = ADDON_SETTINGS_ID */)
 {
   if (!HasSettingsToSave(id))
-    return false; // no settings to save
+    return; // no settings to save
 
-  bool success{true};
   CSettingsData& data = m_settings[id];
 
   // break down the path into directories
@@ -386,14 +385,14 @@ bool CAddon::SaveSettings(AddonInstanceId id /* = ADDON_SETTINGS_ID */)
 
   // create the individual folders
   if (!CDirectory::Exists(strRoot))
-    success = CDirectory::Create(strRoot);
+    CDirectory::Create(strRoot);
   if (!CDirectory::Exists(strAddon))
-    success = CDirectory::Create(strAddon);
+    CDirectory::Create(strAddon);
 
   // create the XML file
   CXBMCTinyXML doc;
   if (SettingsToXML(doc, id))
-    success = doc.SaveFile(data.m_userSettingsPath);
+    doc.SaveFile(data.m_userSettingsPath);
 
   data.m_hasUserSettings = true;
 
@@ -402,7 +401,6 @@ bool CAddon::SaveSettings(AddonInstanceId id /* = ADDON_SETTINGS_ID */)
 #ifdef HAS_PYTHON
   CServiceBroker::GetXBPython().OnSettingsChanged(ID());
 #endif
-  return success;
 }
 
 std::string CAddon::GetSetting(const std::string& key, AddonInstanceId id)

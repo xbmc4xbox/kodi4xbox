@@ -10,10 +10,8 @@
 
 #include "InfoLoader.h"
 #include "settings/ISubSettings.h"
-#include "utils/Job.h"
 
 #include <string>
-#include <vector>
 
 #define KB  (1024)          // 1 KiloByte (1KB)   1024 Byte (2^10 Byte)
 #define MB  (1024*KB)       // 1 MegaByte (1MB)   1024 KB (2^10 KB)
@@ -46,11 +44,6 @@ public:
   std::string cpuFrequency;
   std::string osVersionInfo;
   std::string macAddress;
-  std::string ipAddress;
-  std::string netMask;
-  std::string gatewayAddress;
-  std::string networkLinkState;
-  std::vector<std::string> dnsServers;
   std::string batteryLevel;
 };
 
@@ -67,13 +60,8 @@ private:
   static bool SystemUpTime(int iInputMinutes, int &iMinutes, int &iHours, int &iDays);
   static std::string GetSystemUpTime(bool bTotalUptime);
   static std::string GetMACAddress();
-  static std::string GetIPAddress();
-  static std::string GetNetMask();
-  static std::string GetGatewayAddress();
-  static std::string GetNetworkLinkState();
   static std::string GetVideoEncoder();
   static std::string GetBatteryLevel();
-  static std::vector<std::string> GetDNSServers();
 
   CSysData m_info;
 };
@@ -83,31 +71,21 @@ class CSysInfo : public CInfoLoader, public ISubSettings
 public:
   enum WindowsVersion
   {
-    // clang-format off
     WindowsVersionUnknown = -1, // Undetected, unsupported Windows version or OS in not Windows
-    WindowsVersionWin8_1,       // Windows 8.1, Windows Server 2012 R2
+    WindowsVersionWin7,         // Windows 7, Windows Server 2008 R2
+    WindowsVersionWin8,         // Windows 8, Windows Server 2012
+    WindowsVersionWin8_1,       // Windows 8.1
     WindowsVersionWin10,        // Windows 10
-    WindowsVersionWin10_1607,   // Windows 10 1607
-    WindowsVersionWin10_1703,   // Windows 10 1703 - Creators Update
-    WindowsVersionWin10_1709,   // Windows 10 1709 - Fall Creators Update
+    WindowsVersionWin10_1709,   // Windows 10 1709 (FCU)
     WindowsVersionWin10_1803,   // Windows 10 1803
     WindowsVersionWin10_1809,   // Windows 10 1809
     WindowsVersionWin10_1903,   // Windows 10 1903
     WindowsVersionWin10_1909,   // Windows 10 1909
     WindowsVersionWin10_2004,   // Windows 10 2004
-    WindowsVersionWin10_20H2,   // Windows 10 20H2
-    WindowsVersionWin10_21H1,   // Windows 10 21H1
-    WindowsVersionWin10_21H2,   // Windows 10 21H2
-    WindowsVersionWin10_22H2,   // Windows 10 22H2
     WindowsVersionWin10_Future, // Windows 10 future build
-    WindowsVersionWin11_21H2,   // Windows 11 21H2 - Sun Valley
-    WindowsVersionWin11_22H2,   // Windows 11 22H2 - Sun Valley 2
-    WindowsVersionWin11_23H2,   // Windows 11 23H2 - Sun Valley 3
-    WindowsVersionWin11_24H2,   // Windows 11 24H2 - Hudson Valley
-    WindowsVersionWin11_Future, // Windows 11 future build
+    WindowsVersionWin11,        // Windows 11
     /* Insert new Windows versions here, when they'll be known */
     WindowsVersionFuture = 100  // Future Windows version, not known to code
-    // clang-format on
   };
   enum WindowsDeviceFamily
   {

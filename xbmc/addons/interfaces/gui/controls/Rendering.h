@@ -74,16 +74,15 @@ extern "C"
     virtual void Delete();
 
   protected:
-    bool (*CBCreate)(KODI_GUI_CLIENT_HANDLE cbhdl, int x, int y, int w, int h, void* device) =
-        nullptr;
-    void (*CBRender)(KODI_GUI_CLIENT_HANDLE cbhdl) = nullptr;
-    void (*CBStop)(KODI_GUI_CLIENT_HANDLE cbhdl) = nullptr;
-    bool (*CBDirty)(KODI_GUI_CLIENT_HANDLE cbhdl) = nullptr;
+    bool (*CBCreate)(KODI_GUI_CLIENT_HANDLE cbhdl, int x, int y, int w, int h, void* device);
+    void (*CBRender)(KODI_GUI_CLIENT_HANDLE cbhdl);
+    void (*CBStop)(KODI_GUI_CLIENT_HANDLE cbhdl);
+    bool (*CBDirty)(KODI_GUI_CLIENT_HANDLE cbhdl);
 
-    KODI_GUI_CLIENT_HANDLE m_clientHandle = nullptr;
-    CAddonDll* m_addon = nullptr;
+    KODI_GUI_CLIENT_HANDLE m_clientHandle;
+    CAddonDll* m_addon;
     CGUIRenderingControl* m_control;
-    int m_refCount = 1;
+    int m_refCount;
   };
 
   } /* namespace ADDON */

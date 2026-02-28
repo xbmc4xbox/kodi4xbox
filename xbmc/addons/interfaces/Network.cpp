@@ -140,9 +140,7 @@ bool Interface_Network::is_host_on_lan(void* kodiBase, const char* hostname, boo
     return false;
   }
 
-  //! TODO change to use the LanCheckMode enum class on the API signature
-  return URIUtils::IsHostOnLAN(hostname, offLineCheck ? LanCheckMode::ANY_PRIVATE_SUBNET
-                                                      : LanCheckMode::ONLY_LOCAL_SUBNET);
+  return URIUtils::IsHostOnLAN(hostname, offLineCheck);
 }
 
 char* Interface_Network::dns_lookup(void* kodiBase, const char* url, bool* ret)

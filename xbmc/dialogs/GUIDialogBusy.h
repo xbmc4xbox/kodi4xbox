@@ -10,16 +10,22 @@
 
 #include "guilib/GUIDialog.h"
 
-#include <cstdint>
-
 class IRunnable;
 class CEvent;
 
-class CGUIDialogBusy : private CGUIDialog
+class CGUIDialogBusy: public CGUIDialog
 {
-  friend class CGUIWindowManager;
-
 public:
+  CGUIDialogBusy(void);
+  ~CGUIDialogBusy(void) override;
+  bool OnBack(int actionID) override;
+  void DoProcess(unsigned int currentTime, CDirtyRegionList &dirtyregions) override;
+  void Render() override;
+  /*! \brief set the current progress of the busy operation
+   \param progress a percentage of progress
+   */
+  bool IsCanceled() { return m_bCanceled; }
+
   /*! \brief Wait for a runnable to execute off-thread.
    Creates a thread to run the given runnable, and while waiting
    it displays the busy dialog.
@@ -38,17 +44,8 @@ public:
    \return true if the event completed, false if cancelled.
    */
   static bool WaitOnEvent(CEvent &event, unsigned int displaytime = 100, bool allowCancel = true);
-
-private:
-  CGUIDialogBusy();
-  ~CGUIDialogBusy() override;
-
+protected:
   void Open_Internal(bool bProcessRenderLoop, const std::string& param = "") override;
-  bool OnBack(int actionID) override;
-  void DoProcess(unsigned int currentTime, CDirtyRegionList& dirtyregions) override;
-  void Render() override;
-
-  bool m_bLastVisible{false};
-  bool m_cancelled{false};
-  uint32_t m_waiters{0};
+  bool m_bCanceled;
+  bool m_bLastVisible = false;
 };

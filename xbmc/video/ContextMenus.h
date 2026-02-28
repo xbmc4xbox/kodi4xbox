@@ -17,10 +17,10 @@
 namespace CONTEXTMENU
 {
 
-class CVideoInfoBase : public CStaticContextMenuAction
+class CVideoInfo : public CStaticContextMenuAction
 {
 public:
-  explicit CVideoInfoBase(MediaType mediaType);
+  explicit CVideoInfo(MediaType mediaType);
   bool IsVisible(const CFileItem& item) const override;
   bool Execute(const std::shared_ptr<CFileItem>& item) const override;
 
@@ -28,40 +28,24 @@ private:
   const MediaType m_mediaType;
 };
 
-struct CVideoInfo : CVideoInfoBase
+struct CTVShowInfo : CVideoInfo
 {
-  CVideoInfo() : CVideoInfoBase(MediaTypeVideo) {}
-  bool IsVisible(const CFileItem& item) const override;
+  CTVShowInfo() : CVideoInfo(MediaTypeTvShow) {}
 };
 
-struct CTVShowInfo : CVideoInfoBase
+struct CEpisodeInfo : CVideoInfo
 {
-  CTVShowInfo() : CVideoInfoBase(MediaTypeTvShow) {}
+  CEpisodeInfo() : CVideoInfo(MediaTypeEpisode) {}
 };
 
-struct CSeasonInfo : CVideoInfoBase
+struct CMusicVideoInfo : CVideoInfo
 {
-  CSeasonInfo() : CVideoInfoBase(MediaTypeSeason) {}
+  CMusicVideoInfo() : CVideoInfo(MediaTypeMusicVideo) {}
 };
 
-struct CEpisodeInfo : CVideoInfoBase
+struct CMovieInfo : CVideoInfo
 {
-  CEpisodeInfo() : CVideoInfoBase(MediaTypeEpisode) {}
-};
-
-struct CMusicVideoInfo : CVideoInfoBase
-{
-  CMusicVideoInfo() : CVideoInfoBase(MediaTypeMusicVideo) {}
-};
-
-struct CMovieInfo : CVideoInfoBase
-{
-  CMovieInfo() : CVideoInfoBase(MediaTypeMovie) {}
-};
-
-struct CMovieSetInfo : CVideoInfoBase
-{
-  CMovieSetInfo() : CVideoInfoBase(MediaTypeVideoCollection) {}
+  CMovieInfo() : CVideoInfo(MediaTypeMovie) {}
 };
 
 struct CVideoRemoveResumePoint : CStaticContextMenuAction
@@ -92,20 +76,6 @@ struct CVideoBrowse : CStaticContextMenuAction
   bool Execute(const std::shared_ptr<CFileItem>& item) const override;
 };
 
-struct CVideoChooseVersion : CStaticContextMenuAction
-{
-  CVideoChooseVersion() : CStaticContextMenuAction(40221) {} // Choose version
-  bool IsVisible(const CFileItem& item) const override;
-  bool Execute(const std::shared_ptr<CFileItem>& item) const override;
-};
-
-struct CVideoPlayVersionUsing : CStaticContextMenuAction
-{
-  CVideoPlayVersionUsing() : CStaticContextMenuAction(40209) {} // Play version using...
-  bool IsVisible(const CFileItem& item) const override;
-  bool Execute(const std::shared_ptr<CFileItem>& _item) const override;
-};
-
 struct CVideoResume : IContextMenuItem
 {
   std::string GetLabel(const CFileItem& item) const override;
@@ -116,13 +86,6 @@ struct CVideoResume : IContextMenuItem
 struct CVideoPlay : IContextMenuItem
 {
   std::string GetLabel(const CFileItem& item) const override;
-  bool IsVisible(const CFileItem& item) const override;
-  bool Execute(const std::shared_ptr<CFileItem>& _item) const override;
-};
-
-struct CVideoPlayUsing : CStaticContextMenuAction
-{
-  CVideoPlayUsing() : CStaticContextMenuAction(15213) {} // Play using...
   bool IsVisible(const CFileItem& item) const override;
   bool Execute(const std::shared_ptr<CFileItem>& _item) const override;
 };
@@ -141,9 +104,9 @@ struct CVideoPlayNext : CStaticContextMenuAction
   bool Execute(const std::shared_ptr<CFileItem>& item) const override;
 };
 
-struct CVideoPlayAndQueue : IContextMenuItem
+struct CVideoPlayAndQueue : CStaticContextMenuAction
 {
-  std::string GetLabel(const CFileItem& item) const override;
+  CVideoPlayAndQueue() : CStaticContextMenuAction(13412) {} // Play from here
   bool IsVisible(const CFileItem& item) const override;
   bool Execute(const std::shared_ptr<CFileItem>& item) const override;
 };

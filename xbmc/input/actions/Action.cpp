@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2024 Team Kodi
+ *  Copyright (C) 2005-2018 Team Kodi
  *  This file is part of Kodi - https://kodi.tv
  *
  *  SPDX-License-Identifier: GPL-2.0-or-later
@@ -10,11 +10,7 @@
 
 #include "ActionIDs.h"
 #include "ActionTranslator.h"
-#include "input/keyboard/Key.h"
-#include "input/keyboard/KeyIDs.h"
-
-using namespace KODI;
-using namespace ACTION;
+#include "input/Key.h"
 
 CAction::CAction() : m_id(ACTION_NONE)
 {
@@ -24,15 +20,14 @@ CAction::CAction(int actionID,
                  float amount1 /* = 1.0f */,
                  float amount2 /* = 0.0f */,
                  const std::string& name /* = "" */,
-                 unsigned int holdTime /*= 0*/,
-                 unsigned int buttonCode /*= 0*/)
+                 unsigned int holdTime /*= 0*/)
   : m_name(name)
 {
   m_id = actionID;
   m_amount[0] = amount1;
   m_amount[1] = amount2;
   m_repeat = 0;
-  m_buttonCode = buttonCode;
+  m_buttonCode = 0;
   m_unicode = 0;
   m_holdTime = holdTime;
 }

@@ -9,10 +9,11 @@
 #include "VideoInfoTagLoaderFactory.h"
 
 #include "FileItem.h"
-#include "VideoTagLoaderFFmpeg.h"
+#include "ServiceBroker.h"
 #include "VideoTagLoaderNFO.h"
 #include "VideoTagLoaderPlugin.h"
-#include "video/tags/VideoTagExtractionHelper.h"
+#include "settings/Settings.h"
+#include "settings/SettingsComponent.h"
 
 using namespace VIDEO;
 
@@ -34,14 +35,6 @@ IVideoInfoTagLoader* CVideoInfoTagLoaderFactory::CreateLoader(const CFileItem& i
   if (nfo->HasInfo())
     return nfo;
   delete nfo;
-
-  if (TAGS::CVideoTagExtractionHelper::IsExtractionSupportedFor(item))
-  {
-    CVideoTagLoaderFFmpeg* ff = new CVideoTagLoaderFFmpeg(item, info, lookInFolder);
-    if (ff->HasInfo())
-      return ff;
-    delete ff;
-  }
 
   return nullptr;
 }

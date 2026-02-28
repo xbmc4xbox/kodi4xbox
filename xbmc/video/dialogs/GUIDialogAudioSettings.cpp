@@ -14,7 +14,6 @@
 #include "application/ApplicationComponents.h"
 #include "application/ApplicationPlayer.h"
 #include "application/ApplicationVolumeHandling.h"
-#include "cores/AudioEngine/Utils/AEUtil.h"
 #include "cores/IPlayer.h"
 #include "dialogs/GUIDialogYesNo.h"
 #include "guilib/GUIMessage.h"
@@ -33,7 +32,6 @@
 #include "utils/log.h"
 #include "video/VideoDatabase.h"
 
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -92,7 +90,12 @@ std::string CGUIDialogAudioSettings::FormatDecibel(float value)
 
 std::string CGUIDialogAudioSettings::FormatPercentAsDecibel(float value)
 {
+#if 0
   return StringUtils::Format(g_localizeStrings.Get(14054), CAEUtil::PercentToGain(value));
+#else
+  // TODO: calculate volume gain
+  return StringUtils::Format(g_localizeStrings.Get(14054), value);
+#endif
 }
 
 void CGUIDialogAudioSettings::OnSettingChanged(const std::shared_ptr<const CSetting>& setting)
@@ -242,11 +245,8 @@ void CGUIDialogAudioSettings::InitializeSettings()
 
   CSettingDependency dependencyAudioOutputPassthroughDisabled(SettingDependencyType::Enable, GetSettingsManager());
   dependencyAudioOutputPassthroughDisabled.Or()
-      ->Add(std::make_shared<CSettingDependencyCondition>(SETTING_AUDIO_PASSTHROUGH, "false",
-                                                          SettingDependencyOperator::Equals, false,
-                                                          GetSettingsManager()))
-      ->Add(std::make_shared<CSettingDependencyCondition>("IsPlayingPassthrough", "", "", true,
-                                                          GetSettingsManager()));
+    ->Add(CSettingDependencyConditionPtr(new CSettingDependencyCondition(SETTING_AUDIO_PASSTHROUGH, "false", SettingDependencyOperator::Equals, false, GetSettingsManager())))
+    ->Add(CSettingDependencyConditionPtr(new CSettingDependencyCondition("IsPlayingPassthrough", "", "", true, GetSettingsManager())));
   SettingDependencies depsAudioOutputPassthroughDisabled;
   depsAudioOutputPassthroughDisabled.push_back(dependencyAudioOutputPassthroughDisabled);
 
@@ -415,7 +415,12 @@ std::string CGUIDialogAudioSettings::SettingFormatterPercentAsDecibel(
   if (control->GetFormatLabel() > -1)
     formatString = g_localizeStrings.Get(control->GetFormatLabel());
 
+#if 0
   return StringUtils::Format(formatString, CAEUtil::PercentToGain(value.asFloat()));
+#else
+  // TODO: calculate volume gain
+  return StringUtils::Format(formatString, value.asFloat());
+#endif
 }
 
 std::string CGUIDialogAudioSettings::FormatFlags(StreamFlags flags)

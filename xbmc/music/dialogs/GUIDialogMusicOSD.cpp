@@ -15,8 +15,7 @@
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIWindowManager.h"
 #include "input/InputManager.h"
-#include "input/actions/Action.h"
-#include "input/actions/ActionIDs.h"
+#include "input/Key.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 

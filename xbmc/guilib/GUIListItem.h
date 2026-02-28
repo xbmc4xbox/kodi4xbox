@@ -19,6 +19,7 @@
 
 //  Forward
 class CGUIListItemLayout;
+using CGUIListItemLayoutPtr = std::unique_ptr<CGUIListItemLayout>;
 class CArchive;
 class CVariant;
 
@@ -60,7 +61,7 @@ public:
   void SetLabel2(const std::string& strLabel);
   const std::string& GetLabel2() const;
 
-  void SetOverlayImage(GUIIconOverlay icon);
+  void SetOverlayImage(GUIIconOverlay icon, bool bOnOff=false);
   std::string GetOverlayImage() const;
 
   /*! \brief Set a particular art type for an item
@@ -124,10 +125,10 @@ public:
   bool HasOverlay() const;
   virtual bool IsFileItem() const { return false; }
 
-  void SetLayout(std::unique_ptr<CGUIListItemLayout> layout);
+  void SetLayout(CGUIListItemLayoutPtr layout);
   CGUIListItemLayout *GetLayout();
 
-  void SetFocusedLayout(std::unique_ptr<CGUIListItemLayout> layout);
+  void SetFocusedLayout(CGUIListItemLayoutPtr layout);
   CGUIListItemLayout *GetFocusedLayout();
 
   void FreeIcons();
@@ -178,8 +179,8 @@ protected:
   std::string m_strLabel2;     // text of column2
   GUIIconOverlay m_overlayIcon; // type of overlay icon
 
-  std::unique_ptr<CGUIListItemLayout> m_layout;
-  std::unique_ptr<CGUIListItemLayout> m_focusedLayout;
+  CGUIListItemLayoutPtr m_layout;
+  CGUIListItemLayoutPtr m_focusedLayout;
   bool m_bSelected;     // item is selected or not
   unsigned int m_currentItem; // current item number within container (starting at 1)
 

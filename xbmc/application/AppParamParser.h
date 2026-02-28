@@ -25,10 +25,7 @@ public:
 
 protected:
   virtual void ParseArg(const std::string& arg);
-  virtual void DisplayHelp();
 
 private:
-  void DisplayVersion();
-
   std::shared_ptr<CAppParams> m_params;
 };

@@ -11,7 +11,6 @@
 #include "ISetting.h"
 #include "Setting.h"
 #include "SettingCategoryAccess.h"
-#include "utils/logtypes.h"
 
 #include <string>
 #include <utility>
@@ -56,14 +55,6 @@ public:
    */
   SettingList GetSettings(SettingLevel level) const;
 
-  /*
-   * \brief Determine if there are visible settings assigned to the given setting level (or below)
-   *        and that they meet the requirements conditions belonging to the setting group.
-   * \param level Level the settings should be assigned to
-   * \return True if there are visible settings belonging to the setting group, otherwise false
-   */
-  bool ContainsVisibleSettings(const SettingLevel level) const;
-
   void AddSetting(const std::shared_ptr<CSetting>& setting);
   void AddSettings(const SettingList &settings);
 
@@ -77,8 +68,6 @@ public:
 private:
   SettingList m_settings;
   std::shared_ptr<ISettingControl> m_control;
-
-  static Logger s_logger;
 };
 
 using SettingGroupPtr = std::shared_ptr<CSettingGroup>;
@@ -136,8 +125,6 @@ public:
 private:
   SettingGroupList m_groups;
   CSettingCategoryAccess m_accessCondition;
-
-  static Logger s_logger;
 };
 
 using SettingCategoryPtr = std::shared_ptr<CSettingCategory>;
@@ -186,8 +173,6 @@ public:
 
 private:
   SettingCategoryList m_categories;
-
-  static Logger s_logger;
 };
 
 using SettingSectionPtr = std::shared_ptr<CSettingSection>;

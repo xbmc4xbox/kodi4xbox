@@ -96,7 +96,7 @@ int CApplicationMessenger::SendMsg(ThreadMessage&& message, bool wait)
     // forever!
     if (m_guiThreadId != CThread::GetCurrentThreadId())
     {
-      message.waitEvent = std::make_shared<CEvent>(true);
+      message.waitEvent.reset(new CEvent(true));
       waitEvent = message.waitEvent;
       result = message.result;
     }

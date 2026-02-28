@@ -24,7 +24,6 @@
 #include "log.h"
 #include "music/MusicDatabase.h"
 #include "music/tags/MusicInfoTag.h"
-#include "network/upnp/UPnP.h"
 #include "utils/Variant.h"
 #include "video/Bookmark.h"
 #include "video/VideoDatabase.h"
@@ -54,18 +53,6 @@ void CSaveFileState::DoWork(CFileItem& item,
     if (URIUtils::IsUPnP(progressTrackingFile)
         && UPNP::CUPnP::SaveFileState(item, bookmark, updatePlayCount))
     {
-      CFileItem updatedItem(item);
-      if (updatedItem.HasVideoInfoTag())
-        updatedItem.GetVideoInfoTag()->SetResumePoint(bookmark);
-      if (updatedItem.HasProperty("original_listitem_url"))
-        updatedItem.SetPath(updatedItem.GetProperty("original_listitem_url").asString());
-      else
-        updatedItem.SetPath(
-            progressTrackingFile); // fallback to progressTrackingFile which should be the upnp path
-
-      CGUIMessage message(GUI_MSG_NOTIFY_ALL, 0, 0, GUI_MSG_UPDATE_ITEM, 0,
-                          std::make_shared<CFileItem>(updatedItem));
-      CServiceBroker::GetGUI()->GetWindowManager().SendThreadMessage(message);
       return;
     }
 #endif
@@ -112,7 +99,7 @@ void CSaveFileState::DoWork(CFileItem& item,
               // consider this item as played
               const CDateTime newLastPlayed = videodatabase.IncrementPlayCount(item);
 
-              item.SetOverlayImage(CGUIListItem::ICON_OVERLAY_WATCHED);
+              item.SetOverlayImage(CGUIListItem::ICON_OVERLAY_UNWATCHED, true);
               updateListing = true;
 
               if (item.HasVideoInfoTag())

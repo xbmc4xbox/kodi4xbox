@@ -8,21 +8,10 @@
 
 #pragma once
 
-#include <memory>
-
-class CApplicationPlayer;
 class CFileItem;
-
-enum class TempoStepChange
-{
-  INCREASE,
-  DECREASE,
-};
 
 class CPlayerUtils
 {
 public:
   static bool IsItemPlayable(const CFileItem& item);
-  static void AdvanceTempoStep(std::shared_ptr<CApplicationPlayer> appPlayer,
-                               TempoStepChange change);
 };

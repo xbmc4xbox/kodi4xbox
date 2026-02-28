@@ -28,7 +28,8 @@ enum class InfoTagType
   VIDEO,
   AUDIO,
   PICTURE,
-  PROGRAM
+  PROGRAM,
+  PVR,
 };
 
 class CDirectoryProvider :
@@ -49,7 +50,7 @@ public:
   ~CDirectoryProvider() override;
 
   // Implementation of IListProvider
-  IListProvider* Clone() override;
+  std::unique_ptr<IListProvider> Clone() override;
   bool Update(bool forceRefresh) override;
   void Announce(ANNOUNCEMENT::AnnouncementFlag flag,
                 const std::string& sender,

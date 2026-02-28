@@ -26,11 +26,6 @@ class CVideoSettings;
 class CGUIDialogProgress;
 class CGUIDialogProgressBarHandle;
 
-struct VideoAssetInfo;
-
-enum class VideoAssetTypeOwner;
-enum class VideoAssetType;
-
 namespace dbiplus
 {
   class field_value;
@@ -98,13 +93,6 @@ enum VideoDbDetails
 #define VIDEODB_DETAILS_MOVIE_RATING_TYPE       VIDEODB_MAX_COLUMNS + 17
 #define VIDEODB_DETAILS_MOVIE_UNIQUEID_VALUE    VIDEODB_MAX_COLUMNS + 18
 #define VIDEODB_DETAILS_MOVIE_UNIQUEID_TYPE     VIDEODB_MAX_COLUMNS + 19
-#define VIDEODB_DETAILS_MOVIE_HASVERSIONS       VIDEODB_MAX_COLUMNS + 20
-#define VIDEODB_DETAILS_MOVIE_HASEXTRAS VIDEODB_MAX_COLUMNS + 21
-#define VIDEODB_DETAILS_MOVIE_ISDEFAULTVERSION VIDEODB_MAX_COLUMNS + 22
-#define VIDEODB_DETAILS_MOVIE_VERSION_FILEID VIDEODB_MAX_COLUMNS + 23
-#define VIDEODB_DETAILS_MOVIE_VERSION_TYPEID VIDEODB_MAX_COLUMNS + 24
-#define VIDEODB_DETAILS_MOVIE_VERSION_TYPENAME VIDEODB_MAX_COLUMNS + 25
-#define VIDEODB_DETAILS_MOVIE_VERSION_ITEMTYPE VIDEODB_MAX_COLUMNS + 26
 
 #define VIDEODB_DETAILS_EPISODE_TVSHOW_ID       VIDEODB_MAX_COLUMNS + 2
 #define VIDEODB_DETAILS_EPISODE_USER_RATING     VIDEODB_MAX_COLUMNS + 3
@@ -142,7 +130,6 @@ enum VideoDbDetails
 #define VIDEODB_DETAILS_TVSHOW_RATING_TYPE      VIDEODB_MAX_COLUMNS + 12
 #define VIDEODB_DETAILS_TVSHOW_UNIQUEID_VALUE   VIDEODB_MAX_COLUMNS + 13
 #define VIDEODB_DETAILS_TVSHOW_UNIQUEID_TYPE    VIDEODB_MAX_COLUMNS + 14
-#define VIDEODB_DETAILS_TVSHOW_NUM_INPROGRESS VIDEODB_MAX_COLUMNS + 15
 
 #define VIDEODB_DETAILS_MUSICVIDEO_USER_RATING  VIDEODB_MAX_COLUMNS + 2
 #define VIDEODB_DETAILS_MUSICVIDEO_PREMIERED    VIDEODB_MAX_COLUMNS + 3
@@ -303,7 +290,6 @@ typedef enum // this enum MUST match the offset struct further down!! and make s
   VIDEODB_ID_SEASON_EPISODES_TOTAL = 12,
   VIDEODB_ID_SEASON_EPISODES_WATCHED = 13,
   VIDEODB_ID_SEASON_PREMIERED = 14,
-  VIDEODB_ID_SEASON_EPISODES_INPROGRESS = 15,
   VIDEODB_ID_SEASON_MAX
 } VIDEODB_SEASON_IDS;
 
@@ -399,18 +385,6 @@ const struct SDbTableOffsets DbMusicVideoOffsets[] =
   { VIDEODB_TYPE_STRING, my_offsetof(CVideoInfoTag,m_basePath) },
   { VIDEODB_TYPE_INT, my_offsetof(CVideoInfoTag,m_parentPathID) },
   { VIDEODB_TYPE_INT, my_offsetof(CVideoInfoTag,m_iIdUniqueID)}
-};
-
-enum class ArtFallbackOptions
-{
-  NONE,
-  PARENT
-};
-
-enum class DeleteMovieCascadeAction
-{
-  DEFAULT_VERSION,
-  ALL_ASSETS
 };
 
 #define COMPARE_PERCENTAGE     0.90f // 90%
@@ -537,14 +511,8 @@ public:
   int GetSeasonForEpisode(int idEpisode);
 
   bool LoadVideoInfo(const std::string& strFilenameAndPath, CVideoInfoTag& details, int getDetails = VideoDbDetailsAll);
-  bool GetMovieInfo(const std::string& strFilenameAndPath,
-                    CVideoInfoTag& details,
-                    int idMovie = -1,
-                    int idVersion = -1,
-                    int idFile = -1,
-                    int getDetails = VideoDbDetailsAll);
+  bool GetMovieInfo(const std::string& strFilenameAndPath, CVideoInfoTag& details, int idMovie = -1, int getDetails = VideoDbDetailsAll);
   bool GetTvShowInfo(const std::string& strPath, CVideoInfoTag& details, int idTvShow = -1, CFileItem* item = NULL, int getDetails = VideoDbDetailsAll);
-  bool GetSeasonInfo(const std::string& path, int season, CVideoInfoTag& details, CFileItem* item);
   bool GetSeasonInfo(int idSeason, CVideoInfoTag& details, CFileItem* item);
   bool GetSeasonInfo(int idSeason, CVideoInfoTag& details, bool allDetails = true);
   bool GetEpisodeBasicInfo(const std::string& strFilenameAndPath, CVideoInfoTag& details, int idEpisode  = -1);
@@ -601,9 +569,7 @@ public:
 
   int UpdateDetailsForMovie(int idMovie, CVideoInfoTag& details, const std::map<std::string, std::string> &artwork, const std::set<std::string> &updatedDetails);
 
-  void DeleteMovie(int idMovie,
-                   bool bKeepId = false,
-                   DeleteMovieCascadeAction action = DeleteMovieCascadeAction::ALL_ASSETS);
+  void DeleteMovie(int idMovie, bool bKeepId = false);
   void DeleteTvShow(int idTvShow, bool bKeepId = false);
   void DeleteTvShow(const std::string& strPath);
   void DeleteSeason(int idSeason, bool bKeepId = false);
@@ -679,9 +645,7 @@ public:
   void AddBookMarkToFile(const std::string& strFilenameAndPath, const CBookmark &bookmark, CBookmark::EType type = CBookmark::STANDARD);
   bool GetResumeBookMark(const std::string& strFilenameAndPath, CBookmark &bookmark);
   void DeleteResumeBookMark(const CFileItem& item);
-  void ClearBookMarkOfFile(const std::string& strFilenameAndPath,
-                           const CBookmark& bookmark,
-                           CBookmark::EType type = CBookmark::STANDARD);
+  void ClearBookMarkOfFile(const std::string& strFilenameAndPath, CBookmark& bookmark, CBookmark::EType type = CBookmark::STANDARD);
   void ClearBookMarksOfFile(const std::string& strFilenameAndPath, CBookmark::EType type = CBookmark::STANDARD);
   void ClearBookMarksOfFile(int idFile, CBookmark::EType type = CBookmark::STANDARD);
   bool GetBookMarkForEpisode(const CVideoInfoTag& tag, CBookmark& bookmark);
@@ -839,7 +803,6 @@ public:
                   VideoDbContentType idContent = VideoDbContentType::UNKNOWN,
                   const Filter& filter = Filter(),
                   bool countOnly = false);
-
   bool GetMusicVideoAlbumsNav(const std::string& strBaseDir, CFileItemList& items, int idArtist, const Filter &filter = Filter(), bool countOnly = false);
 
   bool GetMoviesNav(const std::string& strBaseDir, CFileItemList& items, int idGenre=-1, int idYear=-1, int idActor=-1, int idDirector=-1, int idStudio=-1, int idCountry=-1, int idSet=-1, int idTag=-1, const SortDescription &sortDescription = SortDescription(), int getDetails = VideoDbDetailsNone);
@@ -905,11 +868,7 @@ public:
   void UpdateFileDateAdded(CVideoInfoTag& details);
 
   void ExportToXML(const std::string &path, bool singleFile = true, bool images=false, bool actorThumbs=false, bool overwrite=false);
-  void ExportActorThumbs(const std::string& path,
-                         const CVideoInfoTag& tag,
-                         bool singleFiles,
-                         bool overwrite = false,
-                         const std::string& tvshowDir = "") const;
+  void ExportActorThumbs(const std::string &path, const CVideoInfoTag& tag, bool singleFiles, bool overwrite=false);
   void ImportFromXML(const std::string &path);
   void DumpToDummyFiles(const std::string &path);
   bool ImportArtFromXML(const TiXmlNode *node, std::map<std::string, std::string> &artwork);
@@ -969,19 +928,6 @@ public:
   void SetArtForItem(int mediaId, const MediaType &mediaType, const std::map<std::string, std::string> &art);
   bool GetArtForItem(int mediaId, const MediaType &mediaType, std::map<std::string, std::string> &art);
   std::string GetArtForItem(int mediaId, const MediaType &mediaType, const std::string &artType);
-
-  /*!
-   * \brief Retrieve all art for the given video asset, with optional fallback to the art of the
-   * parent/owner of the asset
-   * \param assetId id of the file of the asset
-   * \param fallback optionally request fallback to the art of the parent/owner for each art type
-     that is not defined for the asset
-   * \param art collection of the retrieved art
-   * \return 
-  */
-  bool GetArtForAsset(int assetId,
-                      ArtFallbackOptions fallback,
-                      std::map<std::string, std::string>& art);
   bool HasArtForItem(int mediaId, const MediaType &mediaType);
   bool RemoveArtForItem(int mediaId, const MediaType &mediaType, const std::string &artType);
   bool RemoveArtForItem(int mediaId, const MediaType &mediaType, const std::set<std::string> &artTypes);
@@ -1030,79 +976,17 @@ public:
   \return The dbId of the season.
   */
   int AddSeason(int showID, int season, const std::string& name = "");
-  int AddSet(const std::string& strSet,
-             const std::string& strOverview = "",
-             const bool updateOverview = true);
+  int AddSet(const std::string& strSet, const std::string& strOverview = "");
   void ClearMovieSet(int idMovie);
   void SetMovieSet(int idMovie, int idSet);
   bool SetVideoUserRating(int dbId, int rating, const MediaType& mediaType);
   bool GetUseAllExternalAudioForVideo(const std::string& videoPath);
 
-  std::string GetSetByNameLike(const std::string& nameLike) const;
-
-  std::string GetVideoItemTitle(VideoDbContentType itemType, int dbId);
-  std::string GetVideoVersionById(int id);
-  void GetVideoVersions(VideoDbContentType itemType,
-                        int dbId,
-                        CFileItemList& items,
-                        VideoAssetType videoAssetType);
-  void GetDefaultVideoVersion(VideoDbContentType itemType, int dbId, CFileItem& item);
-
-  /*!
-   * \brief Remove a video from the library and transfer all of its assets to another video of the
-   * same type.
-   * \param itemType Type of the video being converted
-   * \param dbIdSource id of the video being converted
-   * \param dbIdTarget id that the video will be attached to
-   * \param idVideoVersion new versiontype of the default version of the video
-   * \param assetType new asset type of the default version of the video
-   * \return true for success, false otherwise
-   */
-  bool ConvertVideoToVersion(VideoDbContentType itemType,
-                             int dbIdSource,
-                             int dbIdTarget,
-                             int idVideoVersion,
-                             VideoAssetType assetType);
-  void SetDefaultVideoVersion(VideoDbContentType itemType, int dbId, int idFile);
-  void SetVideoVersion(int idFile, int idVideoVersion);
-  int AddVideoVersionType(const std::string& typeVideoVersion,
-                          VideoAssetTypeOwner owner,
-                          VideoAssetType assetType);
-  void AddVideoAsset(VideoDbContentType itemType,
-                     int dbId,
-                     int idVideoVersion,
-                     VideoAssetType videoAssetType,
-                     CFileItem& item);
-  bool DeleteVideoAsset(int idFile);
-  bool IsDefaultVideoVersion(int idFile);
-  bool GetVideoVersionTypes(VideoDbContentType idContent,
-                            VideoAssetType asset,
-                            CFileItemList& items);
-  void SetVideoVersionDefaultArt(int dbId, int idFrom, VideoDbContentType type);
-  void InitializeVideoVersionTypeTable(int schemaVersion);
-  void UpdateVideoVersionTypeTable();
-  bool GetVideoVersionsNav(const std::string& strBaseDir,
-                           CFileItemList& items,
-                           VideoDbContentType idContent = VideoDbContentType::UNKNOWN,
-                           const Filter& filter = Filter());
-  VideoAssetInfo GetVideoVersionInfo(const std::string& filenameAndPath);
-  bool GetAssetsForVideo(VideoDbContentType itemType,
-                         int mediaId,
-                         VideoAssetType assetType,
-                         CFileItemList& items);
-  bool GetDefaultVersionForVideo(VideoDbContentType itemType, int mediaId, CFileItem& item);
-  bool UpdateAssetsOwner(const std::string& mediaType, int dbIdSource, int dbIdTarget);
-
-  int GetMovieId(const std::string& strFilenameAndPath);
-  std::string GetMovieTitle(int idMovie);
-  void GetSameVideoItems(const CFileItem& item, CFileItemList& items);
-  int GetFileIdByMovie(int idMovie);
-  std::string GetFileBasePathById(int idFile);
-
 protected:
   int AddNewMovie(CVideoInfoTag& details);
   int AddNewMusicVideo(CVideoInfoTag& details);
 
+  int GetMovieId(const std::string& strFilenameAndPath);
   int GetMusicVideoId(const std::string& strFilenameAndPath);
 
   /*! \brief Get the id of this fileitem
@@ -1267,6 +1151,4 @@ private:
   static void AnnounceUpdate(const std::string& content, int id);
 
   static CDateTime GetDateAdded(const std::string& filename, CDateTime dateAdded = CDateTime());
-
-  bool FillMovieItem(std::unique_ptr<dbiplus::Dataset>& dataset, int movieId, CFileItem& item);
 };

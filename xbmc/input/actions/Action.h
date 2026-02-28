@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2024 Team Kodi
+ *  Copyright (C) 2005-2018 Team Kodi
  *  This file is part of Kodi - https://kodi.tv
  *
  *  SPDX-License-Identifier: GPL-2.0-or-later
@@ -10,14 +10,15 @@
 
 #include <string>
 
+#ifndef SWIG
+
 class CKey;
 
 /*!
- * \ingroup action
- *
- * \brief Class encapsulating information regarding a particular user action to
- * be sent to windows and controls
- */
+  \ingroup actionkeys
+  \brief class encapsulating information regarding a particular user action to be sent to windows
+  and controls
+  */
 class CAction
 {
 public:
@@ -26,8 +27,7 @@ public:
           float amount1 = 1.0f,
           float amount2 = 0.0f,
           const std::string& name = "",
-          unsigned int holdTime = 0,
-          unsigned int buttonCode = 0);
+          unsigned int holdTime = 0);
   CAction(int actionID, wchar_t unicode);
   CAction(int actionID,
           unsigned int state,
@@ -119,3 +119,5 @@ private:
   wchar_t m_unicode = 0;
   std::string m_text;
 };
+
+#endif

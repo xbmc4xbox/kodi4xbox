@@ -12,14 +12,12 @@
 #include "music/MusicDatabase.h"
 #include "music/tags/MusicInfoTag.h"
 #include "playlists/PlayListTypes.h"
-#include "pvr/channels/PVRChannel.h"
 #include "threads/SingleLock.h"
 #include "utils/StringUtils.h"
 #include "utils/Variant.h"
 #include "utils/log.h"
 #include "video/VideoDatabase.h"
 
-#include <memory>
 #include <mutex>
 #include <stdio.h>
 
@@ -136,7 +134,7 @@ void CAnnouncementManager::Announce(AnnouncementFlag flag,
   announcement.data = data;
 
   if (item != nullptr)
-    announcement.item = std::make_shared<CFileItem>(*item);
+    announcement.item = CFileItemPtr(new CFileItem(*item));
 
   {
     std::unique_lock<CCriticalSection> lock(m_queueCritSection);
@@ -180,18 +178,7 @@ void CAnnouncementManager::DoAnnounce(AnnouncementFlag flag,
 
   if(item->HasPVRChannelInfoTag())
   {
-    const std::shared_ptr<PVR::CPVRChannel> channel(item->GetPVRChannelInfoTag());
-    id = channel->ChannelID();
-    type = "channel";
-
-    object["item"]["title"] = channel->ChannelName();
-    object["item"]["channeltype"] = channel->IsRadio() ? "radio" : "tv";
-
-    if (data.isMember("player") && data["player"].isMember("playerid"))
-    {
-      object["player"]["playerid"] =
-          channel->IsRadio() ? PLAYLIST::TYPE_MUSIC : PLAYLIST::TYPE_VIDEO;
-    }
+    // no support for PVR on Xbox
   }
   else if (item->HasVideoInfoTag() && !item->HasPVRRecordingInfoTag())
   {

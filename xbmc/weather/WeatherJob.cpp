@@ -18,7 +18,9 @@
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
 #include "interfaces/generic/ScriptInvocationManager.h"
+#if 0
 #include "network/Network.h"
+#endif
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 #include "settings/lib/Setting.h"
@@ -49,8 +51,10 @@ CWeatherJob::CWeatherJob(int location)
 
 bool CWeatherJob::DoWork()
 {
+#if 0
   // wait for the network
   if (!CServiceBroker::GetNetwork().IsAvailable())
+#endif
     return false;
 
   AddonPtr addon;

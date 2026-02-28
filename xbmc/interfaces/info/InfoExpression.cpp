@@ -9,6 +9,8 @@
 #include "InfoExpression.h"
 
 #include "GUIInfoManager.h"
+#include "ServiceBroker.h"
+#include "guilib/GUIComponent.h"
 #include "utils/log.h"
 
 #include <list>
@@ -17,10 +19,9 @@
 
 using namespace INFO;
 
-void InfoSingle::Initialize(CGUIInfoManager* infoMgr)
+void InfoSingle::Initialize()
 {
-  InfoBool::Initialize(infoMgr);
-  m_condition = m_infoMgr->TranslateSingleString(m_expression, m_listItemDependent);
+  m_condition = CServiceBroker::GetGUI()->GetInfoManager().TranslateSingleString(m_expression, m_listItemDependent);
 }
 
 void InfoSingle::Update(int contextWindow, const CGUIListItem* item)
@@ -28,16 +29,15 @@ void InfoSingle::Update(int contextWindow, const CGUIListItem* item)
   // use propagated context in case this info has the default context (i.e. if not tied to a specific window)
   // its value might depend on the context in which the evaluation was called
   int context = m_context == DEFAULT_CONTEXT ? contextWindow : m_context;
-  m_value = m_infoMgr->GetBool(m_condition, context, item);
+  m_value = CServiceBroker::GetGUI()->GetInfoManager().GetBool(m_condition, context, item);
 }
 
-void InfoExpression::Initialize(CGUIInfoManager* infoMgr)
+void InfoExpression::Initialize()
 {
-  InfoBool::Initialize(infoMgr);
   if (!Parse(m_expression))
   {
     CLog::Log(LOGERROR, "Error parsing boolean expression {}", m_expression);
-    m_expression_tree = std::make_shared<InfoLeaf>(m_infoMgr->Register("false", 0), false);
+    m_expression_tree = std::make_shared<InfoLeaf>(CServiceBroker::GetGUI()->GetInfoManager().Register("false", 0), false);
   }
 }
 
@@ -213,6 +213,9 @@ bool InfoExpression::Parse(const std::string &expression)
   // The next two are for syntax-checking purposes
   bool after_binaryoperator = true;
   int bracket_count = 0;
+
+  CGUIInfoManager& infoMgr = CServiceBroker::GetGUI()->GetInfoManager();
+
   char c;
   // Skip leading whitespace - don't want it to count as an operand if that's all there is
   while (isspace((unsigned char)(c=*s)))
@@ -239,7 +242,7 @@ bool InfoExpression::Parse(const std::string &expression)
       }
       if (!operand.empty())
       {
-        InfoPtr info = m_infoMgr->Register(operand, m_context);
+        InfoPtr info = infoMgr.Register(operand, m_context);
         if (!info)
         {
           CLog::Log(LOGERROR, "Bad operand '{}'", operand);
@@ -290,7 +293,7 @@ bool InfoExpression::Parse(const std::string &expression)
   }
   if (!operand.empty())
   {
-    InfoPtr info = m_infoMgr->Register(operand, m_context);
+    InfoPtr info = infoMgr.Register(operand, m_context);
     if (!info)
     {
       CLog::Log(LOGERROR, "Bad operand '{}'", operand);

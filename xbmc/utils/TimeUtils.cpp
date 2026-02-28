@@ -13,7 +13,7 @@
 #if   defined(TARGET_DARWIN)
 #include <mach/mach_time.h>
 #include <CoreVideo/CVHostTime.h>
-#elif defined(TARGET_WINDOWS)
+#elif defined(TARGET_WINDOWS) || defined(NXDK)
 #include <windows.h>
 #else
 #include <time.h>
@@ -28,7 +28,7 @@ int64_t CurrentHostCounter(void)
 {
 #if defined(TARGET_DARWIN)
   return( (int64_t)CVGetCurrentHostTime() );
-#elif defined(TARGET_WINDOWS)
+#elif defined(TARGET_WINDOWS) || defined(_XBOX)
   LARGE_INTEGER PerformanceCount;
   QueryPerformanceCounter(&PerformanceCount);
   return( (int64_t)PerformanceCount.QuadPart );
@@ -47,7 +47,7 @@ int64_t CurrentHostFrequency(void)
 {
 #if defined(TARGET_DARWIN)
   return( (int64_t)CVGetHostClockFrequency() );
-#elif defined(TARGET_WINDOWS)
+#elif defined(TARGET_WINDOWS) || defined(_XBOX)
   LARGE_INTEGER Frequency;
   QueryPerformanceFrequency(&Frequency);
   return( (int64_t)Frequency.QuadPart );
@@ -64,6 +64,10 @@ void CTimeUtils::UpdateFrameTime(bool flip)
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime);
 
   unsigned int currentTime = duration.count();
+#ifdef _XBOX
+  // we don't have an actual frametime on Xbox
+  frameTime = currentTime;
+#else
   unsigned int last = frameTime;
   while (frameTime < currentTime)
   {
@@ -72,10 +76,15 @@ void CTimeUtils::UpdateFrameTime(bool flip)
     if (frameTime < last)
       break;
   }
+#endif
 }
 
 unsigned int CTimeUtils::GetFrameTime()
 {
+#ifdef _XBOX
+  // we don't have an actual frametime on Xbox so just return current time
+  UpdateFrameTime(false);
+#endif
   return frameTime;
 }
 

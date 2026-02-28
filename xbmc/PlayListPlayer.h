@@ -48,7 +48,7 @@ public:
    \sa PlayNext
    */
   bool PlayPrevious();
-  bool PlayItemIdx(int itemIdx);
+  bool PlaySongId(int songId);
   bool Play();
 
   /*!
@@ -71,23 +71,23 @@ public:
 
   /*! \brief Returns the index of the current item in active playlist.
    \return Current item in the active playlist.
-   \sa SetCurrentItemIdx
+   \sa SetCurrentSong
    */
-  int GetCurrentItemIdx() const;
+  int GetCurrentSong() const;
 
   /*! \brief Change the current item in the active playlist.
    \param index item index in playlist. Set only if the index is within the range of the current playlist.
-   \sa GetCurrentItemIdx
+   \sa GetCurrentSong
    */
-  void SetCurrentItemIdx(int index);
+  void SetCurrentSong(int index);
 
-  int GetNextItemIdx();
+  int GetNextSong();
 
   /*! \brief Get the index in the playlist that is offset away from the current index in the current playlist.
    Obeys any repeat settings (eg repeat one will return the current index regardless of offset)
    \return the index of the entry, or -1 if there is no current playlist. There is no guarantee that the returned index is valid.
    */
-  int GetNextItemIdx(int offset) const;
+  int GetNextSong(int offset) const;
 
   /*! \brief Set the active playlist
    \param id Values can be PLAYLIST::TYPE_NONE, PLAYLIST::TYPE_MUSIC or PLAYLIST::TYPE_VIDEO

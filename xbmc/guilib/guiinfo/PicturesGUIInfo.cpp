@@ -15,14 +15,13 @@
 #include "guilib/GUIWindowManager.h"
 #include "guilib/guiinfo/GUIInfo.h"
 #include "guilib/guiinfo/GUIInfoLabels.h"
+#include "pictures/GUIWindowSlideShow.h"
 #include "pictures/PictureInfoTag.h"
-#include "pictures/SlideShowDelegator.h"
 #include "utils/StringUtils.h"
 #include "utils/URIUtils.h"
 #include "utils/log.h"
 
 #include <map>
-#include <memory>
 
 using namespace KODI::GUILIB::GUIINFO;
 
@@ -100,7 +99,7 @@ void CPicturesGUIInfo::SetCurrentSlide(CFileItem *item)
       if (!tag->Loaded()) // If picture metadata has not been loaded yet, load it now
         tag->Load(item->GetPath());
     }
-    m_currentSlide = std::make_unique<CFileItem>(*item);
+    m_currentSlide.reset(new CFileItem(*item));
   }
   else if (m_currentSlide)
   {
@@ -180,10 +179,10 @@ bool CPicturesGUIInfo::GetLabel(std::string& value, const CFileItem *item, int c
       }
       case SLIDESHOW_INDEX:
       {
-        CSlideShowDelegator& slideshow = CServiceBroker::GetSlideShowDelegator();
-        if (slideshow.NumSlides() > 0)
+        CGUIWindowSlideShow *slideshow = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIWindowSlideShow>(WINDOW_SLIDESHOW);
+        if (slideshow && slideshow->NumSlides())
         {
-          value = StringUtils::Format("{}/{}", slideshow.CurrentSlide(), slideshow.NumSlides());
+          value = StringUtils::Format("{}/{}", slideshow->CurrentSlide(), slideshow->NumSlides());
           return true;
         }
         break;
@@ -232,26 +231,26 @@ bool CPicturesGUIInfo::GetBool(bool& value, const CGUIListItem *gitem, int conte
     ///////////////////////////////////////////////////////////////////////////////////////////////
     case SLIDESHOW_ISPAUSED:
     {
-      CSlideShowDelegator& slideShow = CServiceBroker::GetSlideShowDelegator();
-      value = slideShow.IsPaused();
+      CGUIWindowSlideShow *slideShow = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIWindowSlideShow>(WINDOW_SLIDESHOW);
+      value = (slideShow && slideShow->IsPaused());
       return true;
     }
     case SLIDESHOW_ISRANDOM:
     {
-      CSlideShowDelegator& slideShow = CServiceBroker::GetSlideShowDelegator();
-      value = slideShow.IsShuffled();
+      CGUIWindowSlideShow *slideShow = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIWindowSlideShow>(WINDOW_SLIDESHOW);
+      value = (slideShow && slideShow->IsShuffled());
       return true;
     }
     case SLIDESHOW_ISACTIVE:
     {
-      CSlideShowDelegator& slideShow = CServiceBroker::GetSlideShowDelegator();
-      value = slideShow.InSlideShow();
+      CGUIWindowSlideShow *slideShow = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIWindowSlideShow>(WINDOW_SLIDESHOW);
+      value = (slideShow && slideShow->InSlideShow());
       return true;
     }
     case SLIDESHOW_ISVIDEO:
     {
-      CSlideShowDelegator& slideShow = CServiceBroker::GetSlideShowDelegator();
-      value = slideShow.GetCurrentSlide() && slideShow.GetCurrentSlide()->IsVideo();
+      CGUIWindowSlideShow *slideShow = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIWindowSlideShow>(WINDOW_SLIDESHOW);
+      value = (slideShow && slideShow->GetCurrentSlide() && slideShow->GetCurrentSlide()->IsVideo());
       return true;
     }
   }

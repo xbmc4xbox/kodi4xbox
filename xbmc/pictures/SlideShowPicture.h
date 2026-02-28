@@ -12,8 +12,13 @@
 #include "threads/CriticalSection.h"
 #include "utils/ColorUtils.h"
 
-#include <memory>
 #include <string>
+#ifdef HAS_DX
+#include "guilib/GUIShaderDX.h"
+#include <wrl/client.h>
+#endif
+
+#include <memory>
 
 class CTexture;
 
@@ -30,10 +35,8 @@ public:
     int length = 0;
   };
 
-  static std::unique_ptr<CSlideShowPic> CreateSlideShowPicture();
-
   CSlideShowPic();
-  virtual ~CSlideShowPic();
+  ~CSlideShowPic();
 
   void SetTexture(int iSlideNumber,
                   std::unique_ptr<CTexture> pTexture,
@@ -78,17 +81,13 @@ public:
   bool m_bIsComic;
   bool m_bCanMoveHorizontally;
   bool m_bCanMoveVertically;
-
-protected:
-  virtual void Render(float* x, float* y, CTexture* pTexture, UTILS::COLOR::Color color) = 0;
-
 private:
   void SetTexture_Internal(int iSlideNumber,
                            std::unique_ptr<CTexture> pTexture,
                            DISPLAY_EFFECT dispEffect = EFFECT_RANDOM,
                            TRANSITION_EFFECT transEffect = FADEIN_FADEOUT);
   void UpdateVertices(float cur_x[4], float cur_y[4], const float new_x[4], const float new_y[4], CDirtyRegionList &dirtyregions);
-
+  void Render(float* x, float* y, CTexture* pTexture, UTILS::COLOR::Color color);
   std::unique_ptr<CTexture> m_pImage;
 
   int m_iOriginalWidth;
@@ -133,4 +132,8 @@ private:
   bool m_bTransitionImmediately;
 
   CCriticalSection m_textureAccess;
+#ifdef HAS_DX
+  Microsoft::WRL::ComPtr<ID3D11Buffer> m_vb;
+  bool UpdateVertexBuffer(Vertex *vertices);
+#endif
 };

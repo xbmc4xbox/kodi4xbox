@@ -24,17 +24,9 @@
 
 class CGUIListItem; // forward
 class CAction;
-
+class CMouseEvent;
 class CGUIMessage;
 class CGUIAction;
-
-namespace KODI
-{
-namespace MOUSE
-{
-class CMouseEvent;
-} // namespace MOUSE
-} // namespace KODI
 
 enum ORIENTATION { HORIZONTAL = 0, VERTICAL };
 
@@ -131,7 +123,7 @@ public:
    \return EVENT_RESULT corresponding to whether the control handles this event
    \sa HitTest, CanFocusFromPoint, CMouseEvent, EVENT_RESULT
    */
-  virtual EVENT_RESULT SendMouseEvent(const CPoint& point, const KODI::MOUSE::CMouseEvent& event);
+  virtual EVENT_RESULT SendMouseEvent(const CPoint &point, const CMouseEvent &event);
 
   /*! \brief Perform a mouse action
 
@@ -143,7 +135,7 @@ public:
    \return EVENT_RESULT corresponding to whether the control handles this event
    \sa SendMouseEvent, HitTest, CanFocusFromPoint, CMouseEvent
    */
-  virtual EVENT_RESULT OnMouseEvent(const CPoint& point, const KODI::MOUSE::CMouseEvent& event)
+  virtual EVENT_RESULT OnMouseEvent(const CPoint& point, const CMouseEvent& event)
   {
     return EVENT_RESULT_UNHANDLED;
   }
@@ -279,7 +271,6 @@ public:
     GUICONTROL_FADELABEL,
     GUICONTROL_GAME,
     GUICONTROL_GAMECONTROLLER,
-    GUICONTROL_GAMECONTROLLERLIST,
     GUICONTROL_GROUP,
     GUICONTROL_GROUPLIST,
     GUICONTROL_IMAGE,

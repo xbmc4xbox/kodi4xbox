@@ -54,8 +54,7 @@
 #include "video/VideoDbUrl.h"
 #include "video/VideoInfoTag.h"
 #include "video/VideoLibraryQueue.h"
-#include "video/VideoManagerTypes.h"
-#include "video/VideoThumbLoader.h"
+#include "video/windows/GUIWindowVideoBase.h"
 
 #include <algorithm>
 #include <map>
@@ -199,15 +198,6 @@ void CVideoDatabase::CreateTables()
 
   CLog::Log(LOGINFO, "create uniqueid table");
   m_pDS->exec("CREATE TABLE uniqueid (uniqueid_id INTEGER PRIMARY KEY, media_id INTEGER, media_type TEXT, value TEXT, type TEXT)");
-
-  CLog::Log(LOGINFO, "create videoversiontype table");
-  m_pDS->exec("CREATE TABLE videoversiontype (id INTEGER PRIMARY KEY, name TEXT, owner INTEGER, "
-              "itemType INTEGER)");
-  InitializeVideoVersionTypeTable(GetSchemaVersion());
-
-  CLog::Log(LOGINFO, "create videoversion table");
-  m_pDS->exec("CREATE TABLE videoversion (idFile INTEGER PRIMARY KEY, idMedia INTEGER, media_type "
-              "TEXT, itemType INTEGER, idType INTEGER)");
 }
 
 void CVideoDatabase::CreateLinkIndex(const char *table)
@@ -289,10 +279,6 @@ void CVideoDatabase::CreateAnalytics()
               "actor_link (media_id, media_type(20), actor_id)");
   m_pDS->exec("CREATE INDEX ix_actor_link_3 ON actor_link (media_type(20))");
 
-  m_pDS->exec("CREATE INDEX ix_videoversion ON videoversion (idMedia, media_type(20))");
-
-  m_pDS->exec(PrepareSQL("CREATE INDEX ix_movie_title ON movie (c%02d(255))", VIDEODB_ID_TITLE));
-
   CreateLinkIndex("tag");
   CreateForeignLinkIndex("director", "actor");
   CreateForeignLinkIndex("writer", "actor");
@@ -313,8 +299,6 @@ void CVideoDatabase::CreateAnalytics()
               "DELETE FROM tag_link WHERE media_id=old.idMovie AND media_type='movie'; "
               "DELETE FROM rating WHERE media_id=old.idMovie AND media_type='movie'; "
               "DELETE FROM uniqueid WHERE media_id=old.idMovie AND media_type='movie'; "
-              "DELETE FROM videoversion "
-              "WHERE idFile=old.idFile AND idMedia=old.idMovie AND media_type='movie'; "
               "END");
   m_pDS->exec("CREATE TRIGGER delete_tvshow AFTER DELETE ON tvshow FOR EACH ROW BEGIN "
               "DELETE FROM actor_link WHERE media_id=old.idShow AND media_type='tvshow'; "
@@ -363,8 +347,6 @@ void CVideoDatabase::CreateAnalytics()
               "DELETE FROM settings WHERE idFile=old.idFile; "
               "DELETE FROM stacktimes WHERE idFile=old.idFile; "
               "DELETE FROM streamdetails WHERE idFile=old.idFile; "
-              "DELETE FROM videoversion WHERE idFile=old.idFile; "
-              "DELETE FROM art WHERE media_id=old.idFile AND media_type='videoversion'; "
               "END");
 
   CreateViews();
@@ -415,24 +397,19 @@ void CVideoDatabase::CreateViews()
   m_pDS->exec(episodeview);
 
   CLog::Log(LOGINFO, "create tvshowcounts");
-  // clang-format off
   std::string tvshowcounts = PrepareSQL("CREATE VIEW tvshowcounts AS SELECT "
                                        "      tvshow.idShow AS idShow,"
                                        "      MAX(files.lastPlayed) AS lastPlayed,"
                                        "      NULLIF(COUNT(episode.c12), 0) AS totalCount,"
                                        "      COUNT(files.playCount) AS watchedcount,"
                                        "      NULLIF(COUNT(DISTINCT(episode.c12)), 0) AS totalSeasons, "
-                                       "      MAX(files.dateAdded) as dateAdded, "
-                                       "      COUNT(bookmark.type) AS inProgressCount "
+                                       "      MAX(files.dateAdded) as dateAdded "
                                        "    FROM tvshow"
                                        "      LEFT JOIN episode ON"
                                        "        episode.idShow=tvshow.idShow"
                                        "      LEFT JOIN files ON"
                                        "        files.idFile=episode.idFile "
-                                       "      LEFT JOIN bookmark ON"
-                                       "        bookmark.idFile=files.idFile AND bookmark.type=1 "
                                        "GROUP BY tvshow.idShow");
-  // clang-format on
   m_pDS->exec(tvshowcounts);
 
   CLog::Log(LOGINFO, "create tvshowlinkpath_minview");
@@ -450,7 +427,6 @@ void CVideoDatabase::CreateViews()
   m_pDS->exec(tvshowlinkpathview);
 
   CLog::Log(LOGINFO, "create tvshow_view");
-  // clang-format off
   std::string tvshowview = PrepareSQL("CREATE VIEW tvshow_view AS SELECT "
                                      "  tvshow.*,"
                                      "  path.idParentPath AS idParentPath,"
@@ -461,8 +437,7 @@ void CVideoDatabase::CreateViews()
                                      "  rating.votes AS votes, "
                                      "  rating.rating_type AS rating_type, "
                                      "  uniqueid.value AS uniqueid_value, "
-                                     "  uniqueid.type AS uniqueid_type, "
-                                     "  tvshowcounts.inProgressCount AS inProgressCount "
+                                     "  uniqueid.type AS uniqueid_type "
                                      "FROM tvshow"
                                      "  LEFT JOIN tvshowlinkpath_minview ON "
                                      "    tvshowlinkpath_minview.idShow=tvshow.idShow"
@@ -475,11 +450,9 @@ void CVideoDatabase::CreateViews()
                                      "  LEFT JOIN uniqueid ON"
                                      "    uniqueid.uniqueid_id=tvshow.c%02d ",
                                      VIDEODB_ID_TV_RATING_ID, VIDEODB_ID_TV_IDENT_ID);
-  // clang-format on
   m_pDS->exec(tvshowview);
 
   CLog::Log(LOGINFO, "create season_view");
-  // clang-format off
   std::string seasonview = PrepareSQL("CREATE VIEW season_view AS SELECT "
                                      "  seasons.idSeason AS idSeason,"
                                      "  seasons.idShow AS idShow,"
@@ -495,8 +468,7 @@ void CVideoDatabase::CreateViews()
                                      "  tvshow_view.c%02d AS mpaa,"
                                      "  count(DISTINCT episode.idEpisode) AS episodes,"
                                      "  count(files.playCount) AS playCount,"
-                                     "  min(episode.c%02d) AS aired, "
-                                     "  count(bookmark.type) AS inProgressCount "
+                                     "  min(episode.c%02d) AS aired "
                                      "FROM seasons"
                                      "  JOIN tvshow_view ON"
                                      "    tvshow_view.idShow = seasons.idShow"
@@ -504,8 +476,6 @@ void CVideoDatabase::CreateViews()
                                      "    episode.idShow = seasons.idShow AND episode.c%02d = seasons.season"
                                      "  JOIN files ON"
                                      "    files.idFile = episode.idFile "
-                                     "  LEFT JOIN bookmark ON"
-                                     "    bookmark.idFile = files.idFile AND bookmark.type = 1 "
                                      "GROUP BY seasons.idSeason,"
                                      "         seasons.idShow,"
                                      "         seasons.season,"
@@ -523,7 +493,6 @@ void CVideoDatabase::CreateViews()
                                      VIDEODB_ID_EPISODE_AIRED, VIDEODB_ID_EPISODE_SEASON,
                                      VIDEODB_ID_TV_TITLE, VIDEODB_ID_TV_PLOT, VIDEODB_ID_TV_PREMIERED,
                                      VIDEODB_ID_TV_GENRE, VIDEODB_ID_TV_STUDIOS, VIDEODB_ID_TV_MPAA);
-  // clang-format on
   m_pDS->exec(seasonview);
 
   CLog::Log(LOGINFO, "create musicvideo_view");
@@ -553,67 +522,37 @@ void CVideoDatabase::CreateViews()
 
   CLog::Log(LOGINFO, "create movie_view");
 
-  std::string movieview =
-      PrepareSQL("CREATE VIEW movie_view AS SELECT"
-                 "  movie.*,"
-                 "  sets.strSet AS strSet,"
-                 "  sets.strOverview AS strSetOverview,"
-                 "  files.strFileName AS strFileName,"
-                 "  path.strPath AS strPath,"
-                 "  files.playCount AS playCount,"
-                 "  files.lastPlayed AS lastPlayed, "
-                 "  files.dateAdded AS dateAdded, "
-                 "  bookmark.timeInSeconds AS resumeTimeInSeconds, "
-                 "  bookmark.totalTimeInSeconds AS totalTimeInSeconds, "
-                 "  bookmark.playerState AS playerState, "
-                 "  rating.rating AS rating, "
-                 "  rating.votes AS votes, "
-                 "  rating.rating_type AS rating_type, "
-                 "  uniqueid.value AS uniqueid_value, "
-                 "  uniqueid.type AS uniqueid_type, "
-                 "  EXISTS( "
-                 "    SELECT 1 "
-                 "    FROM  videoversion vv "
-                 "    WHERE vv.idMedia = movie.idMovie "
-                 "    AND   vv.media_type = '%s' "
-                 "    AND   vv.itemType = %i "
-                 "    AND   vv.idFile <> movie.idFile "
-                 "  ) AS hasVideoVersions, "
-                 "  EXISTS( "
-                 "    SELECT 1 "
-                 "    FROM  videoversion vv "
-                 "    WHERE vv.idMedia = movie.idMovie "
-                 "    AND   vv.media_type = '%s' "
-                 "    AND   vv.itemType = %i "
-                 "  ) AS hasVideoExtras, "
-                 "  CASE "
-                 "    WHEN vv.idFile = movie.idFile AND vv.itemType = %i THEN 1 "
-                 "    ELSE 0 "
-                 "  END AS isDefaultVersion, "
-                 "  vv.idFile AS videoVersionIdFile, "
-                 "  vvt.id AS videoVersionTypeId,"
-                 "  vvt.name AS videoVersionTypeName,"
-                 "  vvt.itemType AS videoVersionTypeItemType "
-                 "FROM movie"
-                 "  LEFT JOIN sets ON"
-                 "    sets.idSet = movie.idSet"
-                 "  LEFT JOIN rating ON"
-                 "    rating.rating_id = movie.c%02d"
-                 "  LEFT JOIN uniqueid ON"
-                 "    uniqueid.uniqueid_id = movie.c%02d"
-                 "  LEFT JOIN videoversion vv ON"
-                 "    vv.idMedia = movie.idMovie AND vv.media_type = '%s' AND vv.itemType = %i"
-                 "  JOIN videoversiontype vvt ON"
-                 "    vvt.id = vv.idType AND vvt.itemType = vv.itemType"
-                 "  JOIN files ON"
-                 "    files.idFile = vv.idFile"
-                 "  JOIN path ON"
-                 "    path.idPath = files.idPath"
-                 "  LEFT JOIN bookmark ON"
-                 "    bookmark.idFile = vv.idFile AND bookmark.type = 1",
-                 MediaTypeMovie, VideoAssetType::VERSION, MediaTypeMovie, VideoAssetType::EXTRA,
-                 VideoAssetType::VERSION, VIDEODB_ID_RATING_ID, VIDEODB_ID_IDENT_ID, MediaTypeMovie,
-                 VideoAssetType::VERSION);
+  std::string movieview = PrepareSQL("CREATE VIEW movie_view AS SELECT"
+                                      "  movie.*,"
+                                      "  sets.strSet AS strSet,"
+                                      "  sets.strOverview AS strSetOverview,"
+                                      "  files.strFileName AS strFileName,"
+                                      "  path.strPath AS strPath,"
+                                      "  files.playCount AS playCount,"
+                                      "  files.lastPlayed AS lastPlayed, "
+                                      "  files.dateAdded AS dateAdded, "
+                                      "  bookmark.timeInSeconds AS resumeTimeInSeconds, "
+                                      "  bookmark.totalTimeInSeconds AS totalTimeInSeconds, "
+                                      "  bookmark.playerState AS playerState, "
+                                      "  rating.rating AS rating, "
+                                      "  rating.votes AS votes, "
+                                      "  rating.rating_type AS rating_type, "
+                                      "  uniqueid.value AS uniqueid_value, "
+                                      "  uniqueid.type AS uniqueid_type "
+                                      "FROM movie"
+                                      "  LEFT JOIN sets ON"
+                                      "    sets.idSet = movie.idSet"
+                                      "  JOIN files ON"
+                                      "    files.idFile=movie.idFile"
+                                      "  JOIN path ON"
+                                      "    path.idPath=files.idPath"
+                                      "  LEFT JOIN bookmark ON"
+                                      "    bookmark.idFile=movie.idFile AND bookmark.type=1"
+                                      "  LEFT JOIN rating ON"
+                                      "    rating.rating_id=movie.c%02d"
+                                      "  LEFT JOIN uniqueid ON"
+                                      "    uniqueid.uniqueid_id=movie.c%02d",
+                                      VIDEODB_ID_RATING_ID, VIDEODB_ID_IDENT_ID);
   m_pDS->exec(movieview);
 }
 
@@ -1287,20 +1226,15 @@ int CVideoDatabase::GetMovieId(const std::string& strFilenameAndPath)
 
     std::string strSQL;
     if (idFile == -1)
-      strSQL = PrepareSQL("SELECT idMovie FROM movie "
-                          "  JOIN files ON files.idFile=movie.idFile "
-                          "WHERE files.idPath=%i",
-                          idPath);
+      strSQL=PrepareSQL("select idMovie from movie join files on files.idFile=movie.idFile where files.idPath=%i",idPath);
     else
-      strSQL = PrepareSQL("SELECT idMedia FROM videoversion "
-                          "WHERE idFile = %i AND media_type = '%s' AND itemType = %i",
-                          idFile, MediaTypeMovie, VideoAssetType::VERSION);
+      strSQL=PrepareSQL("select idMovie from movie where idFile=%i", idFile);
 
     CLog::Log(LOGDEBUG, LOGDATABASE, "{} ({}), query = {}", __FUNCTION__,
               CURL::GetRedacted(strFilenameAndPath), strSQL);
     m_pDS->query(strSQL);
     if (m_pDS->num_rows() > 0)
-      idMovie = m_pDS->fv(0).get_asInt();
+      idMovie = m_pDS->fv("idMovie").get_asInt();
     m_pDS->close();
 
     return idMovie;
@@ -1458,8 +1392,6 @@ int CVideoDatabase::GetMusicVideoId(const std::string& strFilenameAndPath)
 //********************************************************************************************************************************
 int CVideoDatabase::AddNewMovie(CVideoInfoTag& details)
 {
-  assert(m_pDB->in_transaction());
-
   const auto filePath = details.GetPath();
 
   try
@@ -1476,14 +1408,10 @@ int CVideoDatabase::AddNewMovie(CVideoInfoTag& details)
         return -1;
     }
 
-    m_pDS->exec(
-        PrepareSQL("INSERT INTO movie (idMovie, idFile) VALUES (NULL, %i)", details.m_iFileId));
+    std::string strSQL =
+        PrepareSQL("INSERT INTO movie (idMovie, idFile) VALUES (NULL, %i)", details.m_iFileId);
+    m_pDS->exec(strSQL);
     details.m_iDbId = static_cast<int>(m_pDS->lastinsertid());
-    m_pDS->exec(
-        PrepareSQL("INSERT INTO videoversion (idFile, idMedia, media_type, itemType, idType) "
-                   "VALUES(%i, %i, '%s', %i, %i)",
-                   details.m_iFileId, details.m_iDbId, MediaTypeMovie, VideoAssetType::VERSION,
-                   VIDEO_VERSION_ID_DEFAULT));
 
     return details.m_iDbId;
   }
@@ -1745,9 +1673,7 @@ int CVideoDatabase::AddUniqueIDs(int mediaId, const char *mediaType, const CVide
   return uniqueid;
 }
 
-int CVideoDatabase::AddSet(const std::string& strSet,
-                           const std::string& strOverview /* = "" */,
-                           const bool updateOverview /* = true */)
+int CVideoDatabase::AddSet(const std::string& strSet, const std::string& strOverview /* = "" */)
 {
   if (strSet.empty())
     return -1;
@@ -1771,15 +1697,6 @@ int CVideoDatabase::AddSet(const std::string& strSet,
     {
       int id = m_pDS->fv("idSet").get_asInt();
       m_pDS->close();
-
-      // update set data
-      if (updateOverview)
-      {
-        strSQL = PrepareSQL("UPDATE sets SET strOverview = '%s' WHERE idSet = %i",
-                            strOverview.c_str(), id);
-        m_pDS->exec(strSQL);
-      }
-
       return id;
     }
   }
@@ -1810,7 +1727,7 @@ int CVideoDatabase::AddActor(const std::string& name, const std::string& thumbUR
     int idActor = -1;
 
     // ATTENTION: the trimming of actor names should really not be done here but after the scraping / NFO-parsing
-    std::string trimmedName = name;
+    std::string trimmedName = name.c_str();
     StringUtils::Trim(trimmedName);
 
     std::string strSQL=PrepareSQL("select actor_id from actor where name like '%s'", trimmedName.substr(0, 255).c_str());
@@ -2170,12 +2087,7 @@ void CVideoDatabase::GetMusicVideosByArtist(const std::string& strArtist, CFileI
 }
 
 //********************************************************************************************************************************
-bool CVideoDatabase::GetMovieInfo(const std::string& strFilenameAndPath,
-                                  CVideoInfoTag& details,
-                                  int idMovie /* = -1 */,
-                                  int idVersion /* = -1 */,
-                                  int idFile /* = -1 */,
-                                  int getDetails /* = VideoDbDetailsAll */)
+bool CVideoDatabase::GetMovieInfo(const std::string& strFilenameAndPath, CVideoInfoTag& details, int idMovie /* = -1 */, int getDetails /* = VideoDbDetailsAll */)
 {
   try
   {
@@ -2184,59 +2096,19 @@ bool CVideoDatabase::GetMovieInfo(const std::string& strFilenameAndPath,
 
     if (idMovie < 0)
       idMovie = GetMovieId(strFilenameAndPath);
+    if (idMovie < 0) return false;
 
-    if (idMovie < 0)
-      return false;
-
-    std::string sql;
-    if (idFile >= 0)
-    {
-      sql = PrepareSQL("SELECT * FROM movie_view WHERE idMovie = %i AND videoVersionIdFile = %i",
-                       idMovie, idFile);
-    }
-    else if (idVersion >= 0)
-    {
-      //! @todo get rid of "videos with versions as folder" hack!
-      if (idVersion != VIDEO_VERSION_ID_ALL)
-        sql = PrepareSQL("SELECT * FROM movie_view WHERE idMovie = %i AND videoVersionTypeId = %i",
-                         idMovie, idVersion);
-    }
-    else if (!strFilenameAndPath.empty())
-    {
-      idFile = GetFileId(strFilenameAndPath);
-      if (idFile != -1)
-        sql = PrepareSQL("SELECT * FROM movie_view WHERE idMovie = %i AND videoVersionIdFile = %i",
-                         idMovie, idFile);
-    }
-
-    if (sql.empty())
-      sql = PrepareSQL("SELECT * FROM movie_view WHERE idMovie = %i AND isDefaultVersion = 1",
-                       idMovie);
-
+    std::string sql = PrepareSQL("select * from movie_view where idMovie=%i", idMovie);
     if (!m_pDS->query(sql))
       return false;
-
     details = GetDetailsForMovie(m_pDS, getDetails);
     return !details.IsEmpty();
   }
   catch (...)
   {
-    CLog::LogF(LOGERROR, "{} {} {} failed", strFilenameAndPath, idMovie, idFile);
+    CLog::Log(LOGERROR, "{} ({}) failed", __FUNCTION__, strFilenameAndPath);
   }
   return false;
-}
-
-std::string CVideoDatabase::GetMovieTitle(int idMovie)
-{
-  if (!m_pDB || !m_pDS)
-    return "";
-
-  m_pDS->query(PrepareSQL("SELECT c%02d from movie where idMovie = %i", VIDEODB_ID_TITLE, idMovie));
-
-  if (!m_pDS->eof())
-    return m_pDS->fv(0).get_asString();
-  else
-    return "";
 }
 
 //********************************************************************************************************************************
@@ -2260,33 +2132,6 @@ bool CVideoDatabase::GetTvShowInfo(const std::string& strPath, CVideoInfoTag& de
   catch (...)
   {
     CLog::Log(LOGERROR, "{} ({}) failed", __FUNCTION__, strPath);
-  }
-  return false;
-}
-
-bool CVideoDatabase::GetSeasonInfo(const std::string& path,
-                                   int season,
-                                   CVideoInfoTag& details,
-                                   CFileItem* item)
-{
-  try
-  {
-    const std::string sql = PrepareSQL("strPath='%s' AND season=%i", path.c_str(), season);
-    const std::string id = GetSingleValue("season_view", "idSeason", sql);
-    if (id.empty())
-    {
-      CLog::LogF(LOGERROR, "Failed to obtain seasonId for path={}, season={}", path, season);
-    }
-    else
-    {
-      const int idSeason = static_cast<int>(std::strtol(id.c_str(), nullptr, 10));
-      return GetSeasonInfo(idSeason, details, item);
-    }
-  }
-  catch (...)
-  {
-    CLog::LogF(LOGERROR, "Exception while trying to to obtain seasonId for path={}, season={}",
-               path, season);
   }
   return false;
 }
@@ -2655,7 +2500,7 @@ int CVideoDatabase::SetDetailsForMovie(CVideoInfoTag& details,
     int idSet = -1;
     if (!details.m_set.title.empty())
     {
-      idSet = AddSet(details.m_set.title, details.m_set.overview, details.GetUpdateSetOverview());
+      idSet = AddSet(details.m_set.title, details.m_set.overview);
       // add art if not available
       if (!HasArtForItem(idSet, MediaTypeVideoCollection))
       {
@@ -3326,7 +3171,7 @@ void CVideoDatabase::GetBookMarksForFile(const std::string& strFilenameAndPath, 
 {
   try
   {
-    if (URIUtils::IsDiscImageStack(strFilenameAndPath))
+    if (URIUtils::IsStack(strFilenameAndPath) && CFileItem(CStackDirectory::GetFirstStackedFile(strFilenameAndPath),false).IsDiscImage())
     {
       CStackDirectory dir;
       CFileItemList fileList;
@@ -3512,9 +3357,7 @@ void CVideoDatabase::AddBookMarkToFile(const std::string& strFilenameAndPath, co
   }
 }
 
-void CVideoDatabase::ClearBookMarkOfFile(const std::string& strFilenameAndPath,
-                                         const CBookmark& bookmark,
-                                         CBookmark::EType type /*= CBookmark::STANDARD*/)
+void CVideoDatabase::ClearBookMarkOfFile(const std::string& strFilenameAndPath, CBookmark& bookmark, CBookmark::EType type /*= CBookmark::STANDARD*/)
 {
   try
   {
@@ -3653,9 +3496,7 @@ void CVideoDatabase::DeleteBookMarkForEpisode(const CVideoInfoTag& tag)
 }
 
 //********************************************************************************************************************************
-void CVideoDatabase::DeleteMovie(int idMovie,
-                                 bool bKeepId /* = false */,
-                                 DeleteMovieCascadeAction ca /* = ALL_ASSETS */)
+void CVideoDatabase::DeleteMovie(int idMovie, bool bKeepId /* = false */)
 {
   if (idMovie < 0)
     return;
@@ -3677,39 +3518,12 @@ void CVideoDatabase::DeleteMovie(int idMovie,
     // the ancillary tables are still purged
     if (!bKeepId)
     {
-      const std::string path = GetSingleValue(PrepareSQL(
-          "SELECT strPath FROM path JOIN files ON files.idPath=path.idPath WHERE files.idFile=%i",
-          idFile));
+      std::string path = GetSingleValue(PrepareSQL("SELECT strPath FROM path JOIN files ON files.idPath=path.idPath WHERE files.idFile=%i", idFile));
       if (!path.empty())
         InvalidatePathHash(path);
 
-      const std::string strSQL = PrepareSQL("delete from movie where idMovie=%i", idMovie);
+      std::string strSQL = PrepareSQL("delete from movie where idMovie=%i", idMovie);
       m_pDS->exec(strSQL);
-
-      if (ca == DeleteMovieCascadeAction::ALL_ASSETS)
-      {
-        // The default version of the movie was removed by a delete trigger.
-        // Clean up the other assets attached to the movie, if any.
-
-        // need local dataset due to nested DeleteVideoAsset query
-        const std::unique_ptr<Dataset> pDS{m_pDB->CreateDataset()};
-
-        pDS->query(
-            PrepareSQL("SELECT idFile FROM videoversion WHERE idMedia=%i AND media_type='%s'",
-                       idMovie, MediaTypeMovie));
-
-        while (!pDS->eof())
-        {
-          if (!DeleteVideoAsset(pDS->fv(0).get_asInt()))
-          {
-            RollbackTransaction();
-            pDS->close();
-            return;
-          }
-          pDS->next();
-        }
-        pDS->close();
-      }
     }
 
     //! @todo move this below CommitTransaction() once UPnP doesn't rely on this anymore
@@ -3721,7 +3535,7 @@ void CVideoDatabase::DeleteMovie(int idMovie,
   }
   catch (...)
   {
-    CLog::LogF(LOGERROR, "failed");
+    CLog::Log(LOGERROR, "{} failed", __FUNCTION__);
     RollbackTransaction();
   }
 }
@@ -3956,134 +3770,6 @@ void CVideoDatabase::SetMovieSet(int idMovie, int idSet)
     ExecuteQuery(PrepareSQL("update movie set idSet = null where idMovie = %i", idMovie));
 }
 
-std::string CVideoDatabase::GetFileBasePathById(int idFile)
-{
-  if (!m_pDB || !m_pDS)
-    return "";
-
-  try
-  {
-    m_pDS->query(PrepareSQL(
-        "SELECT strPath FROM path JOIN files ON path.idPath = files.idPath WHERE idFile = %i",
-        idFile));
-
-    if (!m_pDS->eof())
-    {
-      return m_pDS->fv("strPath").get_asString();
-    }
-    m_pDS->close();
-  }
-  catch (...)
-  {
-    CLog::Log(LOGERROR, "{} failed for file {}", __FUNCTION__, idFile);
-  }
-
-  return "";
-}
-
-int CVideoDatabase::GetFileIdByMovie(int idMovie)
-{
-  if (!m_pDB || !m_pDS)
-    return -1;
-
-  int idFile = -1;
-
-  try
-  {
-    m_pDS->query(PrepareSQL("SELECT idFile FROM movie WHERE idMovie = %i", idMovie));
-
-    if (!m_pDS->eof())
-    {
-      idFile = m_pDS->fv("idFile").get_asInt();
-    }
-
-    m_pDS->close();
-  }
-  catch (...)
-  {
-    CLog::Log(LOGERROR, "{} failed for movie {}", __FUNCTION__, idMovie);
-  }
-
-  return idFile;
-}
-
-void CVideoDatabase::GetSameVideoItems(const CFileItem& item, CFileItemList& items)
-{
-  if (!m_pDB || !m_pDS)
-    return;
-
-  std::vector<int> itemIds;
-
-  int dbId = item.GetVideoInfoTag()->m_iDbId;
-  MediaType mediaType = item.GetVideoInfoTag()->m_type;
-
-  try
-  {
-    // get items with same unique ids (imdb, tmdb, etc.) as the specified item, these are
-    // the different versions of the item
-    // note: old records may have the type 'unknown'
-    // note 2: for type 'tmdb' the same value may be used for a movie and a tv episode, only
-    // distinguished by media_type.
-    // @todo make the (value,type) pairs truly unique
-    m_pDS->query(PrepareSQL("SELECT DISTINCT media_id "
-                            "FROM uniqueid "
-                            "WHERE (media_type, value, type) IN "
-                            "  (SELECT media_type, value, type "
-                            "  FROM uniqueid WHERE media_id = %i AND media_type = '%s' AND value != '') ",
-                            dbId, mediaType.c_str()));
-
-    while (!m_pDS->eof())
-    {
-      itemIds.push_back(m_pDS->fv("media_id").get_asInt());
-      m_pDS->next();
-    }
-
-    m_pDS->close();
-
-    VideoDbContentType itemType = item.GetVideoContentType();
-
-    // get items with same title (and year if exists) as the specified item, these are
-    // potentially different versions of the item
-    if (itemType == VideoDbContentType::MOVIES)
-    {
-      if (item.GetVideoInfoTag()->HasYear())
-        m_pDS->query(
-            PrepareSQL("SELECT idMovie FROM movie WHERE c%02d = '%s' AND premiered LIKE '%i%%'",
-                       VIDEODB_ID_TITLE, item.GetVideoInfoTag()->GetTitle().c_str(),
-                       item.GetVideoInfoTag()->GetYear()));
-      else
-        m_pDS->query(
-            PrepareSQL("SELECT idMovie FROM movie WHERE c%02d = '%s' AND LENGTH(premiered) < 4",
-                       VIDEODB_ID_TITLE, item.GetVideoInfoTag()->GetTitle().c_str()));
-
-      while (!m_pDS->eof())
-      {
-        int movieId = m_pDS->fv("idMovie").get_asInt();
-
-        // add movieId if not already in itemIds
-        if (std::find(itemIds.begin(), itemIds.end(), movieId) == itemIds.end())
-          itemIds.push_back(movieId);
-
-        m_pDS->next();
-      }
-
-      m_pDS->close();
-    }
-
-    // get video item details
-    for (const auto id : itemIds)
-    {
-      auto current = std::make_shared<CFileItem>();
-      if (GetDetailsByTypeAndId(*current.get(), itemType, id))
-        items.Add(current);
-    }
-  }
-  catch (...)
-  {
-    CLog::Log(LOGERROR, "{} failed for {} {}", __FUNCTION__, mediaType, dbId);
-  }
-}
-
 void CVideoDatabase::DeleteTag(int idTag, VideoDbContentType mediaType)
 {
   try
@@ -4293,7 +3979,7 @@ bool CVideoDatabase::GetResumePoint(CVideoInfoTag& tag)
 
   try
   {
-    if (URIUtils::IsDiscImageStack(tag.m_strFileNameAndPath))
+    if (URIUtils::IsStack(tag.m_strFileNameAndPath) && CFileItem(CStackDirectory::GetFirstStackedFile(tag.m_strFileNameAndPath),false).IsDiscImage())
     {
       CStackDirectory dir;
       CFileItemList fileList;
@@ -4350,18 +4036,11 @@ CVideoInfoTag CVideoDatabase::GetDetailsForMovie(const dbiplus::sql_record* cons
 
   details.m_iDbId = idMovie;
   details.m_type = MediaTypeMovie;
-  details.SetHasVideoVersions(record->at(VIDEODB_DETAILS_MOVIE_HASVERSIONS).get_asBool());
-  details.SetHasVideoExtras(record->at(VIDEODB_DETAILS_MOVIE_HASEXTRAS).get_asBool());
-  details.SetIsDefaultVideoVersion(record->at(VIDEODB_DETAILS_MOVIE_ISDEFAULTVERSION).get_asBool());
-  auto& versionInfo = details.GetAssetInfo();
-  versionInfo.SetId(record->at(VIDEODB_DETAILS_MOVIE_VERSION_TYPEID).get_asInt());
-  versionInfo.SetTitle(record->at(VIDEODB_DETAILS_MOVIE_VERSION_TYPENAME).get_asString());
-  versionInfo.SetType(
-      static_cast<VideoAssetType>(record->at(VIDEODB_DETAILS_MOVIE_VERSION_ITEMTYPE).get_asInt()));
+
   details.m_set.id = record->at(VIDEODB_DETAILS_MOVIE_SET_ID).get_asInt();
   details.m_set.title = record->at(VIDEODB_DETAILS_MOVIE_SET_NAME).get_asString();
   details.m_set.overview = record->at(VIDEODB_DETAILS_MOVIE_SET_OVERVIEW).get_asString();
-  details.m_iFileId = record->at(VIDEODB_DETAILS_MOVIE_VERSION_FILEID).get_asInt();
+  details.m_iFileId = record->at(VIDEODB_DETAILS_FILEID).get_asInt();
   details.m_strPath = record->at(VIDEODB_DETAILS_MOVIE_PATH).get_asString();
   std::string strFileName = record->at(VIDEODB_DETAILS_MOVIE_FILE).get_asString();
   ConstructPath(details.m_strFileNameAndPath,details.m_strPath,strFileName);
@@ -4384,8 +4063,7 @@ CVideoInfoTag CVideoDatabase::GetDetailsForMovie(const dbiplus::sql_record* cons
 
   if (getDetails)
   {
-    if (getDetails & VideoDbDetailsCast)
-      GetCast(details.m_iDbId, MediaTypeMovie, details.m_cast);
+    GetCast(details.m_iDbId, MediaTypeMovie, details.m_cast);
 
     if (getDetails & VideoDbDetailsTag)
       GetTags(details.m_iDbId, MediaTypeMovie, details.m_tags);
@@ -4454,10 +4132,6 @@ CVideoInfoTag CVideoDatabase::GetDetailsForTvShow(const dbiplus::sql_record* con
   details.SetUniqueID(record->at(VIDEODB_DETAILS_TVSHOW_UNIQUEID_VALUE).get_asString(), record->at(VIDEODB_DETAILS_TVSHOW_UNIQUEID_TYPE).get_asString(), true);
   details.SetDuration(record->at(VIDEODB_DETAILS_TVSHOW_DURATION).get_asInt());
 
-  //! @todo videotag member + guiinfo int needed?
-  //! -- Currently not needed; having it available as item prop seems sufficient for skinning
-  const int inProgressEpisodes = record->at(VIDEODB_DETAILS_TVSHOW_NUM_INPROGRESS).get_asInt();
-
   if (getDetails)
   {
     if (getDetails & VideoDbDetailsCast)
@@ -4485,7 +4159,6 @@ CVideoInfoTag CVideoDatabase::GetDetailsForTvShow(const dbiplus::sql_record* con
     item->SetProperty("numepisodes", details.m_iEpisode); // will be changed later to reflect watchmode setting
     item->SetProperty("watchedepisodes", details.GetPlayCount());
     item->SetProperty("unwatchedepisodes", details.m_iEpisode - details.GetPlayCount());
-    item->SetProperty("inprogressepisodes", inProgressEpisodes);
     item->SetProperty("watchedepisodepercent",
                       details.m_iEpisode > 0 ? (details.GetPlayCount() * 100 / details.m_iEpisode)
                                              : 0);
@@ -4969,7 +4642,6 @@ bool CVideoDatabase::GetArtForItem(int mediaId, const MediaType &mediaType, std:
       return false; // using dataset 2 as we're likely called in loops on dataset 1
 
     std::string sql = PrepareSQL("SELECT type,url FROM art WHERE media_id=%i AND media_type='%s'", mediaId, mediaType.c_str());
-
     m_pDS2->query(sql);
     while (!m_pDS2->eof())
     {
@@ -4982,56 +4654,6 @@ bool CVideoDatabase::GetArtForItem(int mediaId, const MediaType &mediaType, std:
   catch (...)
   {
     CLog::Log(LOGERROR, "{}({}) failed", __FUNCTION__, mediaId);
-  }
-  return false;
-}
-
-bool CVideoDatabase::GetArtForAsset(int assetId,
-                                    ArtFallbackOptions fallback,
-                                    std::map<std::string, std::string>& art)
-{
-  try
-  {
-    if (nullptr == m_pDB)
-      return false;
-    if (nullptr == m_pDS2)
-      return false; // using dataset 2 as we're likely called in loops on dataset 1
-
-    std::string sql{PrepareSQL("SELECT art.media_type, art.type, art.url "
-                               "FROM art "
-                               "WHERE media_id = %i AND media_type = '%s' ",
-                               assetId, MediaTypeVideoVersion)};
-
-    if (fallback == ArtFallbackOptions::PARENT)
-      sql.append(PrepareSQL("UNION "
-                            "SELECT art.media_type, art.type, art.url "
-                            "FROM art "
-                            "  JOIN videoversion as vv "
-                            "  ON art.media_id = vv.idMedia AND art.media_type = vv.media_type "
-                            "WHERE idFile = %i",
-                            assetId));
-
-    m_pDS2->query(sql);
-    while (!m_pDS2->eof())
-    {
-      if (m_pDS2->fv(0).get_asString() == MediaTypeVideoVersion)
-      {
-        // version data has priority over owner's data
-        art[m_pDS2->fv(1).get_asString()] = m_pDS2->fv(2).get_asString();
-      }
-      else if (fallback == ArtFallbackOptions::PARENT)
-      {
-        // insert if not yet present
-        art.insert(make_pair(m_pDS2->fv(1).get_asString(), m_pDS2->fv(2).get_asString()));
-      }
-      m_pDS2->next();
-    }
-    m_pDS2->close();
-    return !art.empty();
-  }
-  catch (...)
-  {
-    CLog::LogF(LOGERROR, "retrieval failed ({})", assetId);
   }
   return false;
 }
@@ -6280,129 +5902,11 @@ void CVideoDatabase::UpdateTables(int iVersion)
     }
     m_pDS->close();
   }
-
-  if (iVersion < 123)
-  {
-    // create videoversiontype table
-    m_pDS->exec("CREATE TABLE videoversiontype (id INTEGER PRIMARY KEY, name TEXT, owner INTEGER)");
-    InitializeVideoVersionTypeTable(iVersion);
-
-    // create videoversion table
-    m_pDS->exec("CREATE TABLE videoversion (idFile INTEGER PRIMARY KEY, idMedia INTEGER, mediaType "
-                "TEXT, itemType INTEGER, idType INTEGER)");
-    m_pDS->exec(PrepareSQL(
-        "INSERT INTO videoversion SELECT idFile, idMovie, 'movie', '%i', '%i' FROM movie",
-        VideoAssetType::VERSION, VIDEO_VERSION_ID_DEFAULT));
-  }
-
-  if (iVersion < 127)
-  {
-    m_pDS->exec("ALTER TABLE videoversiontype ADD itemType INTEGER");
-
-    // First, assume all types are video version types
-    m_pDS->exec(PrepareSQL("UPDATE videoversiontype SET itemType = %i", VideoAssetType::VERSION));
-
-    // Then, check current extras entries and their assigned item type and migrate it
-
-    // get all assets with extras item type
-    m_pDS->query("SELECT DISTINCT idType FROM videoversion WHERE itemType = 1");
-    while (!m_pDS->eof())
-    {
-      const int idType{m_pDS->fv(0).get_asInt()};
-      if (idType > VIDEO_VERSION_ID_END)
-      {
-        // user-added type for extras. change its item type to extras
-        m_pDS2->exec(PrepareSQL("UPDATE videoversiontype SET itemType = %i WHERE id = %i",
-                                VideoAssetType::EXTRA, idType));
-      }
-      else
-      {
-        // system type used for an extra. copy as extras item type.
-        m_pDS2->query(
-            PrepareSQL("SELECT itemType, name FROM videoversiontype WHERE id = %i", idType));
-        if (m_pDS2->fv(0).get_asInt() == 0)
-        {
-          // currently a versions type, create a corresponding user-added type for extras
-          m_pDS2->exec(PrepareSQL(
-              "INSERT INTO videoversiontype (id, name, owner, itemType) VALUES(NULL, '%s', %i, %i)",
-              m_pDS2->fv(1).get_asString().c_str(), VideoAssetTypeOwner::USER,
-              VideoAssetType::EXTRA));
-
-          // update the respective extras to use the new extras type
-          const int newId{static_cast<int>(m_pDS2->lastinsertid())};
-          m_pDS2->exec(
-              PrepareSQL("UPDATE videoversion SET idType = %i WHERE itemType = 1 AND idType = %i",
-                         newId, idType));
-        }
-      }
-      m_pDS->next();
-    }
-    m_pDS->close();
-  }
-
-  if (iVersion < 128)
-  {
-    m_pDS->exec("CREATE TABLE videoversion_new "
-                "(idFile INTEGER PRIMARY KEY, idMedia INTEGER, media_type TEXT, "
-                " itemType INTEGER, idType INTEGER)");
-    m_pDS->exec("INSERT INTO videoversion_new "
-                " (idFile, idMedia, media_type, itemType, idType) "
-                "SELECT idFile, idMedia, mediaType, itemType, idType FROM videoversion");
-    m_pDS->exec("DROP TABLE videoversion");
-    m_pDS->exec("ALTER TABLE videoversion_new RENAME TO videoversion");
-
-    // Fix gap in the migration to videodb v127 for unused user-defined video version types.
-    // Unfortunately due to original design we cannot tell which ones were movie versions or
-    // extras and now they're all displayed in the version type selection for movies.
-    // Remove them all as the better fix of providing a GUI to manage version types will not be
-    // available in Omega v21. That implies the loss of the unused user-defined version names
-    // created since v21 beta 2.
-    m_pDS2->exec(PrepareSQL("DELETE FROM videoversiontype "
-                            "WHERE id NOT IN (SELECT idType FROM videoversion) "
-                            "AND owner = %i "
-                            "AND itemType = %i",
-                            VideoAssetTypeOwner::USER, VideoAssetType::VERSION));
-  }
-
-  if (iVersion < 131)
-  {
-    // Remove quality-like predefined version types
-
-    // Retrieve current utilization per type
-    m_pDS->query("SELECT vvt.id, vvt.name, count(vv.idType) "
-                 "FROM videoversiontype vvt "
-                 "  LEFT JOIN videoversion vv ON vvt.id = vv.idType "
-                 "WHERE vvt.id = 40405 OR vvt.id BETWEEN 40418 AND 40430 "
-                 "GROUP BY vvt.id");
-
-    while (!m_pDS->eof())
-    {
-      const int typeId{m_pDS->fv(0).get_asInt()};
-      const std::string typeName{m_pDS->fv(1).get_asString()};
-      const int versionsCount{m_pDS->fv(2).get_asInt()};
-
-      if (versionsCount > 0)
-      {
-        // type used by some versions, recreate as user type and link the versions to the new id
-        m_pDS2->exec(PrepareSQL(
-            "INSERT INTO videoversiontype (id, name, owner, itemType) VALUES(NULL, '%s', %i, %i)",
-            typeName.c_str(), VideoAssetTypeOwner::USER, VideoAssetType::VERSION));
-
-        const int newId{static_cast<int>(m_pDS2->lastinsertid())};
-
-        m_pDS2->exec(
-            PrepareSQL("UPDATE videoversion SET idType = %i WHERE idType = %i", newId, typeId));
-      }
-      m_pDS2->exec(PrepareSQL("DELETE FROM videoversiontype WHERE id = %i", typeId));
-      m_pDS->next();
-    }
-    m_pDS->close();
-  }
 }
 
 int CVideoDatabase::GetSchemaVersion() const
 {
-  return 131;
+  return 121;
 }
 
 bool CVideoDatabase::LookupByFolders(const std::string &path, bool shows)
@@ -6671,7 +6175,7 @@ CDateTime CVideoDatabase::SetPlayCount(const CFileItem& item, int count, const C
       if (item.GetVideoInfoTag()->GetPlayCount() != count)
         data["playcount"] = count;
       CServiceBroker::GetAnnouncementManager()->Announce(ANNOUNCEMENT::VideoLibrary, "OnUpdate",
-                                                         std::make_shared<CFileItem>(item), data);
+                                                         CFileItemPtr(new CFileItem(item)), data);
     }
 
     return lastPlayed;
@@ -7265,7 +6769,7 @@ bool CVideoDatabase::GetMusicVideoAlbumsNav(const std::string& strBaseDir, CFile
           pItem->GetVideoInfoTag()->m_iDbId = idMVideo;
           items.Add(pItem);
           idMVideoList.push_back(idMVideo);
-          idData.emplace_back(m_pDS->fv(0).get_asString(), m_pDS->fv(5).get_asString());
+          idData.push_back(make_pair(m_pDS->fv(0).get_asString(), m_pDS->fv(5).get_asString()));
         }
       m_pDS->next();
     }
@@ -7953,23 +7457,17 @@ bool CVideoDatabase::GetSeasonsByWhere(const std::string& strBaseDir, const Filt
 
         const int totalEpisodes = m_pDS->fv(VIDEODB_ID_SEASON_EPISODES_TOTAL).get_asInt();
         const int watchedEpisodes = m_pDS->fv(VIDEODB_ID_SEASON_EPISODES_WATCHED).get_asInt();
-        const int inProgressEpisodes = m_pDS->fv(VIDEODB_ID_SEASON_EPISODES_INPROGRESS).get_asInt();
-
         pItem->GetVideoInfoTag()->m_iEpisode = totalEpisodes;
         pItem->SetProperty("totalepisodes", totalEpisodes);
         pItem->SetProperty("numepisodes", totalEpisodes); // will be changed later to reflect watchmode setting
         pItem->SetProperty("watchedepisodes", watchedEpisodes);
         pItem->SetProperty("unwatchedepisodes", totalEpisodes - watchedEpisodes);
-        pItem->SetProperty("inprogressepisodes", inProgressEpisodes);
         pItem->SetProperty("watchedepisodepercent",
                            totalEpisodes > 0 ? (watchedEpisodes * 100 / totalEpisodes) : 0);
         if (iSeason == 0)
           pItem->SetProperty("isspecial", true);
         pItem->GetVideoInfoTag()->SetPlayCount((totalEpisodes == watchedEpisodes) ? 1 : 0);
-        pItem->SetOverlayImage((pItem->GetVideoInfoTag()->GetPlayCount() > 0) &&
-                                       (pItem->GetVideoInfoTag()->m_iEpisode > 0)
-                                   ? CGUIListItem::ICON_OVERLAY_WATCHED
-                                   : CGUIListItem::ICON_OVERLAY_UNWATCHED);
+        pItem->SetOverlayImage(CGUIListItem::ICON_OVERLAY_UNWATCHED, (pItem->GetVideoInfoTag()->GetPlayCount() > 0) && (pItem->GetVideoInfoTag()->m_iEpisode > 0));
 
         items.Add(pItem);
       }
@@ -8095,8 +7593,6 @@ bool CVideoDatabase::GetItems(const std::string& strBaseDir,
     return GetCountriesNav(strBaseDir, items, mediaType, filter);
   else if (StringUtils::EqualsNoCase(itemType, "tags"))
     return GetTagsNav(strBaseDir, items, mediaType, filter);
-  else if (StringUtils::EqualsNoCase(itemType, "videoversions"))
-    return GetVideoVersionsNav(strBaseDir, items, mediaType, filter);
   else if (StringUtils::EqualsNoCase(itemType, "artists") &&
            mediaType == VideoDbContentType::MUSICVIDEOS)
     return GetActorsNav(strBaseDir, items, mediaType, filter);
@@ -8125,8 +7621,6 @@ std::string CVideoDatabase::GetItemById(const std::string &itemType, int id)
     return GetCountryById(id);
   else if (StringUtils::EqualsNoCase(itemType, "tags"))
     return GetTagById(id);
-  else if (StringUtils::EqualsNoCase(itemType, "videoversions"))
-    return GetVideoVersionById(id);
   else if (StringUtils::EqualsNoCase(itemType, "albums"))
     return GetMusicVideoAlbumById(id);
 
@@ -8162,23 +7656,6 @@ bool CVideoDatabase::GetMoviesNav(const std::string& strBaseDir, CFileItemList& 
   Filter filter;
   return GetMoviesByWhere(videoUrl.ToString(), filter, items, sortDescription, getDetails);
 }
-
-namespace
-{
-std::string RewriteVideoVersionURL(const std::string& baseDir, const CVideoInfoTag& movie)
-{
-  const CURL parentPath{URIUtils::GetParentPath(baseDir)};
-  const std::string versionId{std::to_string(movie.GetAssetInfo().GetId())};
-  const std::string mediaId{std::to_string(movie.m_iDbId)};
-  CVideoDbUrl url;
-  url.FromString(parentPath.GetWithoutOptions());
-  url.AppendPath(versionId);
-  url.AppendPath(mediaId);
-  url.AddOption("videoversionid", versionId);
-  url.AddOption("mediaid", mediaId);
-  return url.ToString();
-}
-} // unnamed namespace
 
 bool CVideoDatabase::GetMoviesByWhere(const std::string& strBaseDir, const Filter &filter, CFileItemList& items, const SortDescription &sortDescription /* = SortDescription() */, int getDetails /* = VideoDbDetailsNone */)
 {
@@ -8245,33 +7722,13 @@ bool CVideoDatabase::GetMoviesByWhere(const std::string& strBaseDir, const Filte
       {
         CFileItemPtr pItem(new CFileItem(movie));
 
-        std::string path;
-        CVideoDbUrl itemUrl{videoUrl};
-        CVariant value;
-        if (itemUrl.GetOption("videoversionid", value))
-        {
-          //! @todo get rid of "videos with versions as folder" hack!
-          if (value.asInteger() == VIDEO_VERSION_ID_ALL)
-          {
-            // all versions for the given media id requested; we need to insert the real video
-            // version id for this movie into the videodb url
-            path = RewriteVideoVersionURL(strBaseDir, movie);
-          }
-          // this is a certain version, no need to resolve (e.g. no version chooser on select)
-          pItem->SetProperty("has_resolved_video_asset", true);
-        }
-
-        if (path.empty())
-        {
-          itemUrl.AppendPath(std::to_string(movie.m_iDbId));
-          path = itemUrl.ToString();
-        }
-
-        pItem->SetPath(path);
+        CVideoDbUrl itemUrl = videoUrl;
+        std::string path = std::to_string(movie.m_iDbId);
+        itemUrl.AppendPath(path);
+        pItem->SetPath(itemUrl.ToString());
         pItem->SetDynPath(movie.m_strFileNameAndPath);
 
-        pItem->SetOverlayImage(movie.GetPlayCount() > 0 ? CGUIListItem::ICON_OVERLAY_WATCHED
-                                                        : CGUIListItem::ICON_OVERLAY_UNWATCHED);
+        pItem->SetOverlayImage(CGUIListItem::ICON_OVERLAY_UNWATCHED,movie.GetPlayCount() > 0);
         items.Add(pItem);
       }
     }
@@ -8380,10 +7837,7 @@ bool CVideoDatabase::GetTvShowsByWhere(const std::string& strBaseDir, const Filt
         itemUrl.AppendPath(path);
         pItem->SetPath(itemUrl.ToString());
 
-        pItem->SetOverlayImage((pItem->GetVideoInfoTag()->GetPlayCount() > 0) &&
-                                       (pItem->GetVideoInfoTag()->m_iEpisode > 0)
-                                   ? CGUIListItem::ICON_OVERLAY_WATCHED
-                                   : CGUIListItem::ICON_OVERLAY_UNWATCHED);
+        pItem->SetOverlayImage(CGUIListItem::ICON_OVERLAY_UNWATCHED, (pItem->GetVideoInfoTag()->GetPlayCount() > 0) && (pItem->GetVideoInfoTag()->m_iEpisode > 0));
         items.Add(pItem);
       }
     }
@@ -8519,8 +7973,7 @@ bool CVideoDatabase::GetEpisodesByWhere(const std::string& strBaseDir, const Fil
         pItem->SetPath(itemUrl.ToString());
         pItem->SetDynPath(episode.m_strFileNameAndPath);
 
-        pItem->SetOverlayImage(episode.GetPlayCount() > 0 ? CGUIListItem::ICON_OVERLAY_WATCHED
-                                                          : CGUIListItem::ICON_OVERLAY_UNWATCHED);
+        pItem->SetOverlayImage(CGUIListItem::ICON_OVERLAY_UNWATCHED, episode.GetPlayCount() > 0);
         pItem->m_dateTime = episode.m_firstAired;
         items.Add(pItem);
       }
@@ -8590,7 +8043,7 @@ bool CVideoDatabase::GetInProgressTvShowsNav(const std::string& strBaseDir, CFil
 {
   Filter filter;
   filter.order = PrepareSQL("c%02d", VIDEODB_ID_TV_TITLE);
-  filter.where = "totalCount != watchedCount AND (inProgressCount > 0 OR watchedCount != 0)";
+  filter.where = "watchedCount != 0 AND totalCount != watchedCount";
   return GetTvShowsByWhere(strBaseDir, filter, items, SortDescription(), getDetails);
 }
 
@@ -8607,11 +8060,6 @@ std::string CVideoDatabase::GetCountryById(int id)
 std::string CVideoDatabase::GetSetById(int id)
 {
   return GetSingleValue("sets", "strSet", PrepareSQL("idSet=%i", id));
-}
-
-std::string CVideoDatabase::GetSetByNameLike(const std::string& nameLike) const
-{
-  return GetSingleValue("sets", "strSet", PrepareSQL("strSet LIKE '%s'", nameLike.c_str()));
 }
 
 std::string CVideoDatabase::GetTagById(int id)
@@ -8693,7 +8141,7 @@ int CVideoDatabase::GetTvShowForEpisode(int idEpisode)
 int CVideoDatabase::GetSeasonForEpisode(int idEpisode)
 {
   char column[5];
-  snprintf(column, sizeof(column), "c%0d", VIDEODB_ID_EPISODE_SEASON);
+  sprintf(column, "c%0d", VIDEODB_ID_EPISODE_SEASON);
   std::string id = GetSingleValue("episode", column, PrepareSQL("idEpisode=%i", idEpisode));
   if (id.empty())
     return -1;
@@ -9424,10 +8872,8 @@ bool CVideoDatabase::GetMusicVideosByWhere(const std::string &baseDir, const Fil
         std::string path = std::to_string(record->at(0).get_asInt());
         itemUrl.AppendPath(path);
         item->SetPath(itemUrl.ToString());
-        item->SetDynPath(musicvideo.m_strFileNameAndPath);
 
-        item->SetOverlayImage(musicvideo.GetPlayCount() > 0 ? CGUIListItem::ICON_OVERLAY_WATCHED
-                                                            : CGUIListItem::ICON_OVERLAY_UNWATCHED);
+        item->SetOverlayImage(CGUIListItem::ICON_OVERLAY_UNWATCHED, musicvideo.GetPlayCount() > 0);
         items.Add(item);
       }
     }
@@ -10106,7 +9552,6 @@ void CVideoDatabase::CleanDatabase(CGUIDialogProgressBarHandle* handle,
       std::vector<int> tvshowIDs;
       std::vector<int> episodeIDs;
       std::vector<int> musicVideoIDs;
-      std::vector<int> videoVersionIDs;
 
       if (!filesToTestForDelete.empty())
       {
@@ -10118,8 +9563,6 @@ void CVideoDatabase::CleanDatabase(CGUIDialogProgressBarHandle* handle,
                                     filesToDelete, !showProgress);
         musicVideoIDs = CleanMediaType(MediaTypeMusicVideo, filesToTestForDelete,
                                        pathsDeleteDecisions, filesToDelete, !showProgress);
-        videoVersionIDs = CleanMediaType(MediaTypeVideoVersion, filesToTestForDelete,
-                                         pathsDeleteDecisions, filesToDelete, !showProgress);
       }
 
       if (progress != NULL)
@@ -10335,9 +9778,6 @@ void CVideoDatabase::CleanDatabase(CGUIDialogProgressBarHandle* handle,
 
       for (const auto& i : musicVideoIDs)
         AnnounceRemove(MediaTypeMusicVideo, i, true);
-
-      for (const auto& i : videoVersionIDs)
-        AnnounceRemove(MediaTypeVideoVersion, i, true);
     }
   }
   catch (...)
@@ -10377,11 +9817,6 @@ std::vector<int> CVideoDatabase::CleanMediaType(const std::string &mediaType, co
   {
     idField = "idMVideo";
     parentPathIdField = StringUtils::Format("{}.c{:02}", table, VIDEODB_ID_MUSICVIDEO_PARENTPATHID);
-  }
-  else if (mediaType == MediaTypeVideoVersion)
-  {
-    idField = "idMedia";
-    parentPathIdField = "path.idPath";
   }
   else
     return cleanedIDs;
@@ -10928,7 +10363,6 @@ void CVideoDatabase::ExportToXML(const std::string &path, bool singleFile /* = t
         TiXmlDeclaration decl("1.0", "UTF-8", "yes");
         xmlDoc.InsertEndChild(decl);
       }
-      std::string tvshowDir;
       if (images && !bSkip)
       {
         if (singleFile)
@@ -10940,7 +10374,6 @@ void CVideoDatabase::ExportToXML(const std::string &path, bool singleFile /* = t
           CServiceBroker::GetTextureCache()->Export(i.second, savedThumb, overwrite);
         }
 
-        tvshowDir = tvshow.m_strPath;
         if (actorThumbs)
           ExportActorThumbs(actorsDir, tvshow, !singleFile, overwrite);
 
@@ -11043,7 +10476,7 @@ void CVideoDatabase::ExportToXML(const std::string &path, bool singleFile /* = t
             CServiceBroker::GetTextureCache()->Export(i.second, savedThumb, overwrite);
           }
           if (actorThumbs)
-            ExportActorThumbs(actorsDir, episode, !singleFile, overwrite, tvshowDir);
+            ExportActorThumbs(actorsDir, episode, !singleFile, overwrite);
         }
       }
       pDS->close();
@@ -11108,19 +10541,12 @@ void CVideoDatabase::ExportToXML(const std::string &path, bool singleFile /* = t
         CVariant{647}, CVariant{StringUtils::Format(g_localizeStrings.Get(15011), iFailCount)});
 }
 
-void CVideoDatabase::ExportActorThumbs(const std::string& strDir,
-                                       const CVideoInfoTag& tag,
-                                       bool singleFiles,
-                                       bool overwrite /* =false */,
-                                       const std::string& tvshowDir /* ="" */) const
+void CVideoDatabase::ExportActorThumbs(const std::string &strDir, const CVideoInfoTag &tag, bool singleFiles, bool overwrite /*=false*/)
 {
   std::string strPath(strDir);
   if (singleFiles)
   {
-
-    strPath = URIUtils::AddFileToFolder(
-        tag.m_type == MediaTypeEpisode && !tvshowDir.empty() ? tvshowDir : tag.m_strPath,
-        ".actors");
+    strPath = URIUtils::AddFileToFolder(tag.m_strPath, ".actors");
     if (!CDirectory::Exists(strPath))
     {
       CDirectory::Create(strPath);
@@ -11128,7 +10554,7 @@ void CVideoDatabase::ExportActorThumbs(const std::string& strDir,
     }
   }
 
-  for (const auto& i : tag.m_cast)
+  for (const auto &i : tag.m_cast)
   {
     CFileItem item;
     item.SetLabel(i.strName);
@@ -11509,7 +10935,7 @@ std::string CVideoDatabase::GetSafeFile(const std::string &dir, const std::strin
 {
   std::string safeThumb(name);
   StringUtils::Replace(safeThumb, ' ', '_');
-  return URIUtils::AddFileToFolder(dir, CUtil::MakeLegalFileName(std::move(safeThumb)));
+  return URIUtils::AddFileToFolder(dir, CUtil::MakeLegalFileName(safeThumb));
 }
 
 void CVideoDatabase::AnnounceRemove(const std::string& content, int id, bool scanning /* = false */)
@@ -11632,28 +11058,6 @@ bool CVideoDatabase::GetFilter(CDbUrl &videoUrl, Filter &filter, SortDescription
     option = options.find("set");
     if (option != options.end())
       filter.AppendWhere(PrepareSQL("movie_view.strSet LIKE '%s'", option->second.asString().c_str()));
-
-    option = options.find("videoversionid");
-    if (option != options.end())
-    {
-      const int idVideoVersion{static_cast<int>(option->second.asInteger())};
-      if (idVideoVersion > 0)
-        filter.AppendWhere(PrepareSQL("videoVersionTypeId = %i", idVideoVersion));
-      else
-      {
-        option = options.find("mediaid");
-        if (option != options.end())
-        {
-          const int mediaId{static_cast<int>(option->second.asInteger())};
-          if (mediaId > 0)
-            filter.AppendWhere(PrepareSQL("idMovie = %i", mediaId));
-        }
-      }
-    }
-    else
-    {
-      filter.AppendWhere("isDefaultVersion = 1");
-    }
 
     AppendIdLinkFilter("tag", "tag", "movie", "movie", "idMovie", options, filter);
     AppendLinkFilter("tag", "tag", "movie", "movie", "idMovie", options, filter);
@@ -11948,770 +11352,5 @@ void CVideoDatabase::EraseAllForPath(const std::string& path)
   catch (...)
   {
     CLog::Log(LOGERROR, "{} failed", __FUNCTION__);
-  }
-}
-
-std::string CVideoDatabase::GetVideoItemTitle(VideoDbContentType itemType, int dbId)
-{
-  switch (itemType)
-  {
-    case VideoDbContentType::MOVIES:
-      return GetMovieTitle(dbId);
-    default:
-      return "";
-  }
-}
-
-void CVideoDatabase::InitializeVideoVersionTypeTable(int schemaVersion)
-{
-  try
-  {
-    BeginTransaction();
-
-    for (int id = VIDEO_VERSION_ID_BEGIN; id <= VIDEO_VERSION_ID_END; ++id)
-    {
-      // Exclude removed pre-populated "quality" values
-      if (id == 40405 || (id >= 40418 && id <= 40430))
-        continue;
-
-      const std::string& type{g_localizeStrings.Get(id)};
-      if (schemaVersion < 127)
-      {
-        m_pDS->exec(
-            PrepareSQL("INSERT INTO videoversiontype (id, name, owner) VALUES(%i, '%s', %i)", id,
-                       type.c_str(), VideoAssetTypeOwner::SYSTEM));
-      }
-      else
-      {
-        m_pDS->exec(PrepareSQL(
-            "INSERT INTO videoversiontype (id, name, owner, itemType) VALUES(%i, '%s', %i, %i)", id,
-            type.c_str(), VideoAssetTypeOwner::SYSTEM, VideoAssetType::VERSION));
-      }
-    }
-
-    CommitTransaction();
-  }
-  catch (...)
-  {
-    CLog::Log(LOGERROR, "{} failed", __FUNCTION__);
-    RollbackTransaction();
-  }
-}
-
-void CVideoDatabase::UpdateVideoVersionTypeTable()
-{
-  try
-  {
-    BeginTransaction();
-
-    for (int id = VIDEO_VERSION_ID_BEGIN; id <= VIDEO_VERSION_ID_END; ++id)
-    {
-      const std::string& type = g_localizeStrings.Get(id);
-      m_pDS->exec(PrepareSQL("UPDATE videoversiontype SET name = '%s', owner = %i WHERE id = '%i'",
-                             type.c_str(), VideoAssetTypeOwner::SYSTEM, id));
-    }
-
-    CommitTransaction();
-  }
-  catch (...)
-  {
-    CLog::Log(LOGERROR, "{} failed", __FUNCTION__);
-    RollbackTransaction();
-  }
-}
-
-int CVideoDatabase::AddVideoVersionType(const std::string& typeVideoVersion,
-                                        VideoAssetTypeOwner owner,
-                                        VideoAssetType assetType)
-{
-  if (typeVideoVersion.empty())
-    return -1;
-
-  int id = -1;
-
-  try
-  {
-    if (!m_pDB || !m_pDS)
-      return -1;
-
-    m_pDS->query(PrepareSQL(
-        "SELECT id, owner, itemType FROM videoversiontype WHERE name = '%s' AND itemtype = %i",
-        typeVideoVersion.c_str(), assetType));
-    if (m_pDS->num_rows() == 0)
-    {
-      m_pDS->exec(PrepareSQL("INSERT INTO videoversiontype (id, name, owner, itemType) "
-                             "VALUES(NULL, '%s', %i, %i)",
-                             typeVideoVersion.c_str(), owner, assetType));
-      id = static_cast<int>(m_pDS->lastinsertid());
-    }
-    else
-    {
-      id = m_pDS->fv("id").get_asInt();
-
-      // if user is adding an existing version type, overwrite the existing non-system one
-      VideoAssetTypeOwner oldOwner =
-          static_cast<VideoAssetTypeOwner>(m_pDS->fv("owner").get_asInt());
-      if (oldOwner != VideoAssetTypeOwner::SYSTEM && owner == VideoAssetTypeOwner::USER)
-      {
-        m_pDS->exec(PrepareSQL("UPDATE videoversiontype SET owner = %i WHERE id = %i", owner, id));
-      }
-    }
-  }
-  catch (...)
-  {
-    CLog::Log(LOGERROR, "{} failed to add video version {}", __FUNCTION__, typeVideoVersion);
-  }
-
-  return id;
-}
-
-void CVideoDatabase::GetVideoVersions(VideoDbContentType itemType,
-                                      int dbId,
-                                      CFileItemList& items,
-                                      VideoAssetType videoAssetType)
-{
-  if (!m_pDB || !m_pDS2)
-    return;
-
-  MediaType mediaType;
-
-  if (itemType == VideoDbContentType::MOVIES)
-    mediaType = MediaTypeMovie;
-  else
-    return;
-
-  try
-  {
-    m_pDS2->query(PrepareSQL("SELECT videoversiontype.name AS name,"
-                             "  videoversiontype.id AS id,"
-                             "  videoversion.idFile AS idFile "
-                             "FROM videoversiontype"
-                             "  JOIN videoversion ON"
-                             "    videoversion.idType = videoversiontype.id "
-                             "WHERE videoversion.idMedia = %i AND videoversion.media_type = '%s' "
-                             "AND videoversion.itemType = %i",
-                             dbId, mediaType.c_str(), videoAssetType));
-
-    std::vector<std::tuple<std::string, int, int>> versions;
-
-    while (!m_pDS2->eof())
-    {
-      versions.emplace_back(m_pDS2->fv("name").get_asString(), m_pDS2->fv("id").get_asInt(),
-                            m_pDS2->fv("idFile").get_asInt());
-      m_pDS2->next();
-    }
-    m_pDS2->close();
-
-    CFileItem videoItem;
-    GetDetailsByTypeAndId(videoItem, itemType, dbId);
-
-    for (auto& version : versions)
-    {
-      std::string name = std::get<0>(version);
-      int id = std::get<1>(version);
-      int idFile = std::get<2>(version);
-
-      CVideoInfoTag infoTag;
-      if (GetFileInfo("", infoTag, idFile))
-      {
-        infoTag.m_type = MediaTypeVideoVersion;
-        infoTag.m_iDbId = idFile;
-        infoTag.GetAssetInfo().SetId(id);
-        infoTag.GetAssetInfo().SetTitle(name);
-        infoTag.GetAssetInfo().SetType(videoAssetType);
-        infoTag.m_strTitle = name;
-
-        infoTag.m_strPictureURL = videoItem.GetVideoInfoTag()->m_strPictureURL;
-        infoTag.m_fanart = videoItem.GetVideoInfoTag()->m_fanart;
-
-        auto item(std::make_shared<CFileItem>(infoTag));
-        item->m_strTitle = name;
-        item->SetLabel(name);
-
-        CVideoDbUrl itemUrl;
-        if (itemUrl.FromString(StringUtils::Format("videodb://{}/videoversions/{}",
-                                                   CMediaTypes::ToPlural(mediaType), id)))
-        {
-          itemUrl.AddOption("mediaid", dbId);
-          item->SetPath(itemUrl.ToString());
-        }
-
-        item->SetDynPath(infoTag.m_strFileNameAndPath);
-
-        item->SetOverlayImage(GetPlayCount(idFile) > 0 ? CGUIListItem::ICON_OVERLAY_WATCHED
-                                                       : CGUIListItem::ICON_OVERLAY_UNWATCHED);
-
-        items.Add(item);
-      }
-    }
-  }
-  catch (...)
-  {
-    CLog::Log(LOGERROR, "{} failed for {} {}", __FUNCTION__, mediaType, dbId);
-  }
-}
-
-void CVideoDatabase::GetDefaultVideoVersion(VideoDbContentType itemType, int dbId, CFileItem& item)
-{
-  if (!m_pDB || !m_pDS)
-    return;
-
-  MediaType mediaType;
-  std::string strSQL;
-
-  if (itemType == VideoDbContentType::MOVIES)
-  {
-    mediaType = MediaTypeMovie;
-    strSQL = PrepareSQL("SELECT videoversiontype.name AS name,"
-                        "  videoversiontype.id AS id,"
-                        "  videoversion.idFile AS idFile,"
-                        "  videoversion.itemType AS itemType "
-                        "FROM videoversiontype"
-                        "  JOIN videoversion ON"
-                        "    videoversion.idType = videoversiontype.id"
-                        "  JOIN movie ON"
-                        "    movie.idFile = videoversion.idFile "
-                        "WHERE movie.idMovie = %i",
-                        dbId);
-  }
-  else
-    return;
-
-  try
-  {
-    m_pDS->query(strSQL);
-
-    if (!m_pDS->eof())
-    {
-      std::string name = m_pDS->fv("name").get_asString();
-      int id = m_pDS->fv("id").get_asInt();
-      int idFile = m_pDS->fv("idFile").get_asInt();
-      const auto videoAssetType{static_cast<VideoAssetType>(m_pDS->fv("itemType").get_asInt())};
-      CVideoInfoTag infoTag;
-      if (GetFileInfo("", infoTag, idFile))
-      {
-        infoTag.m_type = MediaTypeVideoVersion;
-        infoTag.m_iDbId = idFile;
-        infoTag.GetAssetInfo().SetId(id);
-        infoTag.GetAssetInfo().SetTitle(name);
-        infoTag.GetAssetInfo().SetType(videoAssetType);
-        infoTag.m_strTitle = name;
-
-        item.SetFromVideoInfoTag(infoTag);
-        item.m_strTitle = name;
-        item.SetLabel(name);
-      }
-    }
-    m_pDS->close();
-  }
-  catch (...)
-  {
-    CLog::Log(LOGERROR, "{} failed for {} {}", __FUNCTION__, mediaType, dbId);
-  }
-}
-
-bool CVideoDatabase::UpdateAssetsOwner(const std::string& mediaType, int dbIdSource, int dbIdTarget)
-{
-  if (dbIdSource != dbIdTarget)
-  {
-    return ExecuteQuery(
-        PrepareSQL("UPDATE videoversion SET idMedia = %i WHERE idMedia = %i AND media_type = '%s'",
-                   dbIdTarget, dbIdSource, mediaType.c_str()));
-  }
-  return true;
-}
-
-bool CVideoDatabase::FillMovieItem(std::unique_ptr<Dataset>& dataset, int movieId, CFileItem& item)
-{
-  CVideoInfoTag infoTag{GetDetailsForMovie(dataset)};
-  if (infoTag.IsEmpty())
-  {
-    CLog::LogF(LOGERROR, "Unable to fill movie item with id '{}'!", movieId);
-    return false;
-  }
-
-  item.SetFromVideoInfoTag(infoTag);
-
-  CVideoDbUrl itemUrl;
-  itemUrl.FromString(
-      StringUtils::Format("videodb://movies/videoversions/{}", infoTag.GetAssetInfo().GetId()));
-  itemUrl.AppendPath(std::to_string(movieId));
-  itemUrl.AddOption("mediaid", movieId);
-  item.SetPath(itemUrl.ToString());
-  item.SetDynPath(infoTag.m_strFileNameAndPath);
-  return true;
-}
-
-bool CVideoDatabase::GetAssetsForVideo(VideoDbContentType itemType,
-                                       int mediaId,
-                                       VideoAssetType assetType,
-                                       CFileItemList& items)
-{
-  if (assetType != VideoAssetType::VERSION)
-  {
-    //! @todo add bool return type to GetVideoVersions
-    GetVideoVersions(itemType, mediaId, items, assetType);
-    return true;
-  }
-
-  if (!m_pDB || !m_pDS)
-    return false;
-
-  MediaType mediaType;
-
-  if (itemType == VideoDbContentType::MOVIES)
-    mediaType = MediaTypeMovie;
-  else
-  {
-    CLog::LogF(LOGERROR, "Unsupported item type '{}'!", static_cast<int>(itemType));
-    return false;
-  }
-
-  try
-  {
-    m_pDS->query(
-        PrepareSQL("SELECT * FROM movie_view WHERE idMovie = %i AND videoVersionTypeItemType = %i",
-                   mediaId, assetType));
-
-    if (m_pDS->eof())
-    {
-      CLog::LogF(LOGERROR, "Query returned no data!");
-      return false;
-    }
-
-    while (!m_pDS->eof())
-    {
-      const auto item{std::make_shared<CFileItem>()};
-      if (FillMovieItem(m_pDS, mediaId, *item))
-        items.Add(item);
-
-      m_pDS->next();
-    }
-    m_pDS->close();
-  }
-  catch (...)
-  {
-    CLog::LogF(LOGERROR, "Execution failed for {} {}", mediaType, mediaId);
-    return false;
-  }
-  return true;
-}
-
-bool CVideoDatabase::GetDefaultVersionForVideo(VideoDbContentType itemType,
-                                               int mediaId,
-                                               CFileItem& item)
-{
-  if (!m_pDB || !m_pDS)
-    return false;
-
-  MediaType mediaType;
-
-  if (itemType == VideoDbContentType::MOVIES)
-    mediaType = MediaTypeMovie;
-  else
-  {
-    CLog::LogF(LOGERROR, "Unsupported item type '{}'!", static_cast<int>(itemType));
-    return false;
-  }
-
-  try
-  {
-    m_pDS->query(PrepareSQL("SELECT * FROM movie_view WHERE idMovie = %i AND "
-                            "videoVersionTypeItemType = %i AND isDefaultVersion = 1",
-                            mediaId, VideoAssetType::VERSION));
-    if (m_pDS->eof())
-    {
-      CLog::LogF(LOGERROR, "Query returned no data!");
-      return false;
-    }
-
-    if (!FillMovieItem(m_pDS, mediaId, item))
-      return false;
-  }
-  catch (...)
-  {
-    CLog::LogF(LOGERROR, "Execution failed for {} {}", mediaType, mediaId);
-    return false;
-  }
-  return true;
-}
-
-bool CVideoDatabase::ConvertVideoToVersion(VideoDbContentType itemType,
-                                           int dbIdSource,
-                                           int dbIdTarget,
-                                           int idVideoVersion,
-                                           VideoAssetType assetType)
-{
-  int idFile = -1;
-  MediaType mediaType;
-  VideoContentTypeToString(itemType, mediaType);
-
-  if (itemType == VideoDbContentType::MOVIES)
-  {
-    idFile = GetFileIdByMovie(dbIdSource);
-  }
-  else
-    return false;
-
-  if (idFile < 0)
-    return false;
-
-  BeginTransaction();
-
-  if (dbIdSource != dbIdTarget)
-  {
-    // Transfer all assets (versions, extras,...) to the new movie.
-    UpdateAssetsOwner(mediaType, dbIdSource, dbIdTarget);
-
-    // version-level art doesn't need any change.
-    // 'movie' art is converted to 'videoversion' art.
-    SetVideoVersionDefaultArt(idFile, dbIdSource, itemType);
-
-    if (itemType == VideoDbContentType::MOVIES)
-      DeleteMovie(dbIdSource);
-  }
-
-  // Rename the default version
-  ExecuteQuery(PrepareSQL("UPDATE videoversion SET idType = %i, itemType = %i WHERE idFile = %i",
-                          idVideoVersion, assetType, idFile));
-
-  CommitTransaction();
-
-  return true;
-}
-
-void CVideoDatabase::SetDefaultVideoVersion(VideoDbContentType itemType, int dbId, int idFile)
-{
-  if (!m_pDB || !m_pDS)
-    return;
-
-  std::string path = GetFileBasePathById(idFile);
-  if (path.empty())
-    return;
-
-  try
-  {
-    if (itemType == VideoDbContentType::MOVIES)
-      m_pDS->exec(PrepareSQL("UPDATE movie SET idFile = %i, c%02d = '%s' WHERE idMovie = %i",
-                             idFile, VIDEODB_ID_BASEPATH, path.c_str(), dbId));
-  }
-  catch (...)
-  {
-    CLog::Log(LOGERROR, "{} failed for video {}", __FUNCTION__, dbId);
-  }
-}
-
-bool CVideoDatabase::IsDefaultVideoVersion(int idFile)
-{
-  if (!m_pDB || !m_pDS)
-    return false;
-
-  try
-  {
-    m_pDS->query(
-        PrepareSQL("SELECT idMedia, media_type FROM videoversion WHERE idFile = %i", idFile));
-    if (m_pDS->num_rows() > 0)
-    {
-      int idMedia = m_pDS->fv("idMedia").get_asInt();
-      std::string mediaType = m_pDS->fv("media_type").get_asString();
-
-      if (mediaType == MediaTypeMovie)
-      {
-        m_pDS->query(PrepareSQL("SELECT idFile FROM movie WHERE idMovie = %i", idMedia));
-        if (m_pDS->num_rows() > 0)
-        {
-          if (m_pDS->fv("idFile").get_asInt() == idFile)
-            return true;
-        }
-      }
-    }
-  }
-  catch (...)
-  {
-    CLog::Log(LOGERROR, "{} failed for {}", __FUNCTION__, idFile);
-  }
-
-  return false;
-}
-
-bool CVideoDatabase::DeleteVideoAsset(int idFile)
-{
-  if (!m_pDB || !m_pDS)
-    return false;
-
-  if (IsDefaultVideoVersion(idFile))
-    return false;
-
-  const bool inTransaction{m_pDB->in_transaction()};
-
-  try
-  {
-    if (!inTransaction)
-      BeginTransaction();
-
-    const std::string path = GetSingleValue(PrepareSQL(
-        "SELECT strPath FROM path JOIN files ON files.idPath=path.idPath WHERE files.idFile=%i",
-        idFile));
-    if (!path.empty())
-      InvalidatePathHash(path);
-
-    /*! \todo replace with a delete trigger on videoversion */
-    m_pDS->exec(PrepareSQL("DELETE FROM art WHERE media_id=%i and media_type='%s'", idFile,
-                           MediaTypeVideoVersion));
-
-    /*! \todo replace with a delete trigger on videoversion */
-    DeleteStreamDetails(idFile);
-
-    m_pDS->exec(PrepareSQL("DELETE FROM videoversion WHERE idFile=%i", idFile));
-
-    if (!inTransaction)
-      CommitTransaction();
-
-    return true;
-  }
-  catch (...)
-  {
-    CLog::LogF(LOGERROR, "failed for {}", idFile);
-    if (!inTransaction)
-      RollbackTransaction();
-    return false;
-  }
-}
-
-void CVideoDatabase::SetVideoVersion(int idFile, int idVideoVersion)
-{
-  if (!m_pDB || !m_pDS)
-    return;
-
-  try
-  {
-    m_pDS->exec(PrepareSQL("UPDATE videoversion SET idType = %i WHERE idFile = %i", idVideoVersion,
-                           idFile));
-  }
-  catch (...)
-  {
-    CLog::Log(LOGERROR, "{} failed for video {}", __FUNCTION__, idFile);
-  }
-}
-
-void CVideoDatabase::AddVideoAsset(VideoDbContentType itemType,
-                                   int dbId,
-                                   int idVideoVersion,
-                                   VideoAssetType videoAssetType,
-                                   CFileItem& item)
-{
-  if (!m_pDB || !m_pDS)
-    return;
-
-  assert(m_pDB->in_transaction() == false);
-
-  MediaType mediaType;
-  if (itemType == VideoDbContentType::MOVIES)
-  {
-    mediaType = MediaTypeMovie;
-  }
-  else
-    return;
-
-  int idFile = AddFile(item.GetPath());
-  if (idFile < 0)
-    return;
-
-  try
-  {
-    BeginTransaction();
-
-    m_pDS->query(PrepareSQL("SELECT idFile FROM videoversion WHERE idFile = %i", idFile));
-
-    if (m_pDS->num_rows() == 0)
-      m_pDS->exec(PrepareSQL("INSERT INTO videoversion VALUES(%i, %i, '%s', %i, %i)", idFile, dbId,
-                             mediaType.c_str(), videoAssetType, idVideoVersion));
-    else
-      m_pDS->exec(PrepareSQL("UPDATE videoversion SET idMedia = %i, media_type = '%s', itemType = "
-                             "%i, idType = %i WHERE idFile = %i",
-                             dbId, mediaType.c_str(), videoAssetType, idVideoVersion, idFile));
-
-    if (item.GetVideoInfoTag()->HasStreamDetails())
-      SetStreamDetailsForFileId(item.GetVideoInfoTag()->m_streamDetails, idFile);
-
-    if (videoAssetType == VideoAssetType::VERSION)
-      SetVideoVersionDefaultArt(idFile, item.GetVideoInfoTag()->m_iDbId, itemType);
-
-    CommitTransaction();
-  }
-  catch (...)
-  {
-    CLog::LogF(LOGERROR, "failed for video {}", dbId);
-    RollbackTransaction();
-  }
-}
-
-VideoAssetInfo CVideoDatabase::GetVideoVersionInfo(const std::string& filenameAndPath)
-{
-  VideoAssetInfo info;
-
-  info.m_idFile = GetFileId(filenameAndPath);
-  if (info.m_idFile < 0)
-    return info;
-
-  if (!m_pDB || !m_pDS)
-    return info;
-
-  try
-  {
-    m_pDS->query(PrepareSQL("SELECT videoversiontype.name,"
-                            "  videoversiontype.id,"
-                            "  videoversion.idMedia,"
-                            "  videoversion.media_type,"
-                            "  videoversion.itemType "
-                            "FROM videoversion"
-                            "  JOIN videoversiontype ON "
-                            "    videoversiontype.id = videoversion.idType "
-                            "WHERE videoversion.idFile = %i",
-                            info.m_idFile));
-
-    if (m_pDS->num_rows() > 0)
-    {
-      info.m_assetTypeId = m_pDS->fv("id").get_asInt();
-      info.m_assetTypeName = m_pDS->fv("name").get_asString();
-      info.m_idMedia = m_pDS->fv("idMedia").get_asInt();
-      info.m_mediaType = m_pDS->fv("media_type").get_asString();
-      info.m_assetType = static_cast<VideoAssetType>(m_pDS->fv("itemType").get_asInt());
-    }
-
-    m_pDS->close();
-  }
-  catch (...)
-  {
-    CLog::LogF(LOGERROR, "failed for {}", filenameAndPath);
-  }
-
-  return info;
-}
-
-bool CVideoDatabase::GetVideoVersionsNav(const std::string& strBaseDir,
-                                         CFileItemList& items,
-                                         VideoDbContentType idContent /* = UNKNOWN */,
-                                         const Filter& filter /* = Filter() */)
-{
-  if (!m_pDB || !m_pDS)
-    return false;
-
-  MediaType mediaType;
-
-  if (idContent == VideoDbContentType::MOVIES)
-  {
-    mediaType = MediaTypeMovie;
-  }
-  else
-    return false;
-
-  CVideoDbUrl videoUrl;
-  if (!videoUrl.FromString(strBaseDir))
-    return false;
-
-  try
-  {
-    m_pDS->query(PrepareSQL(
-        "SELECT DISTINCT videoversiontype.name AS name,"
-        "  videoversiontype.id AS id "
-        "FROM videoversiontype"
-        "  JOIN videoversion ON"
-        "    videoversion.idType = videoversiontype.id "
-        "WHERE name != '' AND owner IN (%i, %i) AND videoversiontype.itemType = %i",
-        VideoAssetTypeOwner::SYSTEM, VideoAssetTypeOwner::USER, VideoAssetType::VERSION));
-
-    while (!m_pDS->eof())
-    {
-      const int id{m_pDS->fv("id").get_asInt()};
-
-      CVideoDbUrl itemUrl{videoUrl};
-      itemUrl.AppendPath(StringUtils::Format("{}/", id));
-
-      const auto item{std::make_shared<CFileItem>(itemUrl.ToString(), true)};
-      item->SetLabel(m_pDS->fv("name").get_asString());
-      auto tag{item->GetVideoInfoTag()};
-      tag->m_type = MediaTypeVideoVersion;
-      tag->m_iDbId = id;
-
-      items.Add(item);
-      m_pDS->next();
-    }
-    m_pDS->close();
-    return true;
-  }
-  catch (...)
-  {
-    CLog::Log(LOGERROR, "{} failed", __FUNCTION__);
-  }
-  return false;
-}
-
-bool CVideoDatabase::GetVideoVersionTypes(VideoDbContentType idContent,
-                                          VideoAssetType assetType,
-                                          CFileItemList& items)
-{
-  if (!m_pDB || !m_pDS)
-    return false;
-
-  MediaType mediaType;
-
-  if (idContent == VideoDbContentType::MOVIES)
-  {
-    mediaType = MediaTypeMovie;
-  }
-  else
-    return false;
-
-  try
-  {
-    m_pDS->query(
-        PrepareSQL("SELECT name, id FROM videoversiontype WHERE name != '' AND itemType = %i "
-                   "AND owner IN (%i, %i)",
-                   assetType, VideoAssetTypeOwner::SYSTEM, VideoAssetTypeOwner::USER));
-
-    while (!m_pDS->eof())
-    {
-      std::string name = m_pDS->fv("name").get_asString();
-      int id = m_pDS->fv("id").get_asInt();
-
-      const auto item{std::make_shared<CFileItem>(name)};
-      item->GetVideoInfoTag()->m_type = MediaTypeVideoVersion;
-      item->GetVideoInfoTag()->m_iDbId = id;
-      item->GetVideoInfoTag()->GetAssetInfo().SetId(id);
-      item->GetVideoInfoTag()->GetAssetInfo().SetTitle(name);
-      item->GetVideoInfoTag()->m_strTitle = name;
-
-      item->m_strTitle = name;
-      item->SetLabel(name);
-
-      items.Add(item);
-      m_pDS->next();
-    }
-    m_pDS->close();
-    return true;
-  }
-  catch (...)
-  {
-    CLog::Log(LOGERROR, "{} failed", __FUNCTION__);
-  }
-  return false;
-}
-
-std::string CVideoDatabase::GetVideoVersionById(int id)
-{
-  return GetSingleValue(PrepareSQL("SELECT name FROM videoversiontype WHERE id=%i", id), m_pDS2);
-}
-
-void CVideoDatabase::SetVideoVersionDefaultArt(int dbId, int idFrom, VideoDbContentType type)
-{
-  MediaType mediaType;
-  VideoContentTypeToString(type, mediaType);
-
-  std::map<std::string, std::string> art;
-  if (GetArtForItem(idFrom, mediaType, art))
-  {
-    for (const auto& it : art)
-      SetArtForItem(dbId, MediaTypeVideoVersion, it.first, it.second);
   }
 }

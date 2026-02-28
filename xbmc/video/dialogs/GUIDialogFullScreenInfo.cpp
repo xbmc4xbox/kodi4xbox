@@ -8,8 +8,7 @@
 
 #include "GUIDialogFullScreenInfo.h"
 
-#include "input/actions/Action.h"
-#include "input/actions/ActionIDs.h"
+#include "input/Key.h"
 
 CGUIDialogFullScreenInfo::CGUIDialogFullScreenInfo(void)
     : CGUIDialog(WINDOW_DIALOG_FULLSCREEN_INFO, "DialogFullScreenInfo.xml")

@@ -112,7 +112,11 @@ class BufferReader
   : public CueReader
 {
 public:
-  explicit BufferReader(const std::string& strContent) : m_data(strContent) {}
+  explicit BufferReader(const std::string &strContent)
+    : m_data(strContent)
+    , m_pos(0)
+  {
+  }
   bool ReadLine(std::string &line) override
   {
     // Read the next line.
@@ -141,7 +145,7 @@ public:
   }
 private:
   std::string m_data;
-  size_t m_pos = 0;
+  size_t m_pos;
 };
 
 CCueDocument::~CCueDocument() = default;

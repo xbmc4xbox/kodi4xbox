@@ -82,8 +82,16 @@ void Interface_GUIControlAddonRendering::destroy(KODI_HANDLE kodiBase,
   Interface_GUIGeneral::unlock();
 }
 
+
 CGUIAddonRenderingControl::CGUIAddonRenderingControl(CGUIRenderingControl* control)
-  : m_control{control}
+  : CBCreate{nullptr},
+    CBRender{nullptr},
+    CBStop{nullptr},
+    CBDirty{nullptr},
+    m_clientHandle{nullptr},
+    m_addon{nullptr},
+    m_control{control},
+    m_refCount{1}
 {
 }
 

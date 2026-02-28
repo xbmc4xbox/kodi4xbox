@@ -18,9 +18,9 @@ class CFileItem;
 namespace CONTEXTMENU
 {
 
-struct CMusicInfoBase : CStaticContextMenuAction
+struct CMusicInfo : CStaticContextMenuAction
 {
-  explicit CMusicInfoBase(MediaType mediaType);
+  explicit CMusicInfo(MediaType mediaType);
   bool IsVisible(const CFileItem& item) const override;
   bool Execute(const std::shared_ptr<CFileItem>& item) const override;
 
@@ -28,25 +28,19 @@ private:
   const MediaType m_mediaType;
 };
 
-struct CMusicInfo : CMusicInfoBase
+struct CAlbumInfo : CMusicInfo
 {
-  CMusicInfo() : CMusicInfoBase(MediaTypeMusic) {}
-  bool IsVisible(const CFileItem& item) const override;
+  CAlbumInfo() : CMusicInfo(MediaTypeAlbum) {}
 };
 
-struct CAlbumInfo : CMusicInfoBase
+struct CArtistInfo : CMusicInfo
 {
-  CAlbumInfo() : CMusicInfoBase(MediaTypeAlbum) {}
+  CArtistInfo() : CMusicInfo(MediaTypeArtist) {}
 };
 
-struct CArtistInfo : CMusicInfoBase
+struct CSongInfo : CMusicInfo
 {
-  CArtistInfo() : CMusicInfoBase(MediaTypeArtist) {}
-};
-
-struct CSongInfo : CMusicInfoBase
-{
-  CSongInfo() : CMusicInfoBase(MediaTypeSong) {}
+  CSongInfo() : CMusicInfo(MediaTypeSong) {}
 };
 
 struct CMusicBrowse : CStaticContextMenuAction
@@ -61,13 +55,6 @@ struct CMusicPlay : CStaticContextMenuAction
   CMusicPlay() : CStaticContextMenuAction(208) {} // Play
   bool IsVisible(const CFileItem& item) const override;
   bool Execute(const std::shared_ptr<CFileItem>& item) const override;
-};
-
-struct CMusicPlayUsing : CStaticContextMenuAction
-{
-  CMusicPlayUsing() : CStaticContextMenuAction(15213) {} // Play using...
-  bool IsVisible(const CFileItem& item) const override;
-  bool Execute(const std::shared_ptr<CFileItem>& _item) const override;
 };
 
 struct CMusicPlayNext : CStaticContextMenuAction

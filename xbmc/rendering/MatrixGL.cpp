@@ -25,7 +25,7 @@
 #include "system_gl.h"
 
 #include <cmath>
-#include "MatrixGLES.h"
+#include "MatrixGL.h"
 #include "utils/log.h"
 #if defined(__ARM_NEON__)
 #include "utils/CPUInfo.h"

@@ -9,8 +9,7 @@
 #include "GUIFixedListContainer.h"
 
 #include "GUIListItemLayout.h"
-#include "input/actions/Action.h"
-#include "input/actions/ActionIDs.h"
+#include "input/Key.h"
 
 CGUIFixedListContainer::CGUIFixedListContainer(int parentID, int controlID, float posX, float posY, float width, float height, ORIENTATION orientation, const CScroller& scroller, int preloadItems, int fixedPosition, int cursorRange)
     : CGUIBaseContainer(parentID, controlID, posX, posY, width, height, orientation, scroller, preloadItems)

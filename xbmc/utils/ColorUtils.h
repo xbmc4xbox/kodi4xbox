@@ -45,8 +45,6 @@ constexpr Color BLUE = 0xFF0000FF;
 constexpr Color NAVY = 0xFF000080;
 constexpr Color FUCHSIA = 0xFFFF00FF;
 constexpr Color PURPLE = 0xFF800080;
-constexpr Color MAGENTA = 0xFFFF00FF;
-constexpr Color CYAN = 0xFF00FFFF;
 
 struct ColorInfo
 {
@@ -63,24 +61,6 @@ struct ColorFloats
   float blue;
   float alpha;
 };
-
-//! \brief W3C HTML 16 basic color list
-constexpr auto HTML_BASIC_COLORS = make_map<std::string_view, Color>({{"white", WHITE},
-                                                                      {"silver", SILVER},
-                                                                      {"gray", GRAY},
-                                                                      {"black", BLACK},
-                                                                      {"red", RED},
-                                                                      {"maroon", MAROON},
-                                                                      {"yellow", YELLOW},
-                                                                      {"olive", OLIVE},
-                                                                      {"lime", LIME},
-                                                                      {"green", GREEN},
-                                                                      {"aqua", AQUA},
-                                                                      {"teal", TEAL},
-                                                                      {"blue", BLUE},
-                                                                      {"navy", NAVY},
-                                                                      {"fuchsia", FUCHSIA},
-                                                                      {"purple", PURPLE}});
 
 /*!
  * \brief Change the opacity of a given ARGB color
@@ -163,7 +143,7 @@ ColorFloats ConvertToFloats(const Color argb);
  * \param color The original color
  * \return The original color converted to hex RGB
  */
-std::string ConvertToHexRGB(const Color argb);
+std::string ConvertoToHexRGB(const Color argb);
 
 } // namespace COLOR
 } // namespace UTILS

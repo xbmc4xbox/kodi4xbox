@@ -10,21 +10,16 @@
 
 #include "GUIAction.h"
 #include "GUIComponent.h"
-#include "GUIControlProfiler.h"
 #include "GUIInfoManager.h"
 #include "GUIMessage.h"
 #include "GUITexture.h"
 #include "GUIWindowManager.h"
 #include "ServiceBroker.h"
 #include "input/InputManager.h"
-#include "input/actions/Action.h"
-#include "input/actions/ActionIDs.h"
-#include "input/mouse/MouseEvent.h"
-#include "input/mouse/MouseStat.h"
+#include "input/Key.h"
 #include "utils/log.h"
 
-using namespace KODI;
-using namespace GUILIB;
+using namespace KODI::GUILIB;
 
 CGUIControl::CGUIControl()
 {
@@ -182,19 +177,9 @@ void CGUIControl::DoRender()
 {
   if (IsVisible() && !m_isCulled)
   {
-    bool hasStereo =
-        m_stereo != 0.0f &&
-        CServiceBroker::GetWinSystem()->GetGfxContext().GetStereoMode() !=
-            RENDER_STEREO_MODE_MONO &&
-        CServiceBroker::GetWinSystem()->GetGfxContext().GetStereoMode() != RENDER_STEREO_MODE_OFF;
-
     CServiceBroker::GetWinSystem()->GetGfxContext().SetTransform(m_cachedTransform);
     if (m_hasCamera)
       CServiceBroker::GetWinSystem()->GetGfxContext().SetCameraPosition(m_camera);
-    if (hasStereo)
-      CServiceBroker::GetWinSystem()->GetGfxContext().SetStereoFactor(m_stereo);
-
-    GUIPROFILER_RENDER_BEGIN(this);
 
     if (m_hitColor != 0xffffffff)
     {
@@ -205,10 +190,6 @@ void CGUIControl::DoRender()
 
     Render();
 
-    GUIPROFILER_RENDER_END(this);
-
-    if (hasStereo)
-      CServiceBroker::GetWinSystem()->GetGfxContext().RestoreStereoFactor();
     if (m_hasCamera)
       CServiceBroker::GetWinSystem()->GetGfxContext().RestoreCameraPosition();
     CServiceBroker::GetWinSystem()->GetGfxContext().RemoveTransform();
@@ -576,7 +557,7 @@ bool CGUIControl::HitTest(const CPoint &point) const
   return m_hitRect.PtInRect(point);
 }
 
-EVENT_RESULT CGUIControl::SendMouseEvent(const CPoint& point, const MOUSE::CMouseEvent& event)
+EVENT_RESULT CGUIControl::SendMouseEvent(const CPoint &point, const CMouseEvent &event)
 {
   CPoint childPoint(point);
   m_transform.InverseTransformPosition(childPoint.x, childPoint.y);
@@ -593,6 +574,7 @@ EVENT_RESULT CGUIControl::SendMouseEvent(const CPoint& point, const MOUSE::CMous
 // override this function to implement custom mouse behaviour
 bool CGUIControl::OnMouseOver(const CPoint &point)
 {
+#if 0
   if (CServiceBroker::GetInputManager().GetMouseState() != MOUSE_STATE_DRAG)
     CServiceBroker::GetInputManager().SetMouseState(MOUSE_STATE_FOCUS);
   if (!CanFocus()) return false;
@@ -601,6 +583,7 @@ bool CGUIControl::OnMouseOver(const CPoint &point)
     CGUIMessage msg(GUI_MSG_SETFOCUS, GetParentID(), GetID());
     OnMessage(msg);
   }
+#endif
   return true;
 }
 

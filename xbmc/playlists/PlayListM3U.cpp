@@ -69,10 +69,6 @@ bool CPlayListM3U::Load(const std::string& strFileName)
   int iStartOffset = 0;
   int iEndOffset = 0;
 
-  bool utf8 = false;
-  if (URIUtils::GetExtension(strFileName) == ".m3u8")
-    utf8 = true;
-
   Clear();
 
   m_strPlayListName = URIUtils::GetFileName(strFileName);
@@ -105,8 +101,7 @@ bool CPlayListM3U::Load(const std::string& strFileName)
         lDuration = atoi(strLength.c_str());
         iComma++;
         strInfo = strLine.substr(iComma);
-        if (!utf8)
-          g_charsetConverter.unknownToUTF8(strInfo);
+        g_charsetConverter.unknownToUTF8(strInfo);
       }
     }
     else if (StringUtils::StartsWith(strLine, OffsetMarker))
@@ -155,8 +150,7 @@ bool CPlayListM3U::Load(const std::string& strFileName)
 
       if (strFileName.length() > 0)
       {
-        if (!utf8)
-          g_charsetConverter.unknownToUTF8(strFileName);
+        g_charsetConverter.unknownToUTF8(strFileName);
 
         // If no info was read from from the extended tag information, use the file name
         if (strInfo.length() == 0)
@@ -217,9 +211,6 @@ void CPlayListM3U::Save(const std::string& strFileName) const
 {
   if (!m_vecItems.size())
     return;
-  bool utf8 = false;
-  if (URIUtils::GetExtension(strFileName) == ".m3u8")
-    utf8 = true;
   std::string strPlaylist = CUtil::MakeLegalPath(strFileName);
   CFile file;
   if (!file.OpenForWrite(strPlaylist,true))
@@ -235,8 +226,7 @@ void CPlayListM3U::Save(const std::string& strFileName) const
   {
     CFileItemPtr item = m_vecItems[i];
     std::string strDescription=item->GetLabel();
-    if (!utf8)
-      g_charsetConverter.utf8ToStringCharset(strDescription);
+    g_charsetConverter.utf8ToStringCharset(strDescription);
     strLine = StringUtils::Format("{}:{},{}\n", InfoMarker,
                                   item->GetMusicInfoTag()->GetDuration(), strDescription);
     if (file.Write(strLine.c_str(), strLine.size()) != static_cast<ssize_t>(strLine.size()))
@@ -248,8 +238,7 @@ void CPlayListM3U::Save(const std::string& strFileName) const
       file.Write(strLine.c_str(),strLine.size());
     }
     std::string strFileName = ResolveURL(item);
-    if (!utf8)
-      g_charsetConverter.utf8ToStringCharset(strFileName);
+    g_charsetConverter.utf8ToStringCharset(strFileName);
     strLine = StringUtils::Format("{}\n", strFileName);
     if (file.Write(strLine.c_str(), strLine.size()) != static_cast<ssize_t>(strLine.size()))
       return; // error

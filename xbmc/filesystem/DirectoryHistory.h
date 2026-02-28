@@ -21,7 +21,7 @@ public:
     CHistoryItem() = default;
     virtual ~CHistoryItem() = default;
     std::string m_strItem;
-    int m_indexItem{-1};
+    std::string m_strDirectory;
   };
 
   class CPathHistoryItem
@@ -39,18 +39,8 @@ public:
   CDirectoryHistory() = default;
   virtual ~CDirectoryHistory();
 
-  /*!
-   * \brief Store the currently selected item for the navigation path
-   * \param strSelectedItem Selected item
-   * \param strDirectory Path
-   * \param indexItem Index of the selected item (in list, after filtering/sorting).
-   * -1 when the index information is not available.
-  */
-  void SetSelectedItem(const std::string& strSelectedItem,
-                       const std::string& strDirectory,
-                       const int indexItem = -1);
+  void SetSelectedItem(const std::string& strSelectedItem, const std::string& strDirectory);
   const std::string& GetSelectedItem(const std::string& strDirectory) const;
-  int GetSelectedItemIndex(const std::string& strDirectory) const;
   void RemoveSelectedItem(const std::string& strDirectory);
 
   void AddPath(const std::string& strPath, const std::string &m_strFilterPath = "");

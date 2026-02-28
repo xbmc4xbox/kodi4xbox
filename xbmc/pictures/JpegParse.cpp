@@ -21,7 +21,7 @@
 
 #include "filesystem/File.h"
 
-#ifdef TARGET_WINDOWS
+#if defined(TARGET_WINDOWS) || defined(NXDK)
 #include <windows.h>
 #else
 #include <memory.h>

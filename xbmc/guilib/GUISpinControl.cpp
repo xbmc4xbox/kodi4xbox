@@ -9,17 +9,13 @@
 #include "GUISpinControl.h"
 
 #include "GUIMessage.h"
-#include "input/actions/Action.h"
-#include "input/actions/ActionIDs.h"
-#include "input/mouse/MouseEvent.h"
+#include "input/Key.h"
 #include "utils/StringUtils.h"
 
 #include <stdio.h>
 
 #define SPIN_BUTTON_DOWN 1
 #define SPIN_BUTTON_UP   2
-
-using namespace KODI;
 
 namespace
 {
@@ -1009,7 +1005,7 @@ bool CGUISpinControl::OnMouseOver(const CPoint &point)
   return CGUIControl::OnMouseOver(point);
 }
 
-EVENT_RESULT CGUISpinControl::OnMouseEvent(const CPoint& point, const MOUSE::CMouseEvent& event)
+EVENT_RESULT CGUISpinControl::OnMouseEvent(const CPoint &point, const CMouseEvent &event)
 {
   if (event.m_id == ACTION_MOUSE_LEFT_CLICK)
   {

@@ -115,7 +115,7 @@ protected:
   std::size_t m_totalTime{0};
 
   int m_cpuCount;
-  unsigned int m_cpuFeatures{0};
+  unsigned int m_cpuFeatures;
 
   std::vector<CoreInfo> m_cores;
 };

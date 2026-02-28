@@ -65,11 +65,6 @@ bool CSkinTimer::VerifyStopCondition() const
   return m_stopCondition && m_stopCondition->Get(INFO::DEFAULT_CONTEXT);
 }
 
-const std::string& CSkinTimer::GetName() const
-{
-  return m_name;
-}
-
 INFO::InfoPtr CSkinTimer::GetStartCondition() const
 {
   return m_startCondition;
@@ -83,21 +78,6 @@ INFO::InfoPtr CSkinTimer::GetResetCondition() const
 INFO::InfoPtr CSkinTimer::GetStopCondition() const
 {
   return m_stopCondition;
-}
-
-const CGUIAction& CSkinTimer::GetStartActions() const
-{
-  return m_startActions;
-}
-
-const CGUIAction& CSkinTimer::GetStopActions() const
-{
-  return m_stopActions;
-}
-
-bool CSkinTimer::ResetsOnStart() const
-{
-  return m_resetOnStart;
 }
 
 void CSkinTimer::OnStart()

@@ -1,78 +1,116 @@
 /*
- *  Copyright (C) 2005-2018 Team Kodi
- *  This file is part of Kodi - https://kodi.tv
+ *      Copyright (C) 2005-2013 Team XBMC
+ *      http://xbmc.org
  *
- *  SPDX-License-Identifier: GPL-2.0-or-later
- *  See LICENSES/README.md for more information.
+ *  This Program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2, or (at your option)
+ *  any later version.
+ *
+ *  This Program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with XBMC; see the file COPYING.  If not, see
+ *  <http://www.gnu.org/licenses/>.
+ *
  */
 
+#include "system.h" // <xtl.h>
 #include "DllLoaderContainer.h"
-#ifdef TARGET_POSIX
-#include "SoLoader.h"
-#endif
-#ifdef TARGET_WINDOWS
-#include "Win32DllLoader.h"
-#endif
-#include "URL.h"
+#include "DllLoader.h"
+#include "dll_tracker.h" // for python unload hack
 #include "filesystem/File.h"
-#include "utils/StringUtils.h"
 #include "utils/URIUtils.h"
+#include "utils/StringUtils.h"
 #include "utils/log.h"
+#include "URL.h"
 
-#if defined(TARGET_WINDOWS)
-#define ENV_PARTIAL_PATH \
-                 "special://xbmcbin/;" \
-                 "special://xbmcbin/system/;" \
-                 "special://xbmcbin/system/python/;" \
-                 "special://xbmc/;" \
-                 "special://xbmc/system/;" \
-                 "special://xbmc/system/python/"
-#else
-#define ENV_PARTIAL_PATH \
-                 "special://xbmcbin/system/;" \
-                 "special://xbmcbin/system/players/mplayer/;" \
-                 "special://xbmcbin/system/players/VideoPlayer/;" \
-                 "special://xbmcbin/system/players/paplayer/;" \
-                 "special://xbmcbin/system/python/;" \
-                 "special://xbmc/system/;" \
-                 "special://xbmc/system/players/mplayer/;" \
-                 "special://xbmc/system/players/VideoPlayer/;" \
-                 "special://xbmc/system/players/paplayer/;" \
-                 "special://xbmc/system/python/"
-#endif
-#if defined(TARGET_DARWIN)
-#define ENV_PATH ENV_PARTIAL_PATH \
-                 ";special://frameworks/"
-#else
-#define ENV_PATH ENV_PARTIAL_PATH
-#endif
+#define ENV_PATH "special://xbmc/system/;special://xbmc/system/players/mplayer/;special://xbmc/system/players/dvdplayer/;special://xbmc/system/players/paplayer/;special://xbmc/system/python/"
 
-//Define this to get logging on all calls to load/unload of dlls
+//Define this to get loggin on all calls to load/unload of dlls
 //#define LOGALL
 
 
 using namespace XFILE;
 
 LibraryLoader* DllLoaderContainer::m_dlls[64] = {};
-int DllLoaderContainer::m_iNrOfDlls = 0;
+int        DllLoaderContainer::m_iNrOfDlls = 0;
+bool       DllLoaderContainer::m_bTrack = true;
+
+
+extern Export export_advapi32[];
+extern Export export_ole32[];
+extern Export export_winmm[];
+extern Export export_user32[];
+extern Export export_msdmo[];
+extern Export export_xbmc_vobsub[];
+extern Export export_kernel32[];
+extern Export export_wsock32[];
+extern Export export_ws2_32[];
+extern Export export_xbox_dx8[];
+extern Export export_xbox___dx8[];
+extern Export export_version[];
+extern Export export_comdlg32[];
+extern Export export_gdi32[];
+extern Export export_ddraw[];
+extern Export export_comctl32[];
+extern Export export_msvcrt[];
+extern Export export_pncrt[];
+extern Export export_iconvx[];
+extern Export export_xbp[];
+extern Export export_zlib[];
+
+DllLoader kernel32("kernel32.dll",        false, true, false, export_kernel32);
+DllLoader msvcr80("msvcr80.dll",          false, true, false, export_msvcrt);
+DllLoader msvcr71("msvcr71.dll",          false, true, false, export_msvcrt);
+DllLoader msvcrt("msvcrt.dll",            false, true, false, export_msvcrt);
+DllLoader wsock32("wsock32.dll",          false, true, false, export_wsock32);
+DllLoader ws2_32("ws2_32.dll",            false, true, false, export_ws2_32);
+DllLoader user32("user32.dll",            false, true, false, export_user32);
+DllLoader ddraw("ddraw.dll",              false, true, false, export_ddraw);
+DllLoader wininet("wininet.dll",          false, true, false, NULL);
+DllLoader advapi32("advapi32.dll",        false, true, false, export_advapi32);
+DllLoader ole32("ole32.dll",              false, true, false, export_ole32);
+DllLoader oleaut32("oleaut32.dll",        false, true, false, NULL);
+DllLoader xbp("xbp.dll",                  false, true, false, export_xbp);
+DllLoader winmm("winmm.dll",              false, true, false, export_winmm);
+DllLoader msdmo("msdmo.dll",              false, true, false, export_msdmo);
+DllLoader xbmc_vobsub("xbmc_vobsub.dll",  false, true, false, export_xbmc_vobsub);
+DllLoader xbox_dx8("xbox_dx8.dll",        false, true, false, export_xbox_dx8);
+DllLoader version("version.dll",          false, true, false, export_version);
+DllLoader comdlg32("comdlg32.dll",        false, true, false, export_comdlg32);
+DllLoader gdi32("gdi32.dll",              false, true, false, export_gdi32);
+DllLoader comctl32("comctl32.dll",        false, true, false, export_comctl32);
+DllLoader pncrt("pncrt.dll",              false, true, false, export_pncrt);
+DllLoader iconvx("iconv.dll",             false, true, false, export_iconvx);
+DllLoader zlib("zlib1.dll",               false, true, false, export_zlib);
+
+void DllLoaderContainer::Clear()
+{
+}
+
+HMODULE DllLoaderContainer::GetModuleAddress(const char* sName)
+{
+  return (HMODULE)GetModule(sName);
+}
 
 LibraryLoader* DllLoaderContainer::GetModule(const char* sName)
 {
-  for (int i = 0; i < m_iNrOfDlls && m_dlls[i] != NULL; i++)
+  for (int i = 0; m_dlls[i] != NULL && i < m_iNrOfDlls; i++)
   {
-    if (StringUtils::CompareNoCase(m_dlls[i]->GetName(), sName) == 0)
-      return m_dlls[i];
-    if (!m_dlls[i]->IsSystemDll() &&
-        StringUtils::CompareNoCase(m_dlls[i]->GetFileName(), sName) == 0)
-      return m_dlls[i];
+    if (stricmp(m_dlls[i]->GetName(), sName) == 0) return m_dlls[i];
+    if (!m_dlls[i]->IsSystemDll() && stricmp(m_dlls[i]->GetFileName(), sName) == 0) return m_dlls[i];
   }
 
   return NULL;
 }
 
-LibraryLoader* DllLoaderContainer::GetModule(const HMODULE hModule)
+LibraryLoader* DllLoaderContainer::GetModule(HMODULE hModule)
 {
-  for (int i = 0; i < m_iNrOfDlls && m_dlls[i] != NULL; i++)
+  for (int i = 0; m_dlls[i] != NULL && i < m_iNrOfDlls; i++)
   {
     if (m_dlls[i]->GetHModule() == hModule) return m_dlls[i];
   }
@@ -131,10 +169,6 @@ LibraryLoader* DllLoaderContainer::FindModule(const char* sName, const char* sCu
   { //  Has a path, just try to load
     return LoadDll(sName, bLoadSymbols);
   }
-#ifdef TARGET_POSIX
-  else if (strcmp(sName, "xbmc.so") == 0)
-    return LoadDll(sName, bLoadSymbols);
-#endif
   else if (sCurrentDir)
   { // in the path of the parent dll?
     std::string strPath=sCurrentDir;
@@ -145,42 +179,33 @@ LibraryLoader* DllLoaderContainer::FindModule(const char* sName, const char* sCu
   }
 
   //  in environment variable?
-  std::vector<std::string> vecEnv;
+  std::vector<std::string> vecEnv = StringUtils::Split(ENV_PATH, ";");
 
-#if defined(TARGET_ANDROID)
-  std::string systemLibs = getenv("KODI_ANDROID_SYSTEM_LIBS");
-  vecEnv = StringUtils::Split(systemLibs, ':');
-  std::string localLibs = getenv("KODI_ANDROID_LIBS");
-  vecEnv.insert(vecEnv.begin(),localLibs);
-#else
-  vecEnv = StringUtils::Split(ENV_PATH, ';');
-#endif
-  LibraryLoader* pDll = NULL;
-
-  for (std::vector<std::string>::const_iterator i = vecEnv.begin(); i != vecEnv.end(); ++i)
+  for (int i=0; i<(int)vecEnv.size(); ++i)
   {
-    std::string strPath = *i;
-    URIUtils::AddSlashAtEnd(strPath);
+    std::string strPath=vecEnv[i];
 
 #ifdef LOGALL
-    CLog::Log(LOGDEBUG, "Searching for the dll {} in directory {}", sName, strPath);
+    CLog::Log(LOGDEBUG, "Searching for the dll {} in directory {}", sName, strPath.c_str());
 #endif
 
     strPath+=sName;
 
     // Have we already loaded this dll
-    if ((pDll = GetModule(strPath.c_str())) != NULL)
+    LibraryLoader* pDll = GetModule(strPath.c_str());
+    if (pDll)
       return pDll;
 
     if (CFile::Exists(strPath))
       return LoadDll(strPath.c_str(), bLoadSymbols);
   }
 
+#ifdef _WIN32PC
   // can't find it in any of our paths - could be a system dll
-  if ((pDll = LoadDll(sName, bLoadSymbols)) != NULL)
-    return pDll;
-
+  return LoadDll(sName, bLoadSymbols);
+#endif
   CLog::Log(LOGDEBUG, "Dll {} was not found in path", sName);
+
   return NULL;
 }
 
@@ -214,8 +239,7 @@ void DllLoaderContainer::ReleaseModule(LibraryLoader*& pDll)
 #ifdef LOGALL
   else
   {
-    CLog::Log(LOGDEBUG, "Dll {} is still referenced with a count of {}", pDll->GetFileName(),
-              iRefCount);
+    CLog::Log(LOGDEBUG, "Dll {} is still referenced with a count of {}", pDll->GetFileName(), iRefCount);
   }
 #endif
 }
@@ -228,11 +252,7 @@ LibraryLoader* DllLoaderContainer::LoadDll(const char* sName, bool bLoadSymbols)
 #endif
 
   LibraryLoader* pLoader;
-#ifdef TARGET_POSIX
-  pLoader = new SoLoader(sName, bLoadSymbols);
-#elif defined(TARGET_WINDOWS)
-  pLoader = new Win32DllLoader(sName, false);
-#endif
+  pLoader = new DllLoader(sName, m_bTrack, false, bLoadSymbols);
 
   if (!pLoader)
   {
@@ -251,22 +271,32 @@ LibraryLoader* DllLoaderContainer::LoadDll(const char* sName, bool bLoadSymbols)
 
 bool DllLoaderContainer::IsSystemDll(const char* sName)
 {
-  for (int i = 0; i < m_iNrOfDlls && m_dlls[i] != NULL; i++)
+  for (int i = 0; m_dlls[i] != NULL && i < m_iNrOfDlls; i++)
   {
-    if (m_dlls[i]->IsSystemDll() && StringUtils::CompareNoCase(m_dlls[i]->GetName(), sName) == 0)
-      return true;
+    if (m_dlls[i]->IsSystemDll() && stricmp(m_dlls[i]->GetName(), sName) == 0) return true;
   }
 
   return false;
 }
 
+int DllLoaderContainer::GetNrOfModules()
+{
+  return m_iNrOfDlls;
+}
+
+LibraryLoader* DllLoaderContainer::GetModule(int iPos)
+{
+  if (iPos < m_iNrOfDlls) return m_dlls[iPos];
+  return NULL;
+}
+
 void DllLoaderContainer::RegisterDll(LibraryLoader* pDll)
 {
-  for (LibraryLoader*& dll : m_dlls)
+  for (int i = 0; i < 64; i++)
   {
-    if (dll == NULL)
+    if (m_dlls[i] == NULL)
     {
-      dll = pDll;
+      m_dlls[i] = pDll;
       m_iNrOfDlls++;
       break;
     }
@@ -300,4 +330,43 @@ void DllLoaderContainer::UnRegisterDll(LibraryLoader* pDll)
       }
     }
   }
+}
+
+void DllLoaderContainer::UnloadPythonDlls()
+{
+  // unload all dlls that python27.dll could have loaded
+  for (int i = 0; m_dlls[i] != NULL && i < m_iNrOfDlls; i++)
+  {
+    char* name = m_dlls[i]->GetName();
+    if (strstr(name, ".pyd") != NULL)
+    {
+      LibraryLoader* pDll = m_dlls[i];
+      ReleaseModule(pDll);
+      i = 0;
+    }
+  }
+
+  // last dll to unload, python27.dll
+  for (int i = 0; m_dlls[i] != NULL && i < m_iNrOfDlls; i++)
+  {
+    char* name = m_dlls[i]->GetName();
+    if (strstr(name, "python27.dll") != NULL)
+    {
+      LibraryLoader* pDll = m_dlls[i];
+      pDll->IncrRef();
+      while (pDll->DecrRef() > 1) pDll->DecrRef();
+
+      // since we freed all python extension dlls first, we have to remove any associations with them first
+      DllTrackInfo* info = tracker_get_dlltrackinfo_byobject((DllLoader*) pDll);
+      if (info != NULL)
+      {
+        info->dllList.clear();
+      }
+
+      ReleaseModule(pDll);
+      break;
+    }
+  }
+
+
 }

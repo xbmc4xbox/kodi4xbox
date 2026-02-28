@@ -29,14 +29,6 @@ public:
   std::string strReleaseGroupMBID;
 };
 
-struct ArtistVideoLinks
-{
-  std::string title;
-  std::string mbTrackID;
-  std::string videoURL;
-  std::string thumbURL;
-};
-
 class CArtist
 {
 public:
@@ -84,7 +76,6 @@ public:
     dateNew.Reset();
     bScrapedMBID = false;
     strLastScraped.clear();
-    videolinks.clear();
   }
 
   /*! \brief Load artist information from an XML file.
@@ -126,7 +117,6 @@ public:
   CDateTime dateNew;  // Time db record created
   bool bScrapedMBID = false;
   std::string strLastScraped;
-  std::vector<ArtistVideoLinks> videolinks;
 };
 
 class CArtistCredit

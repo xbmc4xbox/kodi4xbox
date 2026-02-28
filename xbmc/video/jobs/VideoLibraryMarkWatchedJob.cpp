@@ -6,24 +6,20 @@
  *  See LICENSES/README.md for more information.
  */
 
-#include "VideoLibraryMarkWatchedJob.h"
+#include <vector>
 
+#include "VideoLibraryMarkWatchedJob.h"
 #include "FileItem.h"
-#include "ServiceBroker.h"
 #include "Util.h"
 #include "filesystem/Directory.h"
 #ifdef HAS_UPNP
 #include "network/upnp/UPnP.h"
 #endif
 #include "profiles/ProfileManager.h"
-#include "pvr/PVRManager.h"
-#include "pvr/recordings/PVRRecordings.h"
 #include "settings/SettingsComponent.h"
+#include "ServiceBroker.h"
 #include "utils/URIUtils.h"
 #include "video/VideoDatabase.h"
-
-#include <memory>
-#include <vector>
 
 CVideoLibraryMarkWatchedJob::CVideoLibraryMarkWatchedJob(const std::shared_ptr<CFileItem>& item,
                                                          bool mark)
@@ -52,7 +48,7 @@ bool CVideoLibraryMarkWatchedJob::Work(CVideoDatabase &db)
     return false;
 
   CFileItemList items;
-  items.Add(std::make_shared<CFileItem>(*m_item));
+  items.Add(CFileItemPtr(new CFileItem(*m_item)));
 
   if (m_item->m_bIsFolder)
     CUtil::GetRecursiveListing(m_item->GetPath(), items, "", XFILE::DIR_FLAG_NO_FILE_INFO);
@@ -68,21 +64,6 @@ bool CVideoLibraryMarkWatchedJob::Work(CVideoDatabase &db)
     if (URIUtils::IsUPnP(item->GetPath()) && UPNP::CUPnP::MarkWatched(*item, m_mark))
       continue;
 #endif
-
-    if (item->HasPVRRecordingInfoTag() &&
-        CServiceBroker::GetPVRManager().Recordings()->MarkWatched(item->GetPVRRecordingInfoTag(), m_mark))
-    {
-      CDateTime newLastPlayed;
-      if (m_mark)
-        newLastPlayed = db.IncrementPlayCount(*item);
-      else
-        newLastPlayed = db.SetPlayCount(*item, 0);
-
-      if (newLastPlayed.IsValid())
-        item->GetVideoInfoTag()->m_lastPlayed = newLastPlayed;
-
-      continue;
-    }
 
     markItems.push_back(item);
   }

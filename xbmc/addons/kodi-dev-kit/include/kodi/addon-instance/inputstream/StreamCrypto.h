@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "../../AddonBase.h"
 #include "../../c-api/addon-instance/inputstream/stream_crypto.h"
+#include "../../AddonBase.h"
 
 #ifdef __cplusplus
 

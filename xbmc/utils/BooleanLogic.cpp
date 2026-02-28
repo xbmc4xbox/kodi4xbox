@@ -12,8 +12,6 @@
 #include "utils/XBMCTinyXML.h"
 #include "utils/log.h"
 
-#include <memory>
-
 bool CBooleanLogicValue::Deserialize(const TiXmlNode *node)
 {
   if (node == NULL)
@@ -114,7 +112,7 @@ bool CBooleanLogic::Deserialize(const TiXmlNode *node)
 
   if (m_operation == NULL)
   {
-    m_operation = std::make_shared<CBooleanLogicOperation>();
+    m_operation = CBooleanLogicOperationPtr(new CBooleanLogicOperation());
 
     if (m_operation == NULL)
       return false;

@@ -21,29 +21,22 @@
 #include "application/ApplicationPowerHandling.h"
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIWindowManager.h"
-#include "input/actions/Action.h"
-#include "input/actions/ActionIDs.h"
 #include "music/MusicUtils.h"
 #include "playlists/PlayList.h"
-#include "pvr/PVRManager.h"
-#include "pvr/channels/PVRChannel.h"
-#include "pvr/guilib/PVRGUIActionsChannels.h"
-#include "pvr/recordings/PVRRecording.h"
 #include "settings/MediaSettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 #include "storage/MediaManager.h"
-#include "utils/PlayerUtils.h"
 #include "utils/StringUtils.h"
 #include "utils/URIUtils.h"
 #include "utils/log.h"
 #include "video/PlayerController.h"
 #include "video/VideoUtils.h"
-#include "video/guilib/VideoSelectActionProcessor.h"
+#include "video/windows/GUIWindowVideoBase.h"
 
 #include <math.h>
 
-#ifdef HAS_OPTICAL_DRIVE
+#ifdef HAS_DVD_DRIVE
 #include "Autorun.h"
 #endif
 
@@ -183,14 +176,17 @@ static int PlayerControl(const std::vector<std::string>& params)
       appPlayer->SetPlaySpeed(playSpeed);
     }
   }
-  else if (paramlow == "tempoup" || paramlow == "tempodown")
+  else if (paramlow =="tempoup" || paramlow == "tempodown")
   {
     if (appPlayer->SupportsTempo() && appPlayer->IsPlaying() && !appPlayer->IsPaused())
     {
+      float playTempo = appPlayer->GetPlayTempo();
       if (paramlow == "tempodown")
-        CPlayerUtils::AdvanceTempoStep(appPlayer, TempoStepChange::DECREASE);
+          playTempo -= 0.1f;
       else if (paramlow == "tempoup")
-        CPlayerUtils::AdvanceTempoStep(appPlayer, TempoStepChange::INCREASE);
+          playTempo += 0.1f;
+
+      appPlayer->SetTempo(playTempo);
     }
   }
   else if (StringUtils::StartsWithNoCase(params[0], "tempo"))
@@ -373,28 +369,7 @@ static int PlayerControl(const std::vector<std::string>& params)
   }
   else if (StringUtils::StartsWithNoCase(params[0], "resumelivetv"))
   {
-    CFileItem& fileItem(g_application.CurrentFileItem());
-    std::shared_ptr<PVR::CPVRChannel> channel = fileItem.HasPVRRecordingInfoTag() ? fileItem.GetPVRRecordingInfoTag()->Channel() : std::shared_ptr<PVR::CPVRChannel>();
-
-    if (channel)
-    {
-      const std::shared_ptr<PVR::CPVRChannelGroupMember> groupMember =
-          CServiceBroker::GetPVRManager().Get<PVR::GUI::Channels>().GetChannelGroupMember(channel);
-      if (!groupMember)
-      {
-        CLog::Log(LOGERROR, "ResumeLiveTv could not obtain channel group member for channel: {}",
-                  channel->ChannelName());
-        return false;
-      }
-
-      CFileItem playItem(groupMember);
-      if (!g_application.PlayMedia(
-              playItem, "", channel->IsRadio() ? PLAYLIST::TYPE_MUSIC : PLAYLIST::TYPE_VIDEO))
-      {
-        CLog::Log(LOGERROR, "ResumeLiveTv could not play channel: {}", channel->ChannelName());
-        return false;
-      }
-    }
+    return 0;
   }
   else if (paramlow == "reset")
   {
@@ -410,7 +385,7 @@ static int PlayerControl(const std::vector<std::string>& params)
  */
 static int PlayDVD(const std::vector<std::string>& params)
 {
-#ifdef HAS_OPTICAL_DRIVE
+#ifdef HAS_DVD_DRIVE
   bool restart = false;
   if (!params.empty() && StringUtils::EqualsNoCase(params[0], "restart"))
     restart = true;
@@ -428,17 +403,8 @@ void GetItemsForPlayList(const std::shared_ptr<CFileItem>& item, CFileItemList& 
     VIDEO_UTILS::GetItemsForPlayList(item, queuedItems);
   else if (MUSIC_UTILS::IsItemPlayable(*item))
     MUSIC_UTILS::GetItemsForPlayList(item, queuedItems);
-}
-
-PLAYLIST::Id GetPlayListId(const CFileItem& item)
-{
-  PLAYLIST::Id playlistId{PLAYLIST::TYPE_NONE};
-  if (item.IsVideo())
-    playlistId = PLAYLIST::TYPE_VIDEO;
-  else if (item.IsAudio())
-    playlistId = PLAYLIST::TYPE_MUSIC;
-
-  return playlistId;
+  else
+    CLog::LogF(LOGERROR, "Unable to get playlist items for {}", item->GetPath());
 }
 
 int PlayOrQueueMedia(const std::vector<std::string>& params, bool forcePlay)
@@ -511,33 +477,14 @@ int PlayOrQueueMedia(const std::vector<std::string>& params, bool forcePlay)
   if (!item.m_bIsFolder && item.IsPlugin())
     item.SetProperty("IsPlayable", true);
 
-  if (askToResume)
+  if (askToResume == true)
   {
-    const VIDEO::GUILIB::Action action =
-        VIDEO::GUILIB::CVideoSelectActionProcessorBase::ChoosePlayOrResume(item);
-    if (action == VIDEO::GUILIB::ACTION_RESUME)
-    {
-      item.SetStartOffset(STARTOFFSET_RESUME);
-    }
-    else if (action != VIDEO::GUILIB::ACTION_PLAY_FROM_BEGINNING)
-    {
-      // The Resume dialog was closed without any choice
+    if (CGUIWindowVideoBase::ShowResumeMenu(item) == false)
       return false;
-    }
+    item.SetProperty("check_resume", false);
   }
-  item.SetProperty("check_resume", false);
 
-  if (item.IsStack())
-  {
-    const VIDEO_UTILS::ResumeInformation resumeInfo =
-        VIDEO_UTILS::GetStackPartResumeInformation(item, playOffset + 1);
-
-    if (item.GetStartOffset() == STARTOFFSET_RESUME)
-      item.SetStartOffset(resumeInfo.startOffset);
-
-    item.m_lStartPartNumber = resumeInfo.partNumber;
-  }
-  else if (!forcePlay /* queue */ || item.m_bIsFolder || item.IsPlayList())
+  if (item.m_bIsFolder || item.IsPlayList())
   {
     CFileItemList items;
     GetItemsForPlayList(std::make_shared<CFileItem>(item), items);
@@ -571,74 +518,70 @@ int PlayOrQueueMedia(const std::vector<std::string>& params, bool forcePlay)
         }
       }
 
-      if (!items.IsEmpty())
+      auto& playlistPlayer = CServiceBroker::GetPlaylistPlayer();
+
+      // Play vs. Queue (+Play)
+      if (forcePlay)
       {
-        auto& playlistPlayer = CServiceBroker::GetPlaylistPlayer();
-
-        // Play vs. Queue (+Play)
-        if (forcePlay)
-        {
-          playlistPlayer.ClearPlaylist(playlistId);
-          playlistPlayer.Reset();
-          playlistPlayer.Add(playlistId, items);
-          playlistPlayer.SetCurrentPlaylist(playlistId);
-          playlistPlayer.Play(playOffset, "");
-        }
-        else
-        {
-          const int oldSize = playlistPlayer.GetPlaylist(playlistId).size();
-
-          const auto appPlayer = components.GetComponent<CApplicationPlayer>();
-          if (playNext)
-          {
-            if (appPlayer->IsPlaying())
-              playlistPlayer.Insert(playlistId, items, playlistPlayer.GetCurrentItemIdx() + 1);
-            else
-              playlistPlayer.Add(playlistId, items);
-          }
-          else
-          {
-            playlistPlayer.Add(playlistId, items);
-          }
-
-          if (!appPlayer->IsPlaying())
-          {
-            playlistPlayer.SetCurrentPlaylist(playlistId);
-
-            if (containsMusic)
-            {
-              // video does not auto play on queue like music
-              playlistPlayer.Play(hasPlayOffset ? playOffset : oldSize, "");
-            }
-          }
-        }
+        playlistPlayer.ClearPlaylist(playlistId);
+        playlistPlayer.Reset();
+        playlistPlayer.Add(playlistId, items);
+        playlistPlayer.SetCurrentPlaylist(playlistId);
+        playlistPlayer.Play(playOffset, "");
       }
       else
       {
-        CLog::LogF(LOGERROR, "Unable to {} item '{}'", forcePlay ? "play" : "queue",
-                   item.GetPath());
+        const int oldSize = playlistPlayer.GetPlaylist(playlistId).size();
+
+        const auto appPlayer = components.GetComponent<CApplicationPlayer>();
+        if (playNext)
+        {
+          if (appPlayer->IsPlaying())
+            playlistPlayer.Insert(playlistId, items, playlistPlayer.GetCurrentSong() + 1);
+          else
+            playlistPlayer.Add(playlistId, items);
+        }
+        else
+        {
+          playlistPlayer.Add(playlistId, items);
+        }
+
+        if (items.Size() && !appPlayer->IsPlaying())
+        {
+          playlistPlayer.SetCurrentPlaylist(playlistId);
+
+          if (containsMusic)
+          {
+            // video does not auto play on queue like music
+            playlistPlayer.Play(hasPlayOffset ? playOffset : oldSize, "");
+          }
+        }
       }
+
       return 0;
     }
   }
 
   if (forcePlay)
   {
-    if ((item.IsAudio() || item.IsVideo()) && !item.IsSmartPlayList() && !item.IsPVR())
+    if (item.HasVideoInfoTag() && item.GetStartOffset() == STARTOFFSET_RESUME)
+    {
+      const CBookmark bookmark = item.GetVideoInfoTag()->GetResumePoint();
+      if (bookmark.IsSet())
+        item.SetStartOffset(CUtil::ConvertSecsToMilliSecs(bookmark.timeInSeconds));
+    }
+
+    if ((item.IsAudio() || item.IsVideo()) && !item.IsSmartPlayList())
     {
       if (!item.HasProperty("playlist_type_hint"))
-        item.SetProperty("playlist_type_hint", GetPlayListId(item));
+        item.SetProperty("playlist_type_hint", PLAYLIST::TYPE_MUSIC);
 
       CServiceBroker::GetPlaylistPlayer().Play(std::make_shared<CFileItem>(item), "");
     }
     else
     {
-      g_application.PlayMedia(item, "", GetPlayListId(item));
+      g_application.PlayMedia(item, "", PLAYLIST::TYPE_NONE);
     }
-  }
-  else
-  {
-    CLog::LogF(LOGERROR, "Unable to {} item '{}'", forcePlay ? "play" : "queue", item.GetPath());
   }
 
   return 0;
@@ -806,17 +749,17 @@ static int SubtitleShiftDown(const std::vector<std::string>& params)
 ///   \table_row2_l{
 ///     <b>`PlayMedia(media[\,isdir][\,1]\,[playoffset=xx])`</b>
 ///     ,
-///     Plays the given media. This can be a playlist\, music\, or video file\, directory\,
-///     plugin\, disc image stack\, video file stack or an URL. The optional parameter `,isdir` can
-///     be used for playing a directory. `,1` will start the media without switching to fullscreen.
-///     If media is a playlist or a disc image stack or a video file stack\, you can use
-///     playoffset=xx where xx is the position to start playback from.
+///     Plays the media. This can be a playlist\, music\, or video file\, directory\,
+///     plugin or an Url. The optional parameter "\,isdir" can be used for playing
+///     a directory. "\,1" will start the media without switching to fullscreen.
+///     If media is a playlist\, you can use playoffset=xx where xx is
+///     the position to start playback from.
 ///     @param[in] media                 URL to media to play (optional).
-///     @param[in] isdir                 Set `isdir` if media is a directory (optional).
-///     @param[in] windowed              Set `1` to start playback without switching to fullscreen (optional).
-///     @param[in] resume                Set `resume` to force resuming (optional).
-///     @param[in] noresume              Set `noresume` to force not resuming (optional).
-///     @param[in] playoffset            Set `playoffset=<offset>` to start playback from a given position in a playlist or stack (optional).
+///     @param[in] isdir                 Set "isdir" if media is a directory (optional).
+///     @param[in] windowed              Set "1" to start playback without switching to fullscreen (optional).
+///     @param[in] resume                Set "resume" to force resuming (optional).
+///     @param[in] noresume              Set "noresume" to force not resuming (optional).
+///     @param[in] playeroffset          Set "playoffset=<offset>" to start playback from a given position in a playlist (optional).
 ///   }
 ///   \table_row2_l{
 ///     <b>`PlayWith(core)`</b>
@@ -835,18 +778,17 @@ static int SubtitleShiftDown(const std::vector<std::string>& params)
 ///     <b>`QueueMedia(media[\,isdir][\,1][\,playnext]\,[playoffset=xx])`</b>
 ///     \anchor Builtin_QueueMedia,
 ///     Queues the given media. This can be a playlist\, music\, or video file\, directory\,
-///     plugin\, disc image stack\, video file stack or an URL. The optional parameter `,isdir` can
-///     be used for playing a directory. `,1` will start the media without switching to fullscreen.
-///     If media is a playlist or a disc image stack or a video file stack\, you can use
-///     playoffset=xx where xx is the position to start playback from.
-///     where xx is the position to start playback from.
+///     plugin or an Url. The optional parameter "\,isdir" can be used for playing
+///     a directory. "\,1" will start the media without switching to fullscreen.
+///     If media is a playlist\, you can use playoffset=xx where xx is
+///     the position to start playback from.
 ///     @param[in] media                 URL of media to queue.
-///     @param[in] isdir                 Set `isdir` if media is a directory (optional).
-///     @param[in] 1                     Set `1` to start playback without switching to fullscreen (optional).
-///     @param[in] resume                Set `resume` to force resuming (optional).
-///     @param[in] noresume              Set `noresume` to force not resuming (optional).
-///     @param[in] playoffset            Set `playoffset=<offset>` to start playback from a given position in a playlist or stack (optional).
-///     @param[in] playnext              Set `playnext` to play the media right after the currently playing item, if player is currently
+///     @param[in] isdir                 Set "isdir" if media is a directory (optional).
+///     @param[in] 1                     Set "1" to start playback without switching to fullscreen (optional).
+///     @param[in] resume                Set "resume" to force resuming (optional).
+///     @param[in] noresume              Set "noresume" to force not resuming (optional).
+///     @param[in] playeroffset          Set "playoffset=<offset>" to start playback from a given position in a playlist (optional).
+///     @param[in] playnext              Set "playnext" to play the media right after the currently playing item, if player is currently
 ///     playing. If player is not playing, append media to current playlist (optional).
 ///     <p><hr>
 ///     @skinning_v20 **[New builtin]** \link Builtin_QueueMedia `QueueMedia(media[\,isdir][\,1][\,playnext]\,[playoffset=xx])`\endlink

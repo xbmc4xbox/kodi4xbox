@@ -10,6 +10,7 @@
 
 #include <vector>
 
+#if 0
 #include <taglib/id3v1tag.h>
 #include <taglib/apetag.h>
 #include <taglib/asftag.h>
@@ -49,6 +50,7 @@
 #include <taglib/tpropertymap.h>
 
 #include "TagLibVFSStream.h"
+#endif
 #include "MusicInfoTag.h"
 #include "ReplayGain.h"
 #include "utils/RegExp.h"
@@ -59,13 +61,16 @@
 #include "settings/AdvancedSettings.h"
 #include "settings/SettingsComponent.h"
 
+#if 0
 #if TAGLIB_MAJOR_VERSION <= 1 && TAGLIB_MINOR_VERSION < 11
 #include "utils/Base64.h"
 #endif
 
 using namespace TagLib;
+#endif
 using namespace MUSIC_INFO;
 
+#if 0
 namespace
 {
 std::vector<std::string> StringListToVectorString(const StringList& stringList)
@@ -116,6 +121,7 @@ void SetFlacArt(FLAC::File *flacFile, EmbeddedArt *art, CMusicInfoTag &tag)
   }
 }
 }
+#endif
 
 bool CTagLoaderTagLib::Load(const std::string& strFileName, MUSIC_INFO::CMusicInfoTag& tag, EmbeddedArt *art /* = NULL */)
 {
@@ -123,6 +129,7 @@ bool CTagLoaderTagLib::Load(const std::string& strFileName, MUSIC_INFO::CMusicIn
 }
 
 
+#if 0
 template<>
 bool CTagLoaderTagLib::ParseTag(ASF::Tag *asf, EmbeddedArt *art, CMusicInfoTag& tag)
 {
@@ -235,6 +242,7 @@ bool CTagLoaderTagLib::ParseTag(ASF::Tag *asf, EmbeddedArt *art, CMusicInfoTag& 
   tag.SetLoaded(true);
   return true;
 }
+#endif
 
 int CTagLoaderTagLib::POPMtoXBMC(int popm)
 {
@@ -262,6 +270,7 @@ int CTagLoaderTagLib::POPMtoXBMC(int popm)
   else return 10;
 }
 
+#if 0
 template<>
 bool CTagLoaderTagLib::ParseTag(ID3v1::Tag *id3v1, EmbeddedArt *art, CMusicInfoTag& tag)
 {
@@ -993,6 +1002,7 @@ bool CTagLoaderTagLib::ParseTag(Tag *genericTag, EmbeddedArt *art, CMusicInfoTag
 
   return true;
 }
+#endif
 
 
 
@@ -1093,8 +1103,10 @@ void CTagLoaderTagLib::SetGenre(CMusicInfoTag &tag, const std::vector<std::strin
     if (StringUtils::IsNaturalNumber(genre))
     {
       int number = strtol(i.c_str(), nullptr, 10);
+#if 0
       if (number >= 0 && number < 256)
         genre = ID3v1::genre(number).to8Bit(true);
+#endif
     }
     genres.push_back(genre);
   }
@@ -1207,6 +1219,7 @@ bool CTagLoaderTagLib::Load(const std::string& strFileName, CMusicInfoTag& tag, 
   }
 
   StringUtils::ToLower(strExtension);
+#if 0
   TagLibVFSStream*           stream = new TagLibVFSStream(strFileName, true);
   if (!stream)
   {
@@ -1279,7 +1292,6 @@ bool CTagLoaderTagLib::Load(const std::string& strFileName, CMusicInfoTag& tag, 
       if (!file || !file->isValid())
       {
         delete file;
-        file = nullptr;
         oggFlacFile = nullptr;
         file = oggVorbisFile = new Ogg::Vorbis::File(stream);
       }
@@ -1377,4 +1389,7 @@ bool CTagLoaderTagLib::Load(const std::string& strFileName, CMusicInfoTag& tag, 
   delete stream;
 
   return true;
+#else
+  return false;
+#endif
 }

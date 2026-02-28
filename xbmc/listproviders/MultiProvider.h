@@ -14,7 +14,7 @@
 #include <map>
 #include <vector>
 
-typedef IListProvider* IListProviderPtr;
+typedef std::unique_ptr<IListProvider> IListProviderPtr;
 
 /*!
  \ingroup listproviders
@@ -27,7 +27,7 @@ public:
   explicit CMultiProvider(const CMultiProvider& other);
 
   // Implementation of IListProvider
-  IListProvider* Clone() override;
+  std::unique_ptr<IListProvider> Clone() override;
   bool Update(bool forceRefresh) override;
   void Fetch(std::vector<CGUIListItemPtr> &items) override;
   bool IsUpdating() const override;

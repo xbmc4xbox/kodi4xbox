@@ -51,6 +51,8 @@ public:
    */
   virtual bool FillThumb(CFileItem &item, bool folderThumbs = true);
 
+  static bool GetEmbeddedThumb(const std::string &path, EmbeddedArt &art);
+
 protected:
   CMusicDatabase *m_musicDatabase;
   typedef std::map<int, std::map<std::string, std::string> > ArtCache;

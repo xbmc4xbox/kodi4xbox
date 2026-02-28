@@ -12,15 +12,12 @@
 #include "GUIComponent.h"
 #include "GUIControlFactory.h"
 #include "GUIControlGroup.h"
-#include "GUIControlProfiler.h"
 #include "GUIInfoManager.h"
 #include "GUIWindowManager.h"
 #include "ServiceBroker.h"
 #include "addons/Skin.h"
+#include "input/Key.h"
 #include "input/WindowTranslator.h"
-#include "input/actions/Action.h"
-#include "input/actions/ActionIDs.h"
-#include "input/mouse/MouseEvent.h"
 #include "messaging/ApplicationMessenger.h"
 #include "settings/AdvancedSettings.h"
 #include "settings/SettingsComponent.h"
@@ -33,8 +30,6 @@
 #include "utils/log.h"
 
 #include <mutex>
-
-using namespace KODI;
 
 bool CGUIWindow::icompare::operator()(const std::string &s1, const std::string &s2) const
 {
@@ -354,8 +349,6 @@ void CGUIWindow::DoRender()
   CServiceBroker::GetWinSystem()->GetGfxContext().AddGUITransform();
   CGUIControlGroup::DoRender();
   CServiceBroker::GetWinSystem()->GetGfxContext().RemoveTransform();
-
-  if (CGUIControlProfiler::IsRunning()) CGUIControlProfiler::Instance().EndFrame();
 }
 
 void CGUIWindow::AfterRender()
@@ -424,12 +417,8 @@ bool CGUIWindow::OnAction(const CAction &action)
   CGUIControl *focusedControl = GetFocusedControl();
   if (focusedControl)
   {
-    while (focusedControl && focusedControl != this)
-    {
-      if (focusedControl->OnAction(action))
-        return true;
-      focusedControl = focusedControl->GetParentControl();
-    }
+    if (focusedControl->OnAction(action))
+      return true;
   }
   else
   {
@@ -500,8 +489,7 @@ EVENT_RESULT CGUIWindow::OnMouseAction(const CAction &action)
   CServiceBroker::GetWinSystem()->GetGfxContext().InvertFinalCoords(mousePoint.x, mousePoint.y);
 
   // create the mouse event
-  MOUSE::CMouseEvent event(action.GetID(), action.GetHoldTime(), action.GetAmount(2),
-                           action.GetAmount(3));
+  CMouseEvent event(action.GetID(), action.GetHoldTime(), action.GetAmount(2), action.GetAmount(3));
   if (m_exclusiveMouseControl)
   {
     CGUIControl *child = GetControl(m_exclusiveMouseControl);
@@ -517,7 +505,7 @@ EVENT_RESULT CGUIWindow::OnMouseAction(const CAction &action)
   return SendMouseEvent(mousePoint, event);
 }
 
-EVENT_RESULT CGUIWindow::OnMouseEvent(const CPoint& point, const MOUSE::CMouseEvent& event)
+EVENT_RESULT CGUIWindow::OnMouseEvent(const CPoint &point, const CMouseEvent &event)
 {
   if (event.m_id == ACTION_MOUSE_RIGHT_CLICK)
   { // no control found to absorb this click - go to previous menu

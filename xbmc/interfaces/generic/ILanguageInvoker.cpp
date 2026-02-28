@@ -13,8 +13,10 @@
 #include <string>
 #include <vector>
 
-ILanguageInvoker::ILanguageInvoker(ILanguageInvocationHandler* invocationHandler)
-  : m_invocationHandler(invocationHandler)
+ILanguageInvoker::ILanguageInvoker(ILanguageInvocationHandler *invocationHandler)
+  : m_id(-1),
+    m_state(InvokerStateUninitialized),
+    m_invocationHandler(invocationHandler)
 { }
 
 ILanguageInvoker::~ILanguageInvoker() = default;

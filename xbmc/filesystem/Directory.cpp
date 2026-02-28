@@ -37,12 +37,12 @@ private:
 
   struct CResult
   {
-    CResult(const CURL& dir, const CURL& listDir) : m_event(true), m_dir(dir), m_listDir(listDir) {}
+    CResult(const CURL& dir, const CURL& listDir) : m_event(true), m_dir(dir), m_listDir(listDir), m_result(false) {}
     CEvent        m_event;
     CFileItemList m_list;
     CURL          m_dir;
     CURL          m_listDir;
-    bool m_result = false;
+    bool          m_result;
   };
 
   struct CGetJob
@@ -303,43 +303,6 @@ bool CDirectory::GetDirectory(const CURL& url,
   catch (...) { CLog::Log(LOGERROR, "{} - Unhandled exception", __FUNCTION__); }
   CLog::Log(LOGERROR, "{} - Error getting {}", __FUNCTION__, url.GetRedacted());
   return false;
-}
-
-bool CDirectory::EnumerateDirectory(
-    const std::string& path,
-    const DirectoryEnumerationCallback& callback,
-    const DirectoryFilter& filter /* = [](const std::shared_ptr<CFileItem>&) {return true;} */,
-    bool fileOnly /* = false */,
-    const std::string& mask /* = "" */,
-    int flags /* = DIR_FLAG_DEFAULTS */)
-{
-  CFileItemList items;
-
-  // get items in specified directory
-  if (!CDirectory::GetDirectory(path, items, mask, flags))
-    return false;
-
-  // process all files
-  for (const auto& item : items)
-  {
-    if (!item->m_bIsFolder)
-      callback(item);
-  }
-
-  // process all directories
-  for (const auto& item : items)
-  {
-    if (item->m_bIsFolder && filter(item))
-    {
-      if (!fileOnly)
-        callback(item);
-
-      if (!EnumerateDirectory(item->GetPath(), callback, filter, fileOnly, mask, flags))
-        return false;
-    }
-  }
-
-  return true;
 }
 
 bool CDirectory::Create(const std::string& strPath)

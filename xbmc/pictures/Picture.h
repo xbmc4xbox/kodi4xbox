@@ -8,19 +8,12 @@
 
 #pragma once
 
-#include "pictures/PictureScalingAlgorithm.h"
 #include "utils/Job.h"
 
 #include <cstddef>
 #include <cstdint>
-#include <memory>
 #include <string>
 #include <vector>
-
-extern "C"
-{
-#include <libavutil/pixfmt.h>
-}
 
 class CTexture;
 
@@ -30,19 +23,11 @@ public:
   static bool GetThumbnailFromSurface(const unsigned char* buffer, int width, int height, int stride, const std::string &thumbFile, uint8_t* &result, size_t& result_size);
   static bool CreateThumbnailFromSurface(const unsigned char* buffer, int width, int height, int stride, const std::string &thumbFile);
 
-  static std::unique_ptr<CTexture> CreateTiledThumb(const std::vector<std::string>& files);
-
-  static bool ResizeTexture(
-      const std::string& image,
-      CTexture* texture,
-      uint32_t& dest_width,
-      uint32_t& dest_height,
-      uint8_t*& result,
-      size_t& result_size,
-      CPictureScalingAlgorithm::Algorithm scalingAlgorithm = CPictureScalingAlgorithm::NoAlgorithm);
-  static bool ResizeTexture(const std::string &image, uint8_t *pixels, uint32_t width, uint32_t height, uint32_t pitch,
-    uint32_t &dest_width, uint32_t &dest_height, uint8_t* &result, size_t& result_size,
-    CPictureScalingAlgorithm::Algorithm scalingAlgorithm = CPictureScalingAlgorithm::NoAlgorithm);
+  /*! \brief Create a tiled thumb of the given files
+   \param files the files to create the thumb from
+   \param thumb the filename of the thumb
+   */
+  static bool CreateTiledThumb(const std::vector<std::string> &files, const std::string &thumb);
 
   /*! \brief Cache a texture, resizing, rotating and flipping as needed, and saving as a JPG or PNG
    \param texture a pointer to a CTexture
@@ -55,11 +40,9 @@ public:
       CTexture* texture,
       uint32_t& dest_width,
       uint32_t& dest_height,
-      const std::string& dest,
-      CPictureScalingAlgorithm::Algorithm scalingAlgorithm = CPictureScalingAlgorithm::NoAlgorithm);
+      const std::string& dest);
   static bool CacheTexture(uint8_t *pixels, uint32_t width, uint32_t height, uint32_t pitch, int orientation,
-    uint32_t &dest_width, uint32_t &dest_height, const std::string &dest,
-    CPictureScalingAlgorithm::Algorithm scalingAlgorithm = CPictureScalingAlgorithm::NoAlgorithm);
+    uint32_t &dest_width, uint32_t &dest_height, const std::string &dest);
 
   static void GetScale(unsigned int width, unsigned int height, unsigned int &out_width, unsigned int &out_height);
   static bool ScaleImage(
@@ -67,46 +50,43 @@ public:
       unsigned int in_width,
       unsigned int in_height,
       unsigned int in_pitch,
-      AVPixelFormat in_format,
       uint8_t* out_pixels,
       unsigned int out_width,
       unsigned int out_height,
-      unsigned int out_pitch,
-      AVPixelFormat out_format,
-      CPictureScalingAlgorithm::Algorithm scalingAlgorithm = CPictureScalingAlgorithm::NoAlgorithm);
+      unsigned int out_pitch);
 
 private:
-  static bool OrientateImage(std::unique_ptr<uint32_t[]>& pixels,
+  static bool OrientateImage(uint32_t*& pixels,
                              unsigned int& width,
                              unsigned int& height,
                              int orientation,
                              unsigned int& stridePixels);
 
-  static bool FlipHorizontal(std::unique_ptr<uint32_t[]>& pixels,
+  static bool FlipHorizontal(uint32_t*& pixels,
                              const unsigned int& width,
                              const unsigned int& height,
                              const unsigned int& stridePixels);
-  static bool FlipVertical(std::unique_ptr<uint32_t[]>& pixels,
+  static bool FlipVertical(uint32_t*& pixels,
                            const unsigned int& width,
                            const unsigned int& height,
                            const unsigned int& stridePixels);
-  static bool Rotate90CCW(std::unique_ptr<uint32_t[]>& pixels,
+  static bool Rotate90CCW(uint32_t*& pixels,
                           unsigned int& width,
                           unsigned int& height,
                           unsigned int& stridePixels);
-  static bool Rotate270CCW(std::unique_ptr<uint32_t[]>& pixels,
+  static bool Rotate270CCW(uint32_t*& pixels,
                            unsigned int& width,
                            unsigned int& height,
                            unsigned int& stridePixels);
-  static bool Rotate180CCW(std::unique_ptr<uint32_t[]>& pixels,
+  static bool Rotate180CCW(uint32_t*& pixels,
                            const unsigned int& width,
                            const unsigned int& height,
                            const unsigned int& stridePixels);
-  static bool Transpose(std::unique_ptr<uint32_t[]>& pixels,
+  static bool Transpose(uint32_t*& pixels,
                         unsigned int& width,
                         unsigned int& height,
                         unsigned int& width_aligned);
-  static bool TransposeOffAxis(std::unique_ptr<uint32_t[]>& pixels,
+  static bool TransposeOffAxis(uint32_t*& pixels,
                                unsigned int& width,
                                unsigned int& height,
                                unsigned int& stridePixels);

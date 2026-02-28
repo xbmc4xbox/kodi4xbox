@@ -16,6 +16,7 @@
 class CFileItem;
 
 class CGUIListItem;
+typedef std::shared_ptr<CGUIListItem> CGUIListItemPtr;
 
 class CGUIControl;
 class CGUIMediaWindow;
@@ -33,10 +34,7 @@ std::string GetPlaylistLabel(int item, PLAYLIST::Id playlistid = PLAYLIST::TYPE_
 CGUIWindow* GetWindow(int contextWindow);
 CGUIControl* GetActiveContainer(int containerId, int contextWindow);
 CGUIMediaWindow* GetMediaWindow(int contextWindow);
-std::shared_ptr<CGUIListItem> GetCurrentListItem(int contextWindow,
-                                                 int containerId = 0,
-                                                 int itemOffset = 0,
-                                                 unsigned int itemFlags = 0);
+CGUIListItemPtr GetCurrentListItem(int contextWindow, int containerId = 0, int itemOffset = 0, unsigned int itemFlags = 0);
 
 std::string GetFileInfoLabelValueFromPath(int info, const std::string& filenameAndPath);
 

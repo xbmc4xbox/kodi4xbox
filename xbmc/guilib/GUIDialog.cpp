@@ -13,8 +13,7 @@
 #include "GUILabelControl.h"
 #include "GUIWindowManager.h"
 #include "ServiceBroker.h"
-#include "input/actions/Action.h"
-#include "input/actions/ActionIDs.h"
+#include "input/Key.h"
 #include "messaging/ApplicationMessenger.h"
 #include "threads/SingleLock.h"
 #include "utils/TimeUtils.h"
@@ -115,7 +114,7 @@ void CGUIDialog::DoProcess(unsigned int currentTime, CDirtyRegionList &dirtyregi
 
   // if we were running but now we're not, mark us dirty
   if (!m_active && m_wasRunning)
-    dirtyregions.emplace_back(m_renderRegion);
+    dirtyregions.push_back(CDirtyRegion(m_renderRegion));
 
   if (m_active)
     CGUIWindow::DoProcess(currentTime, dirtyregions);

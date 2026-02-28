@@ -10,9 +10,6 @@
 
 #include "File.h"
 #include "IFile.h"
-#include "ZipManager.h"
-
-#include <zlib.h>
 
 namespace XFILE
 {
@@ -43,19 +40,6 @@ namespace XFILE
     bool InitDecompress();
     bool FillBuffer();
     void DestroyBuffer(void* lpBuffer, int iBufSize);
-    CFile mFile;
-    SZipEntry mZipItem;
-    int64_t m_iFilePos = 0; // position in _uncompressed_ data read
-    int64_t m_iZipFilePos = 0; // position in _compressed_ data
-    int m_iAvailBuffer = 0;
-    z_stream m_ZStream;
-    char m_szBuffer[65535];     // 64k buffer for compressed data
-    char* m_szStringBuffer;
-    char* m_szStartOfStringBuffer; // never allocated!
-    size_t m_iDataInStringBuffer;
-    int m_iRead;
-    bool m_bFlush = false;
-    bool m_bCached;
   };
 }
 

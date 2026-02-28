@@ -134,6 +134,7 @@ add_executable(xbmc
   xbmc/application/ApplicationSettingsHandling.cpp
   xbmc/application/ApplicationSkinHandling.cpp
   xbmc/application/ApplicationStackHelper.cpp
+  xbmc/application/ApplicationVolumeHandling.cpp
   xbmc/application/AppParamParser.cpp
   xbmc/commons/Exception.cpp
   xbmc/commons/ilog.cpp
@@ -184,8 +185,10 @@ add_executable(xbmc
   xbmc/dbwrappers/sqlitedataset.cpp
   xbmc/dialogs/GUIDialogBoxBase.cpp
   xbmc/dialogs/GUIDialogBusy.cpp
+  xbmc/dialogs/GUIDialogBusyNoCancel.cpp
   xbmc/dialogs/GUIDialogButtonMenu.cpp
   xbmc/dialogs/GUIDialogContextMenu.cpp
+  xbmc/dialogs/GUIDialogColorPicker.cpp
   xbmc/dialogs/GUIDialogExtendedProgressBar.cpp
   xbmc/dialogs/GUIDialogFileBrowser.cpp
   xbmc/dialogs/GUIDialogGamepad.cpp
@@ -195,7 +198,7 @@ add_executable(xbmc
   xbmc/dialogs/GUIDialogMediaSource.cpp
   xbmc/dialogs/GUIDialogNumeric.cpp
   xbmc/dialogs/GUIDialogOK.cpp
-  xbmc/dialogs/GUIDialogPlayEject.cpp
+  # xbmc/dialogs/GUIDialogPlayEject.cpp
   xbmc/dialogs/GUIDialogProgress.cpp
   xbmc/dialogs/GUIDialogSeekBar.cpp
   xbmc/dialogs/GUIDialogSelect.cpp
@@ -298,12 +301,14 @@ add_executable(xbmc
   xbmc/guilib/GUIBaseContainer.cpp
   xbmc/guilib/GUIBorderedImage.cpp
   xbmc/guilib/GUIButtonControl.cpp
+	xbmc/guilib/GUIColorButtonControl.cpp
   xbmc/guilib/GUIColorManager.cpp
   xbmc/guilib/GUIComponent.cpp
   xbmc/guilib/GUIControl.cpp
   xbmc/guilib/GUIControlFactory.cpp
   xbmc/guilib/GUIControlGroup.cpp
   xbmc/guilib/GUIControlGroupList.cpp
+  xbmc/guilib/GUIControlLookup.cpp
   xbmc/guilib/GUIDialog.cpp
   xbmc/guilib/GUIEditControl.cpp
   xbmc/guilib/GUIFadeLabelControl.cpp
@@ -330,6 +335,7 @@ add_executable(xbmc
   xbmc/guilib/GUIPanelContainer.cpp
   xbmc/guilib/GUIProgressControl.cpp
   xbmc/guilib/GUIRadioButtonControl.cpp
+	xbmc/guilib/GUIRangesControl.cpp
   xbmc/guilib/GUIRenderingControl.cpp
   xbmc/guilib/GUIResizeControl.cpp
   xbmc/guilib/GUIScrollBarControl.cpp
@@ -348,12 +354,9 @@ add_executable(xbmc
   xbmc/guilib/GUIWindow.cpp
   xbmc/guilib/GUIWindowManager.cpp
   xbmc/guilib/GUIWrappingListContainer.cpp
-  xbmc/guilib/GraphicContext.cpp
   xbmc/guilib/IWindowManagerCallback.cpp
   xbmc/guilib/JpegIO.cpp
   xbmc/guilib/LocalizeStrings.cpp
-  xbmc/guilib/MatrixGLES.cpp
-  xbmc/guilib/Resolution.cpp
   xbmc/guilib/Texture.cpp
   xbmc/guilib/TextureGL.cpp
   xbmc/guilib/TextureManager.cpp
@@ -477,10 +480,7 @@ add_executable(xbmc
   xbmc/pictures/SlideShowPicture.cpp
   xbmc/pictures/libexif.cpp
   xbmc/platform/win32/CharsetConverter.cpp
-  xbmc/platform/win32/Filesystem.cpp
   xbmc/platform/win32/XTimeUtils.cpp
-  xbmc/platform/win32/filesystem/Win32Directory.cpp
-  xbmc/platform/win32/filesystem/Win32File.cpp
   xbmc/platform/win32/threads/ThreadImplWin.cpp
   xbmc/platform/win32/utils/Win32InterfaceForCLog.cpp
   xbmc/platform/xbmc.cpp
@@ -492,6 +492,7 @@ add_executable(xbmc
   xbmc/platform/xbox/filesystem/XboxDirectory.cpp
   xbmc/platform/xbox/filesystem/XboxFile.cpp
   xbmc/platform/xbox/storage/XboxStorageProvider.cpp
+  xbmc/platform/xbox/PlatformXbox.cpp
   xbmc/platform/xbox/strptime.cpp
   xbmc/playlists/PlayList.cpp
   xbmc/playlists/PlayListB4S.cpp
@@ -504,6 +505,7 @@ add_executable(xbmc
   xbmc/playlists/PlayListXSPF.cpp
   xbmc/playlists/SmartPlayList.cpp
   xbmc/playlists/SmartPlaylistFileItemListModifier.cpp
+  xbmc/powermanagement/PowerManager.cpp
   xbmc/profiles/Profile.cpp
   xbmc/profiles/ProfileManager.cpp
   xbmc/profiles/dialogs/GUIDialogLockSettings.cpp
@@ -511,6 +513,7 @@ add_executable(xbmc
   xbmc/profiles/windows/GUIWindowSettingsProfile.cpp
   xbmc/programs/GUIViewStatePrograms.cpp
   xbmc/programs/GUIWindowPrograms.cpp
+  xbmc/rendering/MatrixGL.cpp
   xbmc/rendering/RenderSystem.cpp
   xbmc/rendering/gl/RenderSystemGL.cpp
   xbmc/settings/AdvancedSettings.cpp
@@ -602,7 +605,6 @@ add_executable(xbmc
   xbmc/utils/ScraperUrl.cpp
   xbmc/utils/SortUtils.cpp
   xbmc/utils/Speed.cpp
-  xbmc/utils/Splash.cpp
   xbmc/utils/StreamDetails.cpp
   xbmc/utils/StreamUtils.cpp
   xbmc/utils/StringUtils.cpp
@@ -662,6 +664,9 @@ add_executable(xbmc
   xbmc/weather/GUIWindowWeather.cpp
   xbmc/weather/WeatherJob.cpp
   xbmc/weather/WeatherManager.cpp
+  xbmc/windowing/GraphicContext.cpp
+  xbmc/windowing/Resolution.cpp
+  xbmc/windowing/WindowSystemFactory.cpp
   xbmc/windowing/WinSystem.cpp
   xbmc/windowing/xbox/WinSystemXboxGL.cpp
   xbmc/windows/GUIMediaWindow.cpp

@@ -13,8 +13,7 @@
 #include "guilib/GUISliderControl.h"
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
-#include "input/actions/Action.h"
-#include "input/actions/ActionIDs.h"
+#include "input/Key.h"
 
 #define CONTROL_HEADING 10
 #define CONTROL_SLIDER  11

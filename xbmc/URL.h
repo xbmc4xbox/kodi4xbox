@@ -12,7 +12,6 @@
 
 #include <stdlib.h>
 #include <string>
-#include <string_view>
 
 #ifdef TARGET_WINDOWS
 #undef SetPort // WIN32INCLUDES this is defined as SetPortA in WinSpool.h which is being included _somewhere_
@@ -21,7 +20,10 @@
 class CURL
 {
 public:
-  explicit CURL(std::string strURL) { Parse(std::move(strURL)); }
+  explicit CURL(const std::string& strURL)
+  {
+    Parse(strURL);
+  }
 
   CURL() = default;
   virtual ~CURL(void);
@@ -30,19 +32,31 @@ public:
   bool operator==(const std::string &url) const { return Get() == url; }
 
   void Reset();
-  void Parse(std::string strURL);
-  void SetFileName(std::string strFileName);
-  void SetHostName(std::string strHostName) { m_strHostName = std::move(strHostName); }
+  void Parse(const std::string& strURL);
+  void SetFileName(const std::string& strFileName);
+  void SetHostName(const std::string& strHostName)
+  {
+    m_strHostName = strHostName;
+  }
 
-  void SetUserName(std::string strUserName) { m_strUserName = std::move(strUserName); }
+  void SetUserName(const std::string& strUserName)
+  {
+    m_strUserName = strUserName;
+  }
 
-  void SetDomain(std::string strDomain) { m_strDomain = std::move(strDomain); }
+  void SetDomain(const std::string& strDomain)
+  {
+    m_strDomain = strDomain;
+  }
 
-  void SetPassword(std::string strPassword) { m_strPassword = std::move(strPassword); }
+  void SetPassword(const std::string& strPassword)
+  {
+    m_strPassword = strPassword;
+  }
 
-  void SetProtocol(std::string strProtocol);
-  void SetOptions(std::string strOptions);
-  void SetProtocolOptions(std::string strOptions);
+  void SetProtocol(const std::string& strProtocol);
+  void SetOptions(const std::string& strOptions);
+  void SetProtocolOptions(const std::string& strOptions);
   void SetPort(int port)
   {
     m_iPort = port;
@@ -88,7 +102,7 @@ public:
     return m_strProtocol;
   }
 
-  std::string GetTranslatedProtocol() const;
+  const std::string GetTranslatedProtocol() const;
 
   const std::string& GetFileType() const
   {
@@ -110,7 +124,7 @@ public:
     return m_strProtocolOptions;
   }
 
-  std::string GetFileNameWithoutPath() const; /* return the filename excluding path */
+  const std::string GetFileNameWithoutPath() const; /* return the filename excluding path */
 
   char GetDirectorySeparator() const;
 
@@ -119,13 +133,13 @@ public:
   std::string GetWithoutUserDetails(bool redact = false) const;
   std::string GetWithoutFilename() const;
   std::string GetRedacted() const;
-  static std::string GetRedacted(std::string path);
+  static std::string GetRedacted(const std::string& path);
   bool IsLocal() const;
   bool IsLocalHost() const;
   static bool IsFileOnly(const std::string &url); ///< return true if there are no directories in the url.
   static bool IsFullPath(const std::string &url); ///< return true if the url includes the full path
-  static std::string Decode(std::string_view strURLData);
-  static std::string Encode(std::string_view strURLData);
+  static std::string Decode(const std::string& strURLData);
+  static std::string Encode(const std::string& strURLData);
 
   /*! \brief Check whether a URL is a given URL scheme.
    Comparison is case-insensitive as per RFC1738

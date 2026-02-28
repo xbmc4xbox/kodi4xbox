@@ -10,8 +10,7 @@
 
 #include "GUIInfoManager.h"
 #include "LocalizeStrings.h"
-#include "input/actions/Action.h"
-#include "input/actions/ActionIDs.h"
+#include "input/Key.h"
 
 CGUIRadioButtonControl::CGUIRadioButtonControl(int parentID,
                                                int controlID,

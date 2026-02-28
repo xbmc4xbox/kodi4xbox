@@ -1,233 +1,284 @@
 /*
- *  Copyright (C) 2005-2018 Team Kodi
- *  This file is part of Kodi - https://kodi.tv
+ *      Copyright (C) 2005-2013 Team XBMC
+ *      http://xbmc.org
  *
- *  SPDX-License-Identifier: GPL-2.0-or-later
- *  See LICENSES/README.md for more information.
+ *  This Program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2, or (at your option)
+ *  any later version.
+ *
+ *  This Program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with XBMC; see the file COPYING.  If not, see
+ *  <http://www.gnu.org/licenses/>.
+ *
  */
 
 #include "GUIAudioManager.h"
-
-#include "ServiceBroker.h"
-#include "addons/AddonManager.h"
-#include "addons/Skin.h"
-#include "addons/addoninfo/AddonType.h"
-#include "cores/AudioEngine/Interfaces/AE.h"
-#include "filesystem/Directory.h"
+#include "GUISound.h"
+#include "input/Key.h"
 #include "input/WindowTranslator.h"
-#include "input/actions/Action.h"
 #include "input/actions/ActionIDs.h"
 #include "input/actions/ActionTranslator.h"
-#include "settings/Settings.h"
-#include "settings/SettingsComponent.h"
-#include "settings/lib/Setting.h"
+#include "filesystem/Directory.h"
+#include "threads/SingleLock.h"
 #include "utils/URIUtils.h"
 #include "utils/XBMCTinyXML.h"
 #include "utils/log.h"
+#include "platform/xbox/AudioContext.h"
+#include "ServiceBroker.h"
 
 #include <mutex>
 
-using namespace KODI;
+using namespace std;
+using namespace XFILE;
 
 CGUIAudioManager::CGUIAudioManager()
-  : m_settings(CServiceBroker::GetSettingsComponent()->GetSettings())
 {
-  m_bEnabled = false;
-
-  m_settings->RegisterCallback(this, {CSettings::SETTING_LOOKANDFEEL_SOUNDSKIN,
-                                      CSettings::SETTING_AUDIOOUTPUT_GUISOUNDVOLUME});
+  m_actionSound=NULL;
 }
 
 CGUIAudioManager::~CGUIAudioManager()
 {
-  m_settings->UnregisterCallback(this);
+
 }
 
-void CGUIAudioManager::OnSettingChanged(const std::shared_ptr<const CSetting>& setting)
-{
-  if (setting == NULL)
-    return;
-
-  const std::string &settingId = setting->GetId();
-  if (settingId == CSettings::SETTING_LOOKANDFEEL_SOUNDSKIN)
-  {
-    Enable(true);
-    Load();
-  }
-}
-
-bool CGUIAudioManager::OnSettingUpdate(const std::shared_ptr<CSetting>& setting,
-                                       const char* oldSettingId,
-                                       const TiXmlNode* oldSettingNode)
-{
-  if (setting == NULL)
-    return false;
-
-  if (setting->GetId() == CSettings::SETTING_LOOKANDFEEL_SOUNDSKIN)
-  {
-    //Migrate the old settings
-    if (std::static_pointer_cast<CSettingString>(setting)->GetValue() == "SKINDEFAULT")
-      std::static_pointer_cast<CSettingString>(setting)->Reset();
-    else if (std::static_pointer_cast<CSettingString>(setting)->GetValue() == "OFF")
-      std::static_pointer_cast<CSettingString>(setting)->SetValue("");
-  }
-  if (setting->GetId() == CSettings::SETTING_AUDIOOUTPUT_GUISOUNDVOLUME)
-  {
-    int vol = m_settings->GetInt(CSettings::SETTING_AUDIOOUTPUT_GUISOUNDVOLUME);
-    SetVolume(0.01f * vol);
-  }
-  return true;
-}
-
-
-void CGUIAudioManager::Initialize()
-{
-}
-
-void CGUIAudioManager::DeInitialize()
+void CGUIAudioManager::Initialize(int iDevice)
 {
   std::unique_lock<CCriticalSection> lock(m_cs);
-  UnLoad();
+
+  if (iDevice==CAudioContext::DEFAULT_DEVICE)
+  {
+    bool bAudioOnAllSpeakers=false;
+    g_audioContext.SetupSpeakerConfig(2, bAudioOnAllSpeakers);
+    g_audioContext.SetActiveDevice(CAudioContext::DIRECTSOUND_DEVICE);
+  }
+}
+
+void CGUIAudioManager::DeInitialize(int iDevice)
+{
+  if (!(iDevice == CAudioContext::DIRECTSOUND_DEVICE || iDevice == CAudioContext::DEFAULT_DEVICE)) return;
+
+  std::unique_lock<CCriticalSection> lock(m_cs);
+  if (m_actionSound) //  Wait for finish when an action sound is playing
+    while(m_actionSound->IsPlaying()) {}
+
+  Stop();
 }
 
 void CGUIAudioManager::Stop()
 {
   std::unique_lock<CCriticalSection> lock(m_cs);
-  for (const auto& windowSound : m_windowSoundMap)
+  if (m_actionSound)
   {
-    if (windowSound.second.initSound)
-      windowSound.second.initSound->Stop();
-    if (windowSound.second.deInitSound)
-      windowSound.second.deInitSound->Stop();
+    delete m_actionSound;
+    m_actionSound=NULL;
   }
 
-  for (const auto& pythonSound : m_pythonSounds)
+  for (windowSoundsMap::iterator it=m_windowSounds.begin();it!=m_windowSounds.end();it++)
   {
-    pythonSound.second->Stop();
+    CGUISound* sound=it->second;
+    if (sound->IsPlaying())
+      sound->Stop();
+
+    delete sound;
+  }
+  m_windowSounds.clear();
+
+  for (pythonSoundsMap::iterator it1=m_pythonSounds.begin();it1!=m_pythonSounds.end();it1++)
+  {
+    CGUISound* sound=it1->second;
+    if (sound->IsPlaying())
+      sound->Stop();
+
+    delete sound;
+  }
+  m_pythonSounds.clear();
+}
+
+// \brief Clear any unused audio buffers
+void CGUIAudioManager::FreeUnused()
+{
+  std::unique_lock<CCriticalSection> lock(m_cs);
+
+  //  Free the sound from the last action
+  if (m_actionSound && !m_actionSound->IsPlaying())
+  {
+    delete m_actionSound;
+    m_actionSound=NULL;
+  }
+
+  //  Free sounds from windows
+  windowSoundsMap::iterator it=m_windowSounds.begin();
+  while (it!=m_windowSounds.end())
+  {
+    CGUISound* sound=it->second;
+    if (!sound->IsPlaying())
+    {
+      delete sound;
+      m_windowSounds.erase(it++);
+    }
+    else ++it;
+  }
+
+  // Free sounds from python
+  pythonSoundsMap::iterator it1=m_pythonSounds.begin();
+  while (it1!=m_pythonSounds.end())
+  {
+    CGUISound* sound=it1->second;
+    if (!sound->IsPlaying())
+    {
+      delete sound;
+      m_pythonSounds.erase(it1++);
+    }
+    else ++it1;
   }
 }
 
 // \brief Play a sound associated with a CAction
 void CGUIAudioManager::PlayActionSound(const CAction& action)
 {
+  // it's not possible to play gui sounds when passthrough is active
+  if (g_audioContext.IsPassthroughActive())
+    return;
+
   std::unique_lock<CCriticalSection> lock(m_cs);
 
-  // it's not possible to play gui sounds when passthrough is active
-  if (!m_bEnabled)
+  actionSoundMap::iterator it=m_actionSoundMap.find(action.GetID());
+  if (it==m_actionSoundMap.end())
     return;
 
-  const auto it = m_actionSoundMap.find(action.GetID());
-  if (it == m_actionSoundMap.end())
-    return;
-
-  if (it->second)
+  if (m_actionSound)
   {
-    int vol = m_settings->GetInt(CSettings::SETTING_AUDIOOUTPUT_GUISOUNDVOLUME);
-    it->second->SetVolume(0.01f * vol);
-    it->second->Play();
+    delete m_actionSound;
+    m_actionSound=NULL;
   }
+
+  m_actionSound=new CGUISound();
+  if (!m_actionSound->Load(URIUtils::AddFileToFolder(m_strMediaDir, it->second)))
+  {
+    delete m_actionSound;
+    m_actionSound=NULL;
+    return;
+  }
+
+  m_actionSound->Play();
 }
 
 // \brief Play a sound associated with a window and its event
 // Events: SOUND_INIT, SOUND_DEINIT
 void CGUIAudioManager::PlayWindowSound(int id, WINDOW_SOUND event)
 {
-  std::unique_lock<CCriticalSection> lock(m_cs);
-
   // it's not possible to play gui sounds when passthrough is active
-  if (!m_bEnabled)
+  if (g_audioContext.IsPassthroughActive())
     return;
 
-  const auto it = m_windowSoundMap.find(id);
+  std::unique_lock<CCriticalSection> lock(m_cs);
+
+  windowSoundMap::iterator it=m_windowSoundMap.find(id);
   if (it==m_windowSoundMap.end())
     return;
 
-  std::shared_ptr<IAESound> sound;
+  CWindowSounds sounds=it->second;
+  std::string strFile;
   switch (event)
   {
-    case SOUND_INIT:
-      sound = it->second.initSound;
-      break;
-    case SOUND_DEINIT:
-      sound = it->second.deInitSound;
-      break;
+  case SOUND_INIT:
+    strFile=sounds.strInitFile;
+    break;
+  case SOUND_DEINIT:
+    strFile=sounds.strDeInitFile;
+    break;
   }
 
-  if (!sound)
+  if (strFile.empty())
     return;
 
-  int vol = m_settings->GetInt(CSettings::SETTING_AUDIOOUTPUT_GUISOUNDVOLUME);
-  sound->SetVolume(0.01f * vol);
+  //  One sound buffer for each window
+  windowSoundsMap::iterator itsb=m_windowSounds.find(id);
+  if (itsb!=m_windowSounds.end())
+  {
+    CGUISound* sound=itsb->second;
+    if (sound->IsPlaying())
+      sound->Stop();
+    delete sound;
+    m_windowSounds.erase(itsb++);
+  }
+
+  CGUISound* sound=new CGUISound();
+  if (!sound->Load(URIUtils::AddFileToFolder(m_strMediaDir, strFile)))
+  {
+    delete sound;
+    return;
+  }
+
+  m_windowSounds.insert(pair<int, CGUISound*>(id, sound));
   sound->Play();
 }
 
 // \brief Play a sound given by filename
-void CGUIAudioManager::PlayPythonSound(const std::string& strFileName, bool useCached /*= true*/)
+void CGUIAudioManager::PlayPythonSound(const std::string& strFileName)
 {
+  // it's not possible to play gui sounds when passthrough is active
+  if (g_audioContext.IsPassthroughActive())
+    return;
+
   std::unique_lock<CCriticalSection> lock(m_cs);
 
-  // it's not possible to play gui sounds when passthrough is active
-  if (!m_bEnabled)
-    return;
-
   // If we already loaded the sound, just play it
-  const auto itsb = m_pythonSounds.find(strFileName);
-  if (itsb != m_pythonSounds.end())
+  pythonSoundsMap::iterator itsb=m_pythonSounds.find(strFileName);
+  if (itsb!=m_pythonSounds.end())
   {
-    const auto& sound = itsb->second;
-    if (useCached)
-    {
-      sound->Play();
-      return;
-    }
-    else
-    {
-      m_pythonSounds.erase(itsb);
-    }
+    CGUISound* sound=itsb->second;
+    if (sound->IsPlaying())
+      sound->Stop();
+
+    sound->Play();
+
+    return;
   }
 
-  auto sound = LoadSound(strFileName);
-  if (!sound)
+  CGUISound* sound=new CGUISound();
+  if (!sound->Load(strFileName))
+  {
+    delete sound;
     return;
+  }
 
-  int vol = m_settings->GetInt(CSettings::SETTING_AUDIOOUTPUT_GUISOUNDVOLUME);
-  sound->SetVolume(0.01f * vol);
+  m_pythonSounds.insert(std::pair<std::string, CGUISound*>(strFileName, sound));
   sound->Play();
-  m_pythonSounds.emplace(strFileName, std::move(sound));
 }
-
-void CGUIAudioManager::UnLoad()
-{
-  m_windowSoundMap.clear();
-  m_pythonSounds.clear();
-  m_actionSoundMap.clear();
-  m_soundCache.clear();
-}
-
 
 std::string GetSoundSkinPath()
 {
-  auto setting = std::static_pointer_cast<CSettingString>(CServiceBroker::GetSettingsComponent()->GetSettings()->GetSetting(CSettings::SETTING_LOOKANDFEEL_SOUNDSKIN));
-  auto value = setting->GetValue();
+#if 0
+  auto setting = static_cast<CSettingString*>(CSettings::GetInstance().GetSetting(CSettings::SETTING_LOOKANDFEEL_SOUNDSKIN));
+#endif
+  std::string value = "resource.uisounds.kodi";
   if (value.empty())
     return "";
 
+#if 0
   ADDON::AddonPtr addon;
-  if (!CServiceBroker::GetAddonMgr().GetAddon(value, addon, ADDON::AddonType::RESOURCE_UISOUNDS,
-                                              ADDON::OnlyEnabled::CHOICE_YES))
+  if (!CServiceBroker::GetAddonMgr().GetAddon(value, addon, ADDON::ADDON_RESOURCE_UISOUNDS))
   {
-    CLog::Log(LOGINFO, "Unknown sounds addon '{}'. Setting default sounds.", value);
+    CLog::Log(LOGNOTICE, "Unknown sounds addon '{}'. Setting default sounds.", value.c_str());
     setting->Reset();
   }
-  return URIUtils::AddFileToFolder("resource://", setting->GetValue());
+#endif
+  return URIUtils::AddFileToFolder("resource://", value);
 }
 
 
 // \brief Load the config file (sounds.xml) for nav sounds
 bool CGUIAudioManager::Load()
 {
-  std::unique_lock<CCriticalSection> lock(m_cs);
-  UnLoad();
+  m_actionSoundMap.clear();
+  m_windowSoundMap.clear();
 
   m_strMediaDir = GetSoundSkinPath();
   if (m_strMediaDir.empty())
@@ -239,12 +290,12 @@ bool CGUIAudioManager::Load()
   //  Load our xml file
   CXBMCTinyXML xmlDoc;
 
-  CLog::Log(LOGINFO, "Loading {}", strSoundsXml);
+  CLog::Log(LOGINFO, "Loading {}", strSoundsXml.c_str());
 
   //  Load the config file
   if (!xmlDoc.LoadFile(strSoundsXml))
   {
-    CLog::Log(LOGINFO, "{}, Line {}\n{}", strSoundsXml, xmlDoc.ErrorRow(), xmlDoc.ErrorDesc());
+    CLog::Log(LOGNOTICE, "{}, Line {}\n{}", strSoundsXml.c_str(), xmlDoc.ErrorRow(), xmlDoc.ErrorDesc());
     return false;
   }
 
@@ -252,7 +303,7 @@ bool CGUIAudioManager::Load()
   std::string strValue = pRoot->Value();
   if ( strValue != "sounds")
   {
-    CLog::Log(LOGINFO, "{} Doesn't contain <sounds>", strSoundsXml);
+    CLog::Log(LOGNOTICE, "{} Doesn't contain <sounds>", strSoundsXml.c_str());
     return false;
   }
 
@@ -265,10 +316,12 @@ bool CGUIAudioManager::Load()
     while (pAction)
     {
       TiXmlNode* pIdNode = pAction->FirstChild("name");
-      unsigned int id = ACTION_NONE;    // action identity
+      int id = 0;    // action identity
       if (pIdNode && pIdNode->FirstChild())
       {
-        ACTION::CActionTranslator::TranslateString(pIdNode->FirstChild()->Value(), id);
+#if 0
+        CButtonTranslator::TranslateActionString(pIdNode->FirstChild()->Value(), id);
+#endif
       }
 
       TiXmlNode* pFileNode = pAction->FirstChild("file");
@@ -276,13 +329,8 @@ bool CGUIAudioManager::Load()
       if (pFileNode && pFileNode->FirstChild())
         strFile += pFileNode->FirstChild()->Value();
 
-      if (id != ACTION_NONE && !strFile.empty())
-      {
-        std::string filename = URIUtils::AddFileToFolder(m_strMediaDir, strFile);
-        auto sound = LoadSound(filename);
-        if (sound)
-          m_actionSoundMap.emplace(id, std::move(sound));
-      }
+      if (id > 0 && !strFile.empty())
+        m_actionSoundMap.insert(std::pair<int, std::string>(id, strFile));
 
       pAction = pAction->NextSibling();
     }
@@ -306,8 +354,8 @@ bool CGUIAudioManager::Load()
       }
 
       CWindowSounds sounds;
-      sounds.initSound   = LoadWindowSound(pWindow, "activate"  );
-      sounds.deInitSound = LoadWindowSound(pWindow, "deactivate");
+      LoadWindowSound(pWindow, "activate", sounds.strInitFile);
+      LoadWindowSound(pWindow, "deactivate", sounds.strDeInitFile);
 
       if (id > 0)
         m_windowSoundMap.insert(std::pair<int, CWindowSounds>(id, sounds));
@@ -319,83 +367,60 @@ bool CGUIAudioManager::Load()
   return true;
 }
 
-std::shared_ptr<IAESound> CGUIAudioManager::LoadSound(const std::string& filename)
-{
-  std::unique_lock<CCriticalSection> lock(m_cs);
-  const auto it = m_soundCache.find(filename);
-  if (it != m_soundCache.end())
-  {
-    auto sound = it->second.lock();
-    if (sound)
-      return sound;
-    else
-      m_soundCache.erase(it); // cleanup orphaned cache entry
-  }
-
-  IAE *ae = CServiceBroker::GetActiveAE();
-  if (!ae)
-    return nullptr;
-
-  std::shared_ptr<IAESound> sound(ae->MakeSound(filename));
-  if (!sound)
-    return nullptr;
-
-  m_soundCache[filename] = sound;
-
-  return sound;
-}
-
 // \brief Load a window node of the config file (sounds.xml)
-std::shared_ptr<IAESound> CGUIAudioManager::LoadWindowSound(TiXmlNode* pWindowNode,
-                                                            const std::string& strIdentifier)
+bool CGUIAudioManager::LoadWindowSound(TiXmlNode* pWindowNode, const std::string& strIdentifier, std::string& strFile)
 {
   if (!pWindowNode)
-    return NULL;
+    return false;
 
   TiXmlNode* pFileNode = pWindowNode->FirstChild(strIdentifier);
   if (pFileNode && pFileNode->FirstChild())
-    return LoadSound(URIUtils::AddFileToFolder(m_strMediaDir, pFileNode->FirstChild()->Value()));
+  {
+    strFile = pFileNode->FirstChild()->Value();
+    return true;
+  }
 
-  return NULL;
+  return false;
 }
 
 // \brief Enable/Disable nav sounds
 void CGUIAudioManager::Enable(bool bEnable)
 {
-  // always deinit audio when we don't want gui sounds
-  if (CServiceBroker::GetSettingsComponent()->GetSettings()->GetString(CSettings::SETTING_LOOKANDFEEL_SOUNDSKIN).empty())
+#if 0
+  // Enable/Disable has no effect if nav sounds are turned off
+  if (CSettings::GetInstance().GetString("lookandfeel.soundskin")=="OFF")
     bEnable = false;
+#endif
 
-  std::unique_lock<CCriticalSection> lock(m_cs);
-  m_bEnabled = bEnable;
+  if (bEnable)
+    Initialize(CAudioContext::DEFAULT_DEVICE);
+  else
+    DeInitialize(CAudioContext::DEFAULT_DEVICE);
 }
 
 // \brief Sets the volume of all playing sounds
-void CGUIAudioManager::SetVolume(float level)
+void CGUIAudioManager::SetVolume(int iLevel)
 {
   std::unique_lock<CCriticalSection> lock(m_cs);
 
+  if (m_actionSound)
+    m_actionSound->SetVolume(iLevel);
+
+  windowSoundsMap::iterator it=m_windowSounds.begin();
+  while (it != m_windowSounds.end())
   {
-    for (const auto& actionSound : m_actionSoundMap)
-    {
-      if (actionSound.second)
-        actionSound.second->SetVolume(level);
-    }
+    if (it->second)
+      it->second->SetVolume(iLevel);
+
+    ++it;
   }
 
-  for (const auto& windowSound : m_windowSoundMap)
+  pythonSoundsMap::iterator it1=m_pythonSounds.begin();
+  while (it1 != m_pythonSounds.end())
   {
-    if (windowSound.second.initSound)
-      windowSound.second.initSound->SetVolume(level);
-    if (windowSound.second.deInitSound)
-      windowSound.second.deInitSound->SetVolume(level);
-  }
+    if (it1->second)
+      it1->second->SetVolume(iLevel);
 
-  {
-    for (const auto& pythonSound : m_pythonSounds)
-    {
-      if (pythonSound.second)
-        pythonSound.second->SetVolume(level);
-    }
+    ++it1;
   }
 }

@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <cstdint>
 #include <map>
 #include <memory>
 #include <string>
@@ -113,7 +112,7 @@ public:
   virtual bool CanHaveAddonOrInstanceSettings() = 0;
   virtual bool HasSettings(AddonInstanceId id = ADDON_SETTINGS_ID) = 0;
   virtual bool HasUserSettings(AddonInstanceId id = ADDON_SETTINGS_ID) = 0;
-  virtual bool SaveSettings(AddonInstanceId id = ADDON_SETTINGS_ID) = 0;
+  virtual void SaveSettings(AddonInstanceId id = ADDON_SETTINGS_ID) = 0;
   virtual void UpdateSetting(const std::string& key,
                              const std::string& value,
                              AddonInstanceId id = ADDON_SETTINGS_ID) = 0;

@@ -14,6 +14,7 @@
 #include "guilib/GUIWindow.h"
 #include "playlists/SmartPlayList.h"
 #include "view/GUIViewControl.h"
+#include "threads/Event.h" // FIXME: this shouldn't be included here
 
 #include <atomic>
 
@@ -75,8 +76,8 @@ protected:
   virtual bool OnSelect(int item);
   virtual bool OnPopupMenu(int iItem);
 
-  virtual void GetContextButtons(int itemNumber, CContextButtons& buttons) {}
-  virtual bool OnContextButton(int itemNumber, CONTEXT_BUTTON button) { return false; }
+  virtual void GetContextButtons(int itemNumber, CContextButtons &buttons);
+  virtual bool OnContextButton(int itemNumber, CONTEXT_BUTTON button);
   virtual bool OnAddMediaSource() { return false; }
 
   virtual void FormatItemLabels(CFileItemList &items, const LABEL_MASKS &labelMasks);
@@ -159,7 +160,9 @@ protected:
   virtual void OnDeleteItem(int iItem);
   void OnRenameItem(int iItem);
   bool WaitForNetwork() const;
-  bool GetDirectoryItems(CURL& url, CFileItemList& items, bool useDir);
+  bool GetDirectoryItems(CURL &url, CFileItemList &items, bool useDir);
+  bool WaitGetDirectoryItems(CGetDirectoryItems &items);
+  void CancelUpdateItems();
 
   /*! \brief Translate the folder to start in from the given quick path
    \param url the folder the user wants
@@ -198,6 +201,9 @@ protected:
   protected:
     std::atomic_bool &m_update;
   };
+  CEvent m_updateEvent;
+  std::atomic_bool m_updateAborted = {false};
+  std::atomic_bool m_updateJobActive = {false};
 
   // save control state on window exit
   int m_iLastControl;

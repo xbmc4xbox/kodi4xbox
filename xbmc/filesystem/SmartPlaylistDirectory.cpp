@@ -26,7 +26,6 @@
 #include "video/VideoDbUrl.h"
 
 #include <math.h>
-#include <memory>
 
 #define PROPERTY_PATH_DB            "path.db"
 #define PROPERTY_SORT_ORDER         "sort.order"
@@ -83,7 +82,7 @@ namespace XFILE
     playlist.GetVirtualFolders(virtualFolders);
     for (const std::string& virtualFolder : virtualFolders)
     {
-      CFileItemPtr pItem = std::make_shared<CFileItem>(virtualFolder, true);
+      CFileItemPtr pItem = CFileItemPtr(new CFileItem(virtualFolder, true));
       IFileDirectory *dir = CFileDirectoryFactory::Create(pItem->GetURL(), pItem.get());
 
       if (dir != NULL)

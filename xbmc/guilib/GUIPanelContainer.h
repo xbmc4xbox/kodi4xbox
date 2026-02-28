@@ -53,7 +53,6 @@ protected:
   void SelectItem(int item) override;
   bool HasPreviousPage() const override;
   bool HasNextPage() const override;
-  void ScrollToOffset(int offset) override;
 
   int GetCurrentRow() const;
   int GetCurrentColumn() const;

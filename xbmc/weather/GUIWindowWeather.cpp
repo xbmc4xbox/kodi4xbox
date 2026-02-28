@@ -226,7 +226,7 @@ void CGUIWindowWeather::SetLocation(int loc)
     std::string strLabel = CServiceBroker::GetWeatherManager().GetLocation(loc);
     size_t iPos = strLabel.rfind(", ");
     if (iPos != std::string::npos)
-      strLabel.resize(iPos);
+      strLabel = strLabel.substr(0, iPos);
     SET_CONTROL_LABEL(CONTROL_SELECTLOCATION, strLabel);
   }
   CServiceBroker::GetWeatherManager().Refresh();

@@ -12,6 +12,7 @@
 #include "TextureDatabase.h"
 #include "music/infoscanner/MusicInfoScanner.h"
 #include "music/tags/MusicInfoTag.h"
+#include "music/tags/MusicInfoTagLoaderFactory.h"
 #include "utils/StringUtils.h"
 #include "video/VideoThumbLoader.h"
 
@@ -366,8 +367,19 @@ bool CMusicThumbLoader::FillLibraryArt(CFileItem &item)
     }
 
     item.AppendArt(artmap);
-    item.SetProperty("libraryartfilled", true);
   }
 
+  item.SetProperty("libraryartfilled", true);
   return artfound;
+}
+
+bool CMusicThumbLoader::GetEmbeddedThumb(const std::string &path, EmbeddedArt &art)
+{
+  CFileItem item(path, false);
+  std::unique_ptr<IMusicInfoTagLoader> pLoader (CMusicInfoTagLoaderFactory::CreateLoader(item));
+  CMusicInfoTag tag;
+  if (nullptr != pLoader)
+    pLoader->Load(path, tag, &art);
+
+  return !art.Empty();
 }

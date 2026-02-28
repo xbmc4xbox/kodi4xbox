@@ -203,11 +203,10 @@ public:
    *
    * \param[in] instance Instance identifier to use, use @ref ADDON_SETTINGS_ID
    *                     to denote global add-on settings from settings.xml.
-   * \return true if the operation was successful, false otherwise
    *
    * \sa LoadSettings, LoadUserSettings, HasSettings, HasUserSettings, GetSetting, UpdateSetting
    */
-  bool SaveSettings(AddonInstanceId id = ADDON_SETTINGS_ID) override;
+  void SaveSettings(AddonInstanceId id = ADDON_SETTINGS_ID) override;
 
   /*!
    * \brief Update a user-configured setting with a new value.

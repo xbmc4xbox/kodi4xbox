@@ -154,11 +154,12 @@ bool CGUIListItem::HasArt(const std::string &type) const
   return !GetArt(type).empty();
 }
 
-void CGUIListItem::SetOverlayImage(GUIIconOverlay icon)
+void CGUIListItem::SetOverlayImage(GUIIconOverlay icon, bool bOnOff)
 {
-  if (m_overlayIcon == icon)
+  GUIIconOverlay newIcon = (bOnOff) ? GUIIconOverlay((int)(icon)+1) : icon;
+  if (m_overlayIcon == newIcon)
     return;
-  m_overlayIcon = icon;
+  m_overlayIcon = newIcon;
   SetInvalid();
 }
 
@@ -322,7 +323,7 @@ void CGUIListItem::FreeMemory(bool immediately)
   }
 }
 
-void CGUIListItem::SetLayout(std::unique_ptr<CGUIListItemLayout> layout)
+void CGUIListItem::SetLayout(CGUIListItemLayoutPtr layout)
 {
   m_layout = std::move(layout);
 }
@@ -332,7 +333,7 @@ CGUIListItemLayout *CGUIListItem::GetLayout()
   return m_layout.get();
 }
 
-void CGUIListItem::SetFocusedLayout(std::unique_ptr<CGUIListItemLayout> layout)
+void CGUIListItem::SetFocusedLayout(CGUIListItemLayoutPtr layout)
 {
   m_focusedLayout = std::move(layout);
 }

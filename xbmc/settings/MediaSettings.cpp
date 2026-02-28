@@ -10,7 +10,6 @@
 
 #include "PlayListPlayer.h"
 #include "ServiceBroker.h"
-#include "cores/RetroPlayer/RetroPlayerUtils.h"
 #include "dialogs/GUIDialogFileBrowser.h"
 #include "guilib/LocalizeStrings.h"
 #include "interfaces/AnnouncementManager.h"
@@ -126,26 +125,6 @@ bool CMediaSettings::Load(const TiXmlNode *settings)
       m_defaultVideoSettings.m_ToneMapParam = 1.0f;
   }
 
-  m_defaultGameSettings.Reset();
-  pElement = settings->FirstChildElement("defaultgamesettings");
-  if (pElement != nullptr)
-  {
-    std::string videoFilter;
-    if (XMLUtils::GetString(pElement, "videofilter", videoFilter))
-      m_defaultGameSettings.SetVideoFilter(videoFilter);
-
-    std::string stretchMode;
-    if (XMLUtils::GetString(pElement, "stretchmode", stretchMode))
-    {
-      RETRO::STRETCHMODE sm = RETRO::CRetroPlayerUtils::IdentifierToStretchMode(stretchMode);
-      m_defaultGameSettings.SetStretchMode(sm);
-    }
-
-    int rotation;
-    if (XMLUtils::GetInt(pElement, "rotation", rotation, 0, 270) && rotation >= 0)
-      m_defaultGameSettings.SetRotationDegCCW(static_cast<unsigned int>(rotation));
-  }
-
   // mymusic settings
   pElement = settings->FirstChildElement("mymusic");
   if (pElement != NULL)
@@ -248,11 +227,6 @@ bool CMediaSettings::Save(TiXmlNode *settings) const
   pNode = settings->InsertEndChild(gameSettingsNode);
   if (pNode == nullptr)
     return false;
-
-  XMLUtils::SetString(pNode, "videofilter", m_defaultGameSettings.VideoFilter());
-  std::string sm = RETRO::CRetroPlayerUtils::StretchModeToIdentifier(m_defaultGameSettings.StretchMode());
-  XMLUtils::SetString(pNode, "stretchmode", sm);
-  XMLUtils::SetInt(pNode, "rotation", m_defaultGameSettings.RotationDegCCW());
 
   // mymusic
   pNode = settings->FirstChild("mymusic");

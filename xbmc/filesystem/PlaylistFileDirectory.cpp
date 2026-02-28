@@ -24,11 +24,12 @@ namespace XFILE
 
   bool CPlaylistFileDirectory::GetDirectory(const CURL& url, CFileItemList& items)
   {
-    std::unique_ptr<PLAYLIST::CPlayList> pPlayList(PLAYLIST::CPlayListFactory::Create(url));
+    const std::string pathToUrl = url.Get();
+    std::unique_ptr<CPlayList> pPlayList (CPlayListFactory::Create(pathToUrl));
     if (nullptr != pPlayList)
     {
       // load it
-      if (!pPlayList->Load(url.Get()))
+      if (!pPlayList->Load(pathToUrl))
         return false; //hmmm unable to load playlist?
 
       CPlayList playlist = *pPlayList;
@@ -45,11 +46,12 @@ namespace XFILE
 
   bool CPlaylistFileDirectory::ContainsFiles(const CURL& url)
   {
-    std::unique_ptr<PLAYLIST::CPlayList> pPlayList(PLAYLIST::CPlayListFactory::Create(url));
+    const std::string pathToUrl = url.Get();
+    std::unique_ptr<CPlayList> pPlayList (CPlayListFactory::Create(pathToUrl));
     if (nullptr != pPlayList)
     {
       // load it
-      if (!pPlayList->Load(url.Get()))
+      if (!pPlayList->Load(pathToUrl))
         return false; //hmmm unable to load playlist?
 
       return (pPlayList->size() > 1);

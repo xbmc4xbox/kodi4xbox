@@ -11,7 +11,7 @@
 #include "ServiceBroker.h"
 #include "cores/DataCacheCore.h"
 #include "cores/IPlayer.h"
-#include "cores/VideoPlayer/VideoPlayer.h"
+#include "FileItem.h"
 #include "cores/playercorefactory/PlayerCoreFactory.h"
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIWindowManager.h"
@@ -105,7 +105,7 @@ bool CApplicationPlayer::OpenFile(const CFileItem& item, const CPlayerOptions& o
     if (player->m_name != newPlayer)
       needToClose = true;
 
-    if (player->m_type != "video" && player->m_type != "remote")
+    if (player->m_type != "video")
       needToClose = true;
 
     if (needToClose)
@@ -542,6 +542,13 @@ void CApplicationPlayer::FrameAdvance(int frames)
   std::shared_ptr<IPlayer> player = GetInternal();
   if (player)
     player->FrameAdvance(frames);
+}
+
+void CApplicationPlayer::DoAudioWork()
+{
+  std::shared_ptr<IPlayer> player = GetInternal();
+  if (player)
+    player->DoAudioWork();
 }
 
 std::string CApplicationPlayer::GetPlayerState()
@@ -989,16 +996,6 @@ bool CApplicationPlayer::IsRemotePlaying() const
   return false;
 }
 
-std::string CApplicationPlayer::GetName() const
-{
-  const std::shared_ptr<const IPlayer> player = GetInternal();
-  if (player)
-  {
-    return player->m_name;
-  }
-  return {};
-}
-
 CVideoSettings CApplicationPlayer::GetVideoSettings() const
 {
   std::shared_ptr<const IPlayer> player = GetInternal();
@@ -1030,10 +1027,12 @@ const CSeekHandler& CApplicationPlayer::GetSeekHandler() const
 
 void CApplicationPlayer::SetUpdateStreamDetails()
 {
+#if 0
   std::shared_ptr<IPlayer> player = GetInternal();
   CVideoPlayer* vp = dynamic_cast<CVideoPlayer*>(player.get());
   if (vp)
     vp->SetUpdateStreamDetails();
+#endif
 }
 
 bool CApplicationPlayer::HasGameAgent() const

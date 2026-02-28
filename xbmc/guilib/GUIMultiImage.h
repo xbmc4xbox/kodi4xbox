@@ -53,7 +53,6 @@ protected:
   void LoadDirectory();
   void OnDirectoryLoaded();
   void CancelLoading();
-  void ResetMultiImage();
 
   enum DIRECTORY_STATUS { UNLOADED = 0, LOADING, LOADED, READY };
   void OnJobComplete(unsigned int jobID, bool success, CJob *job) override;

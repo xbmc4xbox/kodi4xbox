@@ -18,8 +18,6 @@
 
 #ifdef HAVE_NEW_CROSSGUID
 #include <crossguid/guid.hpp>
-#else
-#include <guid.h>
 #endif
 
 #if defined(TARGET_ANDROID)
@@ -44,7 +42,7 @@
 #include <time.h>
 
 #include <fstrcmp.h>
-#include <memory.h>
+#include <memory>
 
 // don't move or std functions end up in PCRE namespace
 // clang-format off
@@ -68,22 +66,6 @@ T NumberFromSS(std::string_view str, T fallback) noexcept
   T result{fallback};
   iss >> result;
   return result;
-}
-
-/*!
- * Locale unaware version of tolower
- */
-[[nodiscard]] constexpr char ToLowerAscii(char c)
-{
-  return 'A' <= c && c <= 'Z' ? c - 'A' + 'a' : c;
-}
-
-/*!
- * Locale unaware version of toupper
- */
-[[nodiscard]] constexpr char ToUpperAscii(char c)
-{
-  return 'a' <= c && c <= 'z' ? c - 'a' + 'A' : c;
 }
 } // unnamed namespace
 
@@ -298,51 +280,6 @@ std::string StringUtils::FormatV(const char *fmt, va_list args)
   return ""; // unreachable
 }
 
-std::wstring StringUtils::FormatV(const wchar_t *fmt, va_list args)
-{
-  if (!fmt || !fmt[0])
-    return L"";
-
-  int size = FORMAT_BLOCK_SIZE;
-  va_list argCopy;
-
-  while (true)
-  {
-    wchar_t *cstr = reinterpret_cast<wchar_t*>(malloc(sizeof(wchar_t) * size));
-    if (!cstr)
-      return L"";
-
-    va_copy(argCopy, args);
-    int nActual = vswprintf(cstr, size, fmt, argCopy);
-    va_end(argCopy);
-
-    if (nActual > -1 && nActual < size) // We got a valid result
-    {
-      std::wstring str(cstr, nActual);
-      free(cstr);
-      return str;
-    }
-    free(cstr);
-
-#ifndef TARGET_WINDOWS
-    if (nActual > -1)                   // Exactly what we will need (glibc 2.1)
-      size = nActual + 1;
-    else                                // Let's try to double the size (glibc 2.0)
-      size *= 2;
-#else  // TARGET_WINDOWS
-    va_copy(argCopy, args);
-    size = _vscwprintf(fmt, argCopy);
-    va_end(argCopy);
-    if (size < 0)
-      return L"";
-    else
-      size++; // increment for null-termination
-#endif // TARGET_WINDOWS
-  }
-
-  return L"";
-}
-
 int compareWchar (const void* a, const void* b)
 {
   if (*(const wchar_t*)a <  *(const wchar_t*)b)
@@ -379,7 +316,7 @@ void transformString(const Str& input, Str& output, Fn fn)
 std::string StringUtils::ToUpper(const std::string& str)
 {
   std::string result(str.size(), '\0');
-  transformString(str, result, ToUpperAscii);
+  transformString(str, result, ::toupper);
   return result;
 }
 
@@ -392,7 +329,7 @@ std::wstring StringUtils::ToUpper(const std::wstring& str)
 
 void StringUtils::ToUpper(std::string &str)
 {
-  transformString(str, str, ToUpperAscii);
+  transformString(str, str, ::toupper);
 }
 
 void StringUtils::ToUpper(std::wstring &str)
@@ -403,7 +340,7 @@ void StringUtils::ToUpper(std::wstring &str)
 std::string StringUtils::ToLower(const std::string& str)
 {
   std::string result(str.size(), '\0');
-  transformString(str, result, ToLowerAscii);
+  transformString(str, result, ::tolower);
   return result;
 }
 
@@ -416,7 +353,7 @@ std::wstring StringUtils::ToLower(const std::wstring& str)
 
 void StringUtils::ToLower(std::string &str)
 {
-  transformString(str, str, ToLowerAscii);
+  transformString(str, str, ::tolower);
 }
 
 void StringUtils::ToLower(std::wstring &str)
@@ -470,10 +407,7 @@ bool StringUtils::EqualsNoCase(const char *s1, const char *s2)
   {
     const char c1 = *s1++; // const local variable should help compiler to optimize
     c2 = *s2++;
-    if (c1 != c2 &&
-        ToLowerAscii(c1) !=
-            ToLowerAscii(
-                c2)) // This includes the possibility that one of the characters is the null-terminator, which implies a string mismatch.
+    if (c1 != c2 && ::tolower(c1) != ::tolower(c2)) // This includes the possibility that one of the characters is the null-terminator, which implies a string mismatch.
       return false;
   } while (c2 != '\0'); // At this point, we know c1 == c2, so there's no need to test them both.
   return true;
@@ -493,11 +427,8 @@ int StringUtils::CompareNoCase(const char* s1, const char* s2, size_t n /* = 0 *
     const char c1 = *s1++; // const local variable should help compiler to optimize
     c2 = *s2++;
     index++;
-    if (c1 != c2 &&
-        ToLowerAscii(c1) !=
-            ToLowerAscii(
-                c2)) // This includes the possibility that one of the characters is the null-terminator, which implies a string mismatch.
-      return ToLowerAscii(c1) - ToLowerAscii(c2);
+    if (c1 != c2 && ::tolower(c1) != ::tolower(c2)) // This includes the possibility that one of the characters is the null-terminator, which implies a string mismatch.
+      return ::tolower(c1) - ::tolower(c2);
   } while (c2 != '\0' &&
            index != n); // At this point, we know c1 == c2, so there's no need to test them both.
   return 0;
@@ -613,39 +544,6 @@ std::string& StringUtils::RemoveDuplicatedSpacesAndTabs(std::string& str)
   return str;
 }
 
-bool StringUtils::IsSpecialCharacter(char c)
-{
-  static constexpr std::string_view view(" .-_+,!'\"\t/\\*?#$%&@()[]{}");
-  if (std::any_of(view.begin(), view.end(), [c](char ch) { return ch == c; }))
-    return true;
-  else
-    return false;
-}
-
-std::string StringUtils::ReplaceSpecialCharactersWithSpace(const std::string& str)
-{
-  std::string result;
-  bool prevCharWasSpecial = false;
-
-  for (char c : str)
-  {
-    if (IsSpecialCharacter(c))
-    {
-      if (!prevCharWasSpecial)
-      {
-        result += ' ';
-      }
-      prevCharWasSpecial = true;
-    }
-    else
-    {
-      result += c;
-      prevCharWasSpecial = false;
-    }
-  }
-  return result;
-}
-
 int StringUtils::Replace(std::string &str, char oldChar, char newChar)
 {
   int replacedChars = 0;
@@ -733,7 +631,7 @@ bool StringUtils::StartsWithNoCase(const char *s1, const char *s2)
 {
   while (*s2 != '\0')
   {
-    if (ToLowerAscii(*s1) != ToLowerAscii(*s2))
+    if (::tolower(*s1) != ::tolower(*s2))
       return false;
     s1++;
     s2++;
@@ -764,7 +662,7 @@ bool StringUtils::EndsWithNoCase(const std::string &str1, const std::string &str
   const char *s2 = str2.c_str();
   while (*s2 != '\0')
   {
-    if (ToLowerAscii(*s1) != ToLowerAscii(*s2))
+    if (::tolower(*s1) != ::tolower(*s2))
       return false;
     s1++;
     s2++;
@@ -780,7 +678,7 @@ bool StringUtils::EndsWithNoCase(const std::string &str1, const char *s2)
   const char *s1 = str1.c_str() + str1.size() - len2;
   while (*s2 != '\0')
   {
-    if (ToLowerAscii(*s1) != ToLowerAscii(*s2))
+    if (::tolower(*s1) != ::tolower(*s2))
       return false;
     s1++;
     s2++;
@@ -1774,11 +1672,48 @@ std::string StringUtils::CreateUUID()
   return xg::newGuid().str();
 #endif /* TARGET_ANDROID */
 #else
-  static GuidGenerator guidGenerator;
-  auto guid = guidGenerator.newGuid();
+  /* This function generate a DCE 1.1, ISO/IEC 11578:1996 and IETF RFC-4122
+  * Version 4 conform local unique UUID based upon random number generation.
+  */
+  char UuidStrTmp[40];
+  char *pUuidStr = UuidStrTmp;
+  int i;
 
-  std::stringstream strGuid; strGuid << guid;
-  return strGuid.str();
+  static bool m_uuidInitialized = false;
+  if (!m_uuidInitialized)
+  {
+    /* use current time as the seed for rand()*/
+    srand(time(NULL));
+    m_uuidInitialized = true;
+  }
+
+  /*Data1 - 8 characters.*/
+  for(i = 0; i < 8; i++, pUuidStr++)
+    ((*pUuidStr = (rand() % 16)) < 10) ? *pUuidStr += 48 : *pUuidStr += 55;
+
+  /*Data2 - 4 characters.*/
+  *pUuidStr++ = '-';
+  for(i = 0; i < 4; i++, pUuidStr++)
+    ((*pUuidStr = (rand() % 16)) < 10) ? *pUuidStr += 48 : *pUuidStr += 55;
+
+  /*Data3 - 4 characters.*/
+  *pUuidStr++ = '-';
+  for(i = 0; i < 4; i++, pUuidStr++)
+    ((*pUuidStr = (rand() % 16)) < 10) ? *pUuidStr += 48 : *pUuidStr += 55;
+
+  /*Data4 - 4 characters.*/
+  *pUuidStr++ = '-';
+  for(i = 0; i < 4; i++, pUuidStr++)
+    ((*pUuidStr = (rand() % 16)) < 10) ? *pUuidStr += 48 : *pUuidStr += 55;
+
+  /*Data5 - 12 characters.*/
+  *pUuidStr++ = '-';
+  for(i = 0; i < 12; i++, pUuidStr++)
+    ((*pUuidStr = (rand() % 16)) < 10) ? *pUuidStr += 48 : *pUuidStr += 55;
+
+  *pUuidStr = '\0';
+
+  return UuidStrTmp;
 #endif
 }
 
@@ -1942,21 +1877,6 @@ std::string StringUtils::FormatFileSize(uint64_t bytes)
   }
   unsigned int decimals = value < 9.995 ? 2 : (value < 99.95 ? 1 : 0);
   return Format("{:.{}f}{}", value, decimals, units[i]);
-}
-
-bool StringUtils::Contains(std::string_view str,
-                           std::string_view keyword,
-                           bool isCaseInsensitive /* = true */)
-{
-  if (isCaseInsensitive)
-  {
-    auto itStr =
-        std::search(str.begin(), str.end(), keyword.begin(), keyword.end(),
-                    [](char ch1, char ch2) { return ToUpperAscii(ch1) == ToUpperAscii(ch2); });
-    return (itStr != str.end());
-  }
-
-  return str.find(keyword) != std::string_view::npos;
 }
 
 const std::locale& StringUtils::GetOriginalLocale() noexcept

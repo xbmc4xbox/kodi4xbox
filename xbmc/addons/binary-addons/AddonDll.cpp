@@ -27,7 +27,6 @@
 #include "utils/Variant.h"
 #include "utils/log.h"
 
-#include <algorithm>
 #include <utility>
 
 using namespace KODI::MESSAGING;
@@ -346,13 +345,12 @@ CAddonVersion CAddonDll::GetTypeMinVersionDll(int type) const
   return CAddonVersion(m_pDll ? m_pDll->GetAddonTypeMinVersion(type) : nullptr);
 }
 
-bool CAddonDll::SaveSettings(AddonInstanceId id /* = ADDON_SETTINGS_ID */)
+void CAddonDll::SaveSettings(AddonInstanceId id /* = ADDON_SETTINGS_ID */)
 {
   // must save first, as TransferSettings() reloads saved settings!
-  bool success = CAddon::SaveSettings(id);
+  CAddon::SaveSettings(id);
   if (m_initialized)
     TransferSettings(id);
-  return success;
 }
 
 ADDON_STATUS CAddonDll::TransferSettings(AddonInstanceId instanceId)

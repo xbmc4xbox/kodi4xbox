@@ -245,7 +245,7 @@ bool CLibraryGUIInfo::GetBool(bool& value, const CGUIListItem *gitem, int contex
         {
           artistcount = db.GetArtistCountForRole(strRole);
           db.Close();
-          m_libraryRoleCounts.emplace_back(strRole, artistcount);
+          m_libraryRoleCounts.emplace_back(std::make_pair(strRole, artistcount));
         }
       }
       value = artistcount > 0;

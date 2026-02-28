@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2024 Team Kodi
+ *  Copyright (C) 2005-2018 Team Kodi
  *  This file is part of Kodi - https://kodi.tv
  *
  *  SPDX-License-Identifier: GPL-2.0-or-later
@@ -10,9 +10,11 @@
 
 #include "InputCodingTableBasePY.h"
 #include "InputCodingTableKorean.h"
+#include "utils/XBMCTinyXML.h"
 #include "utils/log.h"
 
-IInputCodingTable* CInputCodingTableFactory::CreateCodingTable(const std::string& strTableName)
+IInputCodingTable* CInputCodingTableFactory::CreateCodingTable(const std::string& strTableName,
+                                                               const TiXmlElement* element)
 {
   if (strTableName == "BasePY")
     return new CInputCodingTableBasePY();

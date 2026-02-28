@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "input/actions/interfaces/IActionListener.h"
+#include "interfaces/IActionListener.h"
 #include "settings/lib/ISettingCallback.h"
 #include "threads/CriticalSection.h"
 #include "utils/Stopwatch.h"
@@ -25,7 +25,7 @@ enum SeekType
   SEEK_TYPE_MUSIC = 1
 };
 
-class CSeekHandler : public ISettingCallback, public KODI::ACTION::IActionListener
+class CSeekHandler : public ISettingCallback, public IActionListener
 {
 public:
   CSeekHandler() = default;

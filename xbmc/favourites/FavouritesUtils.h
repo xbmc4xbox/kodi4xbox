@@ -10,8 +10,6 @@
 
 #include <memory>
 
-class CExecString;
-class CFavouritesURL;
 class CFileItem;
 class CFileItemList;
 
@@ -22,8 +20,5 @@ bool ChooseAndSetNewThumbnail(CFileItem& item);
 bool MoveItem(CFileItemList& items, const std::shared_ptr<CFileItem>& item, int amount);
 bool RemoveItem(CFileItemList& items, const std::shared_ptr<CFileItem>& item);
 bool ShouldEnableMoveItems();
-
-bool ExecuteAction(const CExecString& execString);
-bool ExecuteAction(const CFavouritesURL& favURL);
 
 } // namespace FAVOURITES_UTILS

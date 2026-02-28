@@ -11,10 +11,8 @@
 #include "FileItem.h"
 #include "guilib/GUIMessage.h"
 #include "guilib/LocalizeStrings.h"
-#include "input/actions/ActionIDs.h"
+#include "input/Key.h"
 #include "utils/StringUtils.h"
-
-#include <memory>
 
 #define CONTROL_HEADING         1
 #define CONTROL_NUMBER_OF_ITEMS 2
@@ -197,14 +195,15 @@ int CGUIDialogSelect::Add(const std::string& strLabel)
 
 int CGUIDialogSelect::Add(const CFileItem& item)
 {
-  m_vecList->Add(std::make_shared<CFileItem>(item));
+  m_vecList->Add(CFileItemPtr(new CFileItem(item)));
   return m_vecList->Size() - 1;
 }
 
 void CGUIDialogSelect::SetItems(const CFileItemList& pList)
 {
+  // need to make internal copy of list to be sure dialog is owner of it
   m_vecList->Clear();
-  m_vecList->Append(pList);
+  m_vecList->Copy(pList);
 
   m_viewControl.SetItems(*m_vecList);
 }
@@ -218,7 +217,7 @@ const CFileItemPtr CGUIDialogSelect::GetSelectedFileItem() const
 {
   if (m_selectedItem)
     return m_selectedItem;
-  return std::make_shared<CFileItem>();
+  return CFileItemPtr(new CFileItem);
 }
 
 const std::vector<int>& CGUIDialogSelect::GetSelectedItems() const

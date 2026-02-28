@@ -159,10 +159,6 @@ constexpr const int GUI_MSG_STATE_CHANGED = 51;
  */
 constexpr const int GUI_MSG_SUBTITLE_DOWNLOADED = 52;
 
-/*!
- * \brief Reset a multiimage to its initial state
- */
-constexpr const int GUI_MSG_RESET_MULTI_IMAGE = 53;
 
 constexpr const int GUI_MSG_USER = 1000;
 
@@ -359,7 +355,7 @@ constexpr const int GUI_MSG_CODINGTABLE_LOOKUP_COMPLETED = 65000;
 #include <memory>
 
 // forwards
-class CGUIListItem;
+class CGUIListItem; typedef std::shared_ptr<CGUIListItem> CGUIListItemPtr;
 class CFileItemList;
 
 /*!
@@ -369,15 +365,9 @@ class CFileItemList;
 class CGUIMessage final
 {
 public:
-  CGUIMessage(int dwMsg, int senderID, int controlID, int64_t param1 = 0, int64_t param2 = 0);
-  CGUIMessage(
-      int msg, int senderID, int controlID, int64_t param1, int64_t param2, CFileItemList* item);
-  CGUIMessage(int msg,
-              int senderID,
-              int controlID,
-              int64_t param1,
-              int64_t param2,
-              const std::shared_ptr<CGUIListItem>& item);
+  CGUIMessage(int dwMsg, int senderID, int controlID, int param1 = 0, int param2 = 0);
+  CGUIMessage(int msg, int senderID, int controlID, int param1, int param2, CFileItemList* item);
+  CGUIMessage(int msg, int senderID, int controlID, int param1, int param2, const CGUIListItemPtr &item);
   CGUIMessage(const CGUIMessage& msg);
   ~CGUIMessage(void);
   CGUIMessage& operator = (const CGUIMessage& msg);
@@ -385,14 +375,12 @@ public:
   int GetControlId() const ;
   int GetMessage() const;
   void* GetPointer() const;
-  std::shared_ptr<CGUIListItem> GetItem() const;
+  CGUIListItemPtr GetItem() const;
   int GetParam1() const;
-  int64_t GetParam1AsI64() const;
   int GetParam2() const;
-  int64_t GetParam2AsI64() const;
   int GetSenderId() const;
-  void SetParam1(int64_t param1);
-  void SetParam2(int64_t param2);
+  void SetParam1(int param1);
+  void SetParam2(int param2);
   void SetPointer(void* pointer);
   void SetLabel(const std::string& strLabel);
   void SetLabel(int iString);               // for convenience - looks up in strings.po
@@ -401,7 +389,7 @@ public:
   void SetStringParams(const std::vector<std::string> &params);
   const std::string& GetStringParam(size_t param = 0) const;
   size_t GetNumStringParams() const;
-  void SetItem(std::shared_ptr<CGUIListItem> item);
+  void SetItem(CGUIListItemPtr item);
 
 private:
   std::string m_strLabel;
@@ -410,9 +398,9 @@ private:
   int m_controlID;
   int m_message;
   void* m_pointer;
-  int64_t m_param1;
-  int64_t m_param2;
-  std::shared_ptr<CGUIListItem> m_item;
+  int m_param1;
+  int m_param2;
+  CGUIListItemPtr m_item;
 
   static std::string empty_string;
 };

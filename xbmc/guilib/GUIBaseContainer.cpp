@@ -13,13 +13,9 @@
 #include "GUIListItemLayout.h"
 #include "GUIMessage.h"
 #include "ServiceBroker.h"
-#include "guilib/GUIListItem.h"
 #include "guilib/guiinfo/GUIInfoLabels.h"
-#include "guilib/listproviders/IListProvider.h"
-#include "input/actions/Action.h"
-#include "input/actions/ActionIDs.h"
-#include "input/keyboard/KeyIDs.h"
-#include "input/mouse/MouseEvent.h"
+#include "input/Key.h"
+#include "listproviders/IListProvider.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 #include "utils/CharsetConverter.h"
@@ -29,10 +25,6 @@
 #include "utils/TimeUtils.h"
 #include "utils/XBMCTinyXML.h"
 #include "utils/log.h"
-
-#include <memory>
-
-using namespace KODI;
 
 #define HOLD_TIME_START 100
 #define HOLD_TIME_END   3000
@@ -180,7 +172,7 @@ void CGUIBaseContainer::Process(unsigned int currentTime, CDirtyRegionList &dirt
     bool focused = (current == GetOffset() + GetCursor());
     if (itemNo >= 0)
     {
-      std::shared_ptr<CGUIListItem> item = m_items[itemNo];
+      CGUIListItemPtr item = m_items[itemNo];
       item->SetCurrentItem(itemNo + 1);
 
       // render our item
@@ -203,12 +195,7 @@ void CGUIBaseContainer::Process(unsigned int currentTime, CDirtyRegionList &dirt
   CGUIControl::Process(currentTime, dirtyregions);
 }
 
-void CGUIBaseContainer::ProcessItem(float posX,
-                                    float posY,
-                                    std::shared_ptr<CGUIListItem>& item,
-                                    bool focused,
-                                    unsigned int currentTime,
-                                    CDirtyRegionList& dirtyregions)
+void CGUIBaseContainer::ProcessItem(float posX, float posY, CGUIListItemPtr& item, bool focused, unsigned int currentTime, CDirtyRegionList &dirtyregions)
 {
   if (!m_focusedLayout || !m_layout) return;
 
@@ -247,10 +234,10 @@ void CGUIBaseContainer::ProcessItem(float posX,
       item->GetFocusedLayout()->SetFocusedItem(0);  // focus is not set
     if (!item->GetLayout())
     {
-      auto layout = std::make_unique<CGUIListItemLayout>(*m_layout, this);
+      CGUIListItemLayoutPtr layout = std::make_unique<CGUIListItemLayout>(*m_layout, this);
       item->SetLayout(std::move(layout));
     }
-    if (item->GetFocusedLayout() && item->GetFocusedLayout()->IsAnimating(ANIM_TYPE_UNFOCUS))
+    if (item->GetFocusedLayout())
       item->GetFocusedLayout()->Process(item.get(), m_parentID, currentTime, dirtyregions);
     if (item->GetLayout())
       item->GetLayout()->Process(item.get(), m_parentID, currentTime, dirtyregions);
@@ -283,7 +270,7 @@ void CGUIBaseContainer::Render()
     end += cacheAfter * m_layout->Size(m_orientation);
 
     float focusedPos = 0;
-    std::shared_ptr<CGUIListItem> focusedItem;
+    CGUIListItemPtr focusedItem;
     int current = offset - cacheBefore;
     while (pos < end && m_items.size())
     {
@@ -293,7 +280,7 @@ void CGUIBaseContainer::Render()
       bool focused = (current == GetOffset() + GetCursor());
       if (itemNo >= 0)
       {
-        std::shared_ptr<CGUIListItem> item = m_items[itemNo];
+        CGUIListItemPtr item = m_items[itemNo];
         // render our item
         if (focused)
         {
@@ -655,7 +642,7 @@ void CGUIBaseContainer::OnJumpLetter(const std::string& letter, bool skip /*=fal
   unsigned int i      = (offset + ((skip) ? 1 : 0)) % m_items.size();
   do
   {
-    std::shared_ptr<CGUIListItem> item = m_items[i];
+    CGUIListItemPtr item = m_items[i];
     std::string label = item->GetLabel();
     if (CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(CSettings::SETTING_FILELISTS_IGNORETHEWHENSORTING))
       label = SortUtils::RemoveArticles(label);
@@ -736,10 +723,10 @@ int CGUIBaseContainer::GetSelectedItem() const
   return CorrectOffset(GetOffset(), GetCursor());
 }
 
-std::shared_ptr<CGUIListItem> CGUIBaseContainer::GetListItem(int offset, unsigned int flag) const
+CGUIListItemPtr CGUIBaseContainer::GetListItem(int offset, unsigned int flag) const
 {
   if (!m_items.size() || !m_layout)
-    return std::shared_ptr<CGUIListItem>();
+    return CGUIListItemPtr();
   int item = GetSelectedItem() + offset;
   if (flag & INFOFLAG_LISTITEM_POSITION) // use offset from the first item displayed, taking into account scrolling
     item = CorrectOffset((int)(m_scroller.GetValue() / m_layout->Size(m_orientation)), offset);
@@ -758,12 +745,12 @@ std::shared_ptr<CGUIListItem> CGUIBaseContainer::GetListItem(int offset, unsigne
     if (item >= 0 && item < (int)m_items.size())
       return m_items[item];
   }
-  return std::shared_ptr<CGUIListItem>();
+  return CGUIListItemPtr();
 }
 
 CGUIListItemLayout *CGUIBaseContainer::GetFocusedLayout() const
 {
-  std::shared_ptr<CGUIListItem> item = GetListItem(0);
+  CGUIListItemPtr item = GetListItem(0);
   if (item.get()) return item->GetFocusedLayout();
   return NULL;
 }
@@ -776,8 +763,9 @@ bool CGUIBaseContainer::OnMouseOver(const CPoint &point)
   return CGUIControl::OnMouseOver(point);
 }
 
-EVENT_RESULT CGUIBaseContainer::OnMouseEvent(const CPoint& point, const MOUSE::CMouseEvent& event)
+EVENT_RESULT CGUIBaseContainer::OnMouseEvent(const CPoint &point, const CMouseEvent &event)
 {
+#if 0
   if (event.m_id == ACTION_MOUSE_LEFT_CLICK ||
       event.m_id == ACTION_MOUSE_DOUBLE_CLICK ||
       event.m_id == ACTION_MOUSE_RIGHT_CLICK)
@@ -863,6 +851,7 @@ EVENT_RESULT CGUIBaseContainer::OnMouseEvent(const CPoint& point, const MOUSE::C
     m_gestureActive = false;
     return EVENT_RESULT_HANDLED;
   }
+#endif
   return EVENT_RESULT_UNHANDLED;
 }
 
@@ -876,16 +865,10 @@ bool CGUIBaseContainer::OnClick(int actionID)
       int selected = GetSelectedItem();
       if (selected >= 0 && selected < static_cast<int>(m_items.size()))
       {
-        // One of the actions could trigger a reload of the GUI which destroys
-        // this CGUIBaseContainer and therefore the m_items[selected] we are
-        // going to process. The shared_ptr ensures that item survives until
-        // it has been processed.
-        std::shared_ptr<CGUIListItem> item = m_items[selected];
-
         if (m_clickActions.HasActionsMeetingCondition())
-          m_clickActions.ExecuteActions(0, GetParentID(), item);
+          m_clickActions.ExecuteActions(0, GetParentID(), m_items[selected]);
         else
-          m_listProvider->OnClick(item);
+          m_listProvider->OnClick(m_items[selected]);
       }
       return true;
     }
@@ -924,7 +907,7 @@ std::string CGUIBaseContainer::GetDescription() const
   int item = GetSelectedItem();
   if (item >= 0 && item < (int)m_items.size())
   {
-    std::shared_ptr<CGUIListItem> pItem = m_items[item];
+    CGUIListItemPtr pItem = m_items[item];
     if (pItem->m_bIsFolder)
       strLabel = StringUtils::Format("[{}]", pItem->GetLabel());
     else
@@ -1079,7 +1062,7 @@ void CGUIBaseContainer::UpdateListProvider(bool forceRefresh /* = false */)
         // as fallback, try to re-identify selected item by comparing item paths.
         for (int i = 0; i < static_cast<int>(m_items.size()); i++)
         {
-          const std::shared_ptr<CGUIListItem> c(m_items[i]);
+          const CGUIListItemPtr c(m_items[i]);
           if (c->IsFileItem())
           {
             const std::string &selectedPath = static_cast<CFileItem *>(c.get())->GetPath();
@@ -1132,7 +1115,7 @@ void CGUIBaseContainer::UpdateScrollByLetter()
   std::string currentMatch;
   for (unsigned int i = 0; i < m_items.size(); i++)
   {
-    std::shared_ptr<CGUIListItem> item = m_items[i];
+    CGUIListItemPtr item = m_items[i];
     // The letter offset jumping is only for ASCII characters at present, and
     // our checks are all done in uppercase
     std::string nextLetter;
@@ -1333,7 +1316,7 @@ void CGUIBaseContainer::DumpTextureUse()
   CLog::Log(LOGDEBUG, "{} for container {}", __FUNCTION__, GetID());
   for (unsigned int i = 0; i < m_items.size(); ++i)
   {
-    std::shared_ptr<CGUIListItem> item = m_items[i];
+    CGUIListItemPtr item = m_items[i];
     if (item->GetFocusedLayout()) item->GetFocusedLayout()->DumpTextureUse();
     if (item->GetLayout()) item->GetLayout()->DumpTextureUse();
   }

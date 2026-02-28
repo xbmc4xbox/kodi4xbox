@@ -110,6 +110,7 @@ public:
   }
   /*! \endcond */
 
+
   /// @addtogroup cpp_kodi_addon_pvr_Defs_ChannelGroup_PVRChannelGroupsResultSet
   ///@{
 

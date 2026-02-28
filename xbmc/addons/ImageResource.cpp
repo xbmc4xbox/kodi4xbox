@@ -9,7 +9,6 @@
 
 #include "URL.h"
 #include "addons/addoninfo/AddonType.h"
-#include "filesystem/XbtManager.h"
 #include "utils/FileUtils.h"
 #include "utils/StringUtils.h"
 #include "utils/URIUtils.h"
@@ -29,8 +28,11 @@ void CImageResource::OnPreUnInstall()
   if (!HasXbt(xbtUrl))
     return;
 
+  // TODO: add support for image resources inside XPR/XBT files
+#if 0
   // if there's an XBT we need to remove it from the XBT manager
   XFILE::CXbtManager::GetInstance().Release(xbtUrl);
+#endif
 }
 
 bool CImageResource::IsAllowed(const std::string &file) const

@@ -235,21 +235,19 @@ extern "C"
     void SetupShares() override;
 
     /* kodi to addon callback function addresses */
-    KODI_GUI_CLIENT_HANDLE m_clientHandle = nullptr;
-    bool (*CBOnInit)(KODI_GUI_CLIENT_HANDLE cbhdl) = nullptr;
-    bool (*CBOnFocus)(KODI_GUI_CLIENT_HANDLE cbhdl, int controlId) = nullptr;
-    bool (*CBOnClick)(KODI_GUI_CLIENT_HANDLE cbhdl, int controlId) = nullptr;
-    bool (*CBOnAction)(KODI_GUI_CLIENT_HANDLE cbhdl, ADDON_ACTION actionId) = nullptr;
+    KODI_GUI_CLIENT_HANDLE m_clientHandle;
+    bool (*CBOnInit)(KODI_GUI_CLIENT_HANDLE cbhdl);
+    bool (*CBOnFocus)(KODI_GUI_CLIENT_HANDLE cbhdl, int controlId);
+    bool (*CBOnClick)(KODI_GUI_CLIENT_HANDLE cbhdl, int controlId);
+    bool (*CBOnAction)(KODI_GUI_CLIENT_HANDLE cbhdl, ADDON_ACTION actionId);
     void (*CBGetContextButtons)(KODI_GUI_CLIENT_HANDLE cbhdl,
                                 int itemNumber,
                                 gui_context_menu_pair* buttons,
-                                unsigned int* size) = nullptr;
-    bool (*CBOnContextButton)(KODI_GUI_CLIENT_HANDLE cbhdl,
-                              int itemNumber,
-                              unsigned int button) = nullptr;
+                                unsigned int* size);
+    bool (*CBOnContextButton)(KODI_GUI_CLIENT_HANDLE cbhdl, int itemNumber, unsigned int button);
 
     const int m_windowId;
-    int m_oldWindowId = 0;
+    int m_oldWindowId;
 
   private:
     void WaitForActionEvent(unsigned int timeout);
@@ -273,7 +271,7 @@ extern "C"
     void Show_Internal(bool show = true);
 
   private:
-    bool m_bRunning = false;
+    bool m_bRunning;
   };
 
   } /* namespace ADDON */

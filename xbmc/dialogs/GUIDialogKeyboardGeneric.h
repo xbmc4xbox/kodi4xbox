@@ -10,7 +10,7 @@
 
 #include "guilib/GUIDialog.h"
 #include "guilib/GUIKeyboard.h"
-#include "input/keyboard/KeyboardLayout.h"
+#include "input/KeyboardLayout.h"
 
 #include <memory>
 #include <string>
@@ -18,14 +18,7 @@
 
 class CGUIFont;
 
-class CSpeechRecognitionListener;
-
-enum class KEY_TYPE
-{
-  CAPS,
-  LOWER,
-  SYMBOLS
-};
+enum KEYBOARD {CAPS, LOWER, SYMBOLS};
 
 class CGUIDialogKeyboardGeneric : public CGUIDialog, public CGUIKeyboard
 {
@@ -73,13 +66,13 @@ class CGUIDialogKeyboardGeneric : public CGUIDialog, public CGUIKeyboard
     void NormalCharacter(const std::string &ch);
 
     bool m_bIsConfirmed;
-    KEY_TYPE m_keyType;
+    KEYBOARD m_keyType;
     bool m_bShift;
     bool m_hiddenInput;
     bool m_isKeyboardNavigationMode;
     int m_previouslyFocusedButton;
 
-    std::vector<KODI::KEYBOARD::CKeyboardLayout> m_layouts;
+    std::vector<CKeyboardLayout> m_layouts;
     unsigned int                 m_currentLayout;
 
     std::string m_strHeading;
@@ -95,6 +88,4 @@ class CGUIDialogKeyboardGeneric : public CGUIDialog, public CGUIKeyboard
     CCriticalSection  m_CS;
 
     char_callback_t m_pCharCallback;
-
-    std::shared_ptr<CSpeechRecognitionListener> m_speechRecognitionListener;
 };

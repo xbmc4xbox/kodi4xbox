@@ -12,8 +12,7 @@
 #include "application/ApplicationComponents.h"
 #include "application/ApplicationVolumeHandling.h"
 #include "guilib/GUIMessage.h"
-#include "input/actions/Action.h"
-#include "input/actions/ActionIDs.h"
+#include "input/Key.h"
 
 #include <mutex>
 

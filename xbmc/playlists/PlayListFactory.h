@@ -20,7 +20,6 @@ namespace PLAYLIST
   class CPlayListFactory
   {
   public:
-    static CPlayList* Create(const CURL& url);
     static CPlayList* Create(const std::string& filename);
     static CPlayList* Create(const CFileItem& item);
     static bool IsPlaylist(const CURL& url);

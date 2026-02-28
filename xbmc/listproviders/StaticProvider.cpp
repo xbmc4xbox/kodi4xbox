@@ -70,9 +70,9 @@ CStaticListProvider::CStaticListProvider(const CStaticListProvider& other)
 
 CStaticListProvider::~CStaticListProvider() = default;
 
-IListProvider* CStaticListProvider::Clone()
+std::unique_ptr<IListProvider> CStaticListProvider::Clone()
 {
-  return new CStaticListProvider(*this);
+  return std::make_unique<CStaticListProvider>(*this);
 }
 
 bool CStaticListProvider::Update(bool forceRefresh)

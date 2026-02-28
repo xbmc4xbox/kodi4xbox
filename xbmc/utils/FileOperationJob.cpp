@@ -22,8 +22,6 @@
 #include "utils/URIUtils.h"
 #include "utils/log.h"
 
-#include <memory>
-
 using namespace XFILE;
 
 CFileOperationJob::CFileOperationJob()
@@ -60,7 +58,7 @@ void CFileOperationJob::SetFileOperation(FileAction action,
 
   m_items.Clear();
   for (int i = 0; i < items.Size(); i++)
-    m_items.Add(std::make_shared<CFileItem>(*items[i]));
+    m_items.Add(CFileItemPtr(new CFileItem(*items[i])));
 }
 
 bool CFileOperationJob::DoWork()
@@ -101,7 +99,7 @@ bool CFileOperationJob::DoProcessFile(FileAction action, const std::string& strF
       time += data.st_size;
   }
 
-  fileOperations.emplace_back(action, strFileA, strFileB, time);
+  fileOperations.push_back(CFileOperation(action, strFileA, strFileB, time));
 
   totalTime += time;
 
@@ -135,7 +133,7 @@ bool CFileOperationJob::DoProcessFolder(FileAction action, const std::string& st
 
   if (action == ActionMove)
   {
-    fileOperations.emplace_back(ActionDeleteFolder, strPath, "", 1);
+    fileOperations.push_back(CFileOperation(ActionDeleteFolder, strPath, "", 1));
     totalTime += 1.0;
   }
 
@@ -170,7 +168,7 @@ bool CFileOperationJob::DoProcess(FileAction action,
           strFileName += URIUtils::GetExtension(pItem->GetPath());
         }
 
-        strFileName = CUtil::MakeLegalFileName(std::move(strFileName));
+        strFileName = CUtil::MakeLegalFileName(strFileName);
       }
 
       std::string strnewDestFile;

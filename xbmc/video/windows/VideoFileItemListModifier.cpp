@@ -18,8 +18,6 @@
 #include "video/VideoDatabase.h"
 #include "video/VideoDbUrl.h"
 
-#include <memory>
-
 using namespace XFILE::VIDEODATABASEDIRECTORY;
 
 bool CVideoFileItemListModifier::CanModify(const CFileItemList &items) const
@@ -67,19 +65,17 @@ void CVideoFileItemListModifier::AddQueuingFolder(CFileItemList& items)
   case NODE_TYPE_SEASONS:
   {
     const std::string& strLabel = g_localizeStrings.Get(20366);
-    pItem = std::make_shared<CFileItem>(strLabel); // "All Seasons"
+    pItem.reset(new CFileItem(strLabel));  // "All Seasons"
     videoUrl.AppendPath("-1/");
     pItem->SetPath(videoUrl.ToString());
     // set the number of watched and unwatched items accordingly
     int watched = 0;
     int unwatched = 0;
-    int inprogress = 0;
     for (int i = 0; i < items.Size(); i++)
     {
       CFileItemPtr item = items[i];
       watched += static_cast<int>(item->GetProperty("watchedepisodes").asInteger());
       unwatched += static_cast<int>(item->GetProperty("unwatchedepisodes").asInteger());
-      inprogress += static_cast<int>(item->GetProperty("inprogressepisodes").asInteger());
     }
     const int totalEpisodes = watched + unwatched;
     pItem->SetProperty("totalepisodes", totalEpisodes);
@@ -87,7 +83,6 @@ void CVideoFileItemListModifier::AddQueuingFolder(CFileItemList& items)
                        totalEpisodes); // will be changed later to reflect watchmode setting
     pItem->SetProperty("watchedepisodes", watched);
     pItem->SetProperty("unwatchedepisodes", unwatched);
-    pItem->SetProperty("inprogressepisodes", inprogress);
     pItem->SetProperty("watchedepisodepercent",
                        totalEpisodes > 0 ? watched * 100 / totalEpisodes : 0);
 
@@ -122,7 +117,7 @@ void CVideoFileItemListModifier::AddQueuingFolder(CFileItemList& items)
   }
   break;
   case NODE_TYPE_MUSICVIDEOS_ALBUM:
-    pItem = std::make_shared<CFileItem>("* " + g_localizeStrings.Get(16100)); // "* All Videos"
+    pItem.reset(new CFileItem("* " + g_localizeStrings.Get(16100)));  // "* All Videos"
     videoUrl.AppendPath("-1/");
     pItem->SetPath(videoUrl.ToString());
     break;

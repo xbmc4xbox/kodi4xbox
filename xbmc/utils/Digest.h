@@ -8,14 +8,13 @@
 
 #pragma once
 
+#include "md5.h"
 #include "StringUtils.h"
 
 #include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <string>
-
-#include <openssl/evp.h>
 
 namespace KODI
 {
@@ -91,14 +90,8 @@ public:
   static std::string Calculate(Type type, void const* data, std::size_t size);
 
 private:
-  struct MdCtxDeleter
-  {
-    void operator()(EVP_MD_CTX* context);
-  };
-
   bool m_finalized{false};
-  std::unique_ptr<EVP_MD_CTX, MdCtxDeleter> m_context;
-  EVP_MD const* m_md;
+  MD5Context m_context;
 };
 
 struct TypedDigest

@@ -15,7 +15,7 @@ namespace XFILE
 class IFileDirectory : public IDirectory
 {
 public:
-  ~IFileDirectory() override = default;
+  ~IFileDirectory(void) override = default;
   virtual bool ContainsFiles(const CURL& url)=0;
 };
 

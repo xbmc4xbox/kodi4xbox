@@ -8,7 +8,7 @@
 
 #include "ApplicationActionListeners.h"
 
-#include "input/actions/interfaces/IActionListener.h"
+#include "interfaces/IActionListener.h"
 #include "threads/CriticalSection.h"
 
 #include <algorithm>
@@ -19,7 +19,7 @@ CApplicationActionListeners::CApplicationActionListeners(CCriticalSection& secti
 {
 }
 
-void CApplicationActionListeners::RegisterActionListener(KODI::ACTION::IActionListener* listener)
+void CApplicationActionListeners::RegisterActionListener(IActionListener* listener)
 {
   std::unique_lock<CCriticalSection> lock(m_critSection);
   const auto it = std::find(m_actionListeners.begin(), m_actionListeners.end(), listener);
@@ -27,7 +27,7 @@ void CApplicationActionListeners::RegisterActionListener(KODI::ACTION::IActionLi
     m_actionListeners.push_back(listener);
 }
 
-void CApplicationActionListeners::UnregisterActionListener(KODI::ACTION::IActionListener* listener)
+void CApplicationActionListeners::UnregisterActionListener(IActionListener* listener)
 {
   std::unique_lock<CCriticalSection> lock(m_critSection);
   auto it = std::find(m_actionListeners.begin(), m_actionListeners.end(), listener);

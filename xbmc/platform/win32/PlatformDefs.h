@@ -9,7 +9,6 @@
 #pragma once
 
 #include <windows.h>
-#include <winsock2.h>
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>

@@ -45,10 +45,6 @@ public:
 
   std::string GetAsString() const;
 
-  // The text is UTF-16 and the data stored in a character_t hold multiple informations by bits:
-  // <16 bits: are unicode code bits
-  // 16-24 bits: are color bits
-  // 24-32 bits: are style bits (see FONT_STYLE_* flags)
   vecText m_text;
   bool m_carriageReturn; // true if we have a carriage return here
 };
@@ -98,9 +94,7 @@ public:
   float GetTextWidth() const { return m_textWidth; }
 
   float GetTextWidth(const std::wstring &text) const;
-
-  float GetTextWidth(const vecText& text) const;
-
+  
   /*! \brief Returns the precalculated height of the text to be rendered (in constant time).
    \return height of text
   */
@@ -188,7 +182,7 @@ private:
   inline bool CanWrapAtLetter(character_t letter) const XBMC_FORCE_INLINE
   {
     character_t ch = letter & 0xffff;
-    return ch == L' ';
+    return ch == L' ' || (ch >=0x4e00 && ch <= 0x9fff);
   };
   static void AppendToUTF32(const std::string &utf8, character_t colStyle, vecText &utf32);
   static void AppendToUTF32(const std::wstring &utf16, character_t colStyle, vecText &utf32);

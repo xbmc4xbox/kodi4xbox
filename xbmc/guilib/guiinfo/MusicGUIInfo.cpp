@@ -403,9 +403,6 @@ bool CMusicGUIInfo::GetLabel(std::string& value, const CFileItem *item, int cont
           return true;
         }
         break;
-      case LISTITEM_SONG_VIDEO_URL:
-        value = tag->GetSongVideoURL();
-        return true;
     }
   }
 
@@ -554,7 +551,7 @@ bool CMusicGUIInfo::GetPlaylistInfo(std::string& value, const CGUIInfo &info) co
     if (CServiceBroker::GetPlaylistPlayer().GetCurrentPlaylist() != PLAYLIST::TYPE_MUSIC)
       return false;
 
-    index = CServiceBroker::GetPlaylistPlayer().GetNextItemIdx(index);
+    index = CServiceBroker::GetPlaylistPlayer().GetNextSong(index);
   }
 
   if (index < 0 || index >= playlist.size())
@@ -643,7 +640,7 @@ bool CMusicGUIInfo::GetBool(bool& value, const CGUIListItem *gitem, int contextW
       // requires current playlist be TYPE_MUSIC
       if (CServiceBroker::GetPlaylistPlayer().GetCurrentPlaylist() == PLAYLIST::TYPE_MUSIC)
       {
-        value = (CServiceBroker::GetPlaylistPlayer().GetCurrentItemIdx() > 0); // not first song
+        value = (CServiceBroker::GetPlaylistPlayer().GetCurrentSong() > 0); // not first song
         return true;
       }
       break;
@@ -651,7 +648,7 @@ bool CMusicGUIInfo::GetBool(bool& value, const CGUIListItem *gitem, int contextW
       // requires current playlist be TYPE_MUSIC
       if (CServiceBroker::GetPlaylistPlayer().GetCurrentPlaylist() == PLAYLIST::TYPE_MUSIC)
       {
-        value = (CServiceBroker::GetPlaylistPlayer().GetCurrentItemIdx() <
+        value = (CServiceBroker::GetPlaylistPlayer().GetCurrentSong() <
                  (CServiceBroker::GetPlaylistPlayer().GetPlaylist(PLAYLIST::TYPE_MUSIC).size() -
                   1)); // not last song
         return true;
@@ -679,7 +676,7 @@ bool CMusicGUIInfo::GetBool(bool& value, const CGUIListItem *gitem, int contextW
           value = false;
           return true;
         }
-        index += CServiceBroker::GetPlaylistPlayer().GetCurrentItemIdx();
+        index += CServiceBroker::GetPlaylistPlayer().GetCurrentSong();
       }
       value =
           (index >= 0 &&
