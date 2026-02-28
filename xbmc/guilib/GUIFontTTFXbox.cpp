@@ -22,13 +22,10 @@
 #include "GUIFont.h"
 #include "GUIFontTTFXbox.h"
 #include "GUIFontManager.h"
-#include "ServiceBroker.h"
 #include "Texture.h"
 #include "TextureManager.h"
-#include "GraphicContext.h"
 #include "utils/log.h"
 #include "utils/GLUtils.h"
-#include "windowing/WindowingFactory.h"
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
