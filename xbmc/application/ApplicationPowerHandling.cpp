@@ -24,12 +24,14 @@
 #include "interfaces/generic/ScriptInvocationManager.h"
 #include "messaging/ApplicationMessenger.h"
 #include "music/MusicLibraryQueue.h"
+#include "powermanagement/PowerTypes.h"
 #include "profiles/ProfileManager.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 #include "utils/AlarmClock.h"
 #include "utils/log.h"
 #include "video/VideoLibraryQueue.h"
+#include "windowing/WinSystem.h"
 
 void CApplicationPowerHandling::ResetScreenSaver()
 {
@@ -320,7 +322,7 @@ void CApplicationPowerHandling::ActivateScreenSaver(bool forceType /*= false */)
 
     // Enforce Dim for special cases.
     bool bUseDim = false;
-    if (CServiceBroker::GetGUI()->GetWindowManager().HasModalDialog())
+    if (CServiceBroker::GetGUI()->GetWindowManager().HasModalDialog(true))
       bUseDim = true;
     else if (appPlayer && appPlayer->IsPlayingVideo() &&
              settings->GetBool(CSettings::SETTING_SCREENSAVER_USEDIMONPAUSE))
@@ -406,8 +408,6 @@ void CApplicationPowerHandling::HandleShutdownMessage()
   switch (CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(
       CSettings::SETTING_POWERMANAGEMENT_SHUTDOWNSTATE))
   {
-    // TODO: implement this - look CApplication::OnApplicationMessage(...) from XBMC4Xbox
-#ifndef _XBOX
     case POWERSTATE_SHUTDOWN:
       CServiceBroker::GetAppMessenger()->PostMsg(TMSG_POWERDOWN);
       break;
@@ -427,7 +427,6 @@ void CApplicationPowerHandling::HandleShutdownMessage()
     case POWERSTATE_MINIMIZE:
       CServiceBroker::GetAppMessenger()->PostMsg(TMSG_MINIMIZE);
       break;
-#endif
 
     default:
       CLog::Log(LOGERROR, "{}: No valid shutdownstate matched", __FUNCTION__);

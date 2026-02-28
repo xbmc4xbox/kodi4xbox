@@ -95,7 +95,7 @@ bool CApplicationSkinHandling::LoadSkin(const std::string& skinID)
     }
   }
 
-  std::unique_lock<CCriticalSection> lock(g_graphicsContext);
+  std::unique_lock<CCriticalSection> lock(CServiceBroker::GetWinSystem()->GetGfxContext());
 
   // store current active window with its focused control
   int currentWindowID = CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindow();
@@ -126,7 +126,7 @@ bool CApplicationSkinHandling::LoadSkin(const std::string& skinID)
   g_SkinInfo = skin;
 
   CLog::Log(LOGINFO, "  load fonts for skin...");
-  g_graphicsContext.SetMediaDir(skin->Path());
+  CServiceBroker::GetWinSystem()->GetGfxContext().SetMediaDir(skin->Path());
   g_directoryCache.ClearSubPaths(skin->Path());
 
   const std::shared_ptr<CSettings> settings = CServiceBroker::GetSettingsComponent()->GetSettings();
@@ -356,9 +356,7 @@ bool CApplicationSkinHandling::LoadCustomWindows()
             continue;
           }
 
-#if 0
           pWindow->SetCustom(true);
-#endif
 
           // Determining whether our custom dialog is modeless (visible condition is present)
           // will be done on load. Therefore we need to initialize the custom dialog on gui init.

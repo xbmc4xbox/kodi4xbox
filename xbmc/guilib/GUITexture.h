@@ -29,11 +29,11 @@
  */
 
 #include "TextureManager.h"
-#include "Geometry.h"
 #include "system.h" // HAS_GL, HAS_DX, etc
 #include "guiinfo/GUIInfoColor.h"
+#include "utils/ColorUtils.h"
+#include "utils/Geometry.h"
 
-typedef uint32_t color_t;
 
 // image alignment for <aspect>keep</aspect>, <aspect>scale</aspect> or <aspect>center</aspect>
 #define ASPECT_ALIGN_CENTER  0
@@ -89,6 +89,10 @@ public:
   CGUITextureBase(const CGUITextureBase &left);
   virtual ~CGUITextureBase(void);
 
+  static CGUITextureBase* CreateTexture(
+    float posX, float posY, float width, float height, const CTextureInfo& texture);
+  virtual CGUITextureBase* Clone() const = 0;
+
   bool Process(unsigned int currentTime);
   void Render();
 
@@ -99,7 +103,7 @@ public:
 
   bool SetVisible(bool visible);
   bool SetAlpha(unsigned char alpha);
-  bool SetDiffuseColor(color_t color);
+  bool SetDiffuseColor(UTILS::COLOR::Color color);
   bool SetPosition(float x, float y);
   bool SetWidth(float width);
   bool SetHeight(float height);
@@ -118,6 +122,12 @@ public:
   const CRect &GetRenderRect() const { return m_vertex; };
   bool IsLazyLoaded() const { return m_info.useLarge; };
 
+  /*!
+   * @brief Get the diffuse color (info color) associated to this texture
+   * @return the infocolor associated to this texture
+  */
+  KODI::GUILIB::GUIINFO::CGUIInfoColor GetDiffuseColor() const { return m_info.diffuseColor; }
+
   bool HitTest(const CPoint &point) const { return CRect(m_posX, m_posY, m_posX + m_width, m_posY + m_height).PtInRect(point); };
   bool IsAllocated() const { return m_isAllocated != NO; };
   bool FailedToAlloc() const { return m_isAllocated == NORMAL_FAILED || m_isAllocated == LARGE_FAILED; };
@@ -134,12 +144,12 @@ protected:
   // functions that our implementation classes handle
   virtual void Allocate() {}; ///< called after our textures have been allocated
   virtual void Free() {};     ///< called after our textures have been freed
-  virtual void Begin(color_t color) {};
+  virtual void Begin(UTILS::COLOR::Color color) {};
   virtual void Draw(float *x, float *y, float *z, const CRect &texture, const CRect &diffuse, int orientation)=0;
   virtual void End() {};
 
   bool m_visible;
-  color_t m_diffuseColor;
+  UTILS::COLOR::Color m_diffuseColor;
 
   float m_posX;         // size of the frame
   float m_posY;

@@ -27,15 +27,15 @@ CMultiProvider::CMultiProvider(const CMultiProvider& other) : IListProvider(othe
 {
   for (const auto& provider : other.m_providers)
   {
-    IListProvider* newProvider = provider->Clone();
+    std::unique_ptr<IListProvider> newProvider = provider->Clone();
     if (newProvider)
       m_providers.emplace_back(std::move(newProvider));
   }
 }
 
-IListProvider* CMultiProvider::Clone()
+std::unique_ptr<IListProvider> CMultiProvider::Clone()
 {
-  return new CMultiProvider(*this);
+  return std::make_unique<CMultiProvider>(*this);
 }
 
 bool CMultiProvider::Update(bool forceRefresh)
@@ -58,7 +58,7 @@ void CMultiProvider::Fetch(std::vector<CGUIListItemPtr> &items)
     for (auto& item : subItems)
     {
       auto key = GetItemKey(item);
-      m_itemMap[key] = provider;
+      m_itemMap[key] = provider.get();
       items.push_back(item);
     }
     subItems.clear();

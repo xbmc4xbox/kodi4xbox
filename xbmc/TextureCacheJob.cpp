@@ -188,7 +188,7 @@ std::unique_ptr<CTexture> CTextureCacheJob::LoadImage(const std::string& image,
     return NULL;
 
   std::unique_ptr<CTexture> texture =
-      CTexture::LoadFromFile(image, width, height/*, requirePixels, file.GetMimeType()*/);
+      CTexture::LoadFromFile(image, width, height, requirePixels, file.GetMimeType());
   if (!texture)
     return NULL;
 

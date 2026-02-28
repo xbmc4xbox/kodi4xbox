@@ -135,7 +135,6 @@ void CGUIWindowSystemInfo::FrameMove()
                                SYSTEM_VIDEO_ENCODER_INFO, INFO::DEFAULT_CONTEXT));
     SetControlLabel(i++, "{} {}", 13287, SYSTEM_SCREEN_RESOLUTION);
 
-#if 0
     auto renderingSystem = CServiceBroker::GetRenderSystem();
     if (renderingSystem)
     {
@@ -162,7 +161,6 @@ void CGUIWindowSystemInfo::FrameMove()
         SET_CONTROL_LABEL(i++,
                           StringUtils::Format("{} {}", g_localizeStrings.Get(39153), platform));
     }
-#endif
 
     SetControlLabel(i++, "{} {}", 22010, SYSTEM_GPU_TEMPERATURE);
 

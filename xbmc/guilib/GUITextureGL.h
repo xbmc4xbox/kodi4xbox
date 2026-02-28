@@ -29,16 +29,23 @@
  */
 
 #include "GUITexture.h"
+#include "utils/ColorUtils.h"
 
 #include "system_gl.h"
 
 class CGUITextureGL : public CGUITextureBase
 {
 public:
+  static CGUITextureGL* CreateTexture(
+      float posX, float posY, float width, float height, const CTextureInfo& texture);
+
   CGUITextureGL(float posX, float posY, float width, float height, const CTextureInfo& texture);
-  static void DrawQuad(const CRect &coords, color_t color, CTexture *texture = NULL, const CRect *texCoords = NULL);
+  static void DrawQuad(const CRect &coords, UTILS::COLOR::Color color, CTexture *texture = NULL, const CRect *texCoords = NULL);
+
+  CGUITextureGL* Clone() const override;
+
 protected:
-  void Begin(color_t color);
+  void Begin(UTILS::COLOR::Color color);
   void Draw(float *x, float *y, float *z, const CRect &texture, const CRect &diffuse, int orientation);
   void End();
 private:

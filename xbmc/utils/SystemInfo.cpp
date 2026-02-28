@@ -52,9 +52,7 @@ using namespace winrt::Windows::System::Profile;
 #if defined(TARGET_DARWIN)
 #include "platform/darwin/DarwinUtils.h"
 #endif
-#ifndef _XBOX
 #include "powermanagement/PowerManager.h"
-#endif
 #include "utils/StringUtils.h"
 #include "utils/XMLUtils.h"
 #if defined(TARGET_ANDROID)
@@ -327,11 +325,7 @@ std::string CSysInfoJob::GetVideoEncoder()
 
 std::string CSysInfoJob::GetBatteryLevel()
 {
-#if 0
   return StringUtils::Format("{}%", CServiceBroker::GetPowerManager().BatteryLevel());
-#else
-  return "0%";
-#endif
 }
 
 bool CSysInfoJob::SystemUpTime(int iInputMinutes, int &iMinutes, int &iHours, int &iDays)

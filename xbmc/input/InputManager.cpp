@@ -25,7 +25,7 @@
 #include "settings/SettingsComponent.h"
 #include "settings/lib/Setting.h"
 #include "utils/ExecString.h"
-#include "guilib/Geometry.h"
+#include "utils/Geometry.h"
 #include "utils/StringUtils.h"
 #include "utils/log.h"
 
@@ -138,7 +138,7 @@ bool CInputManager::OnKey(const CKey& key)
       // process for long press if that is the source
       if (key.GetFromService() ||
           !m_buttonTranslator->HasLongpressMapping(
-              CServiceBroker::GetGUI()->GetWindowManager().GetFocusedWindow(), key))
+              CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindowOrDialog(), key))
       {
         m_LastKey.Reset();
         bHandled = HandleKey(key);
@@ -163,7 +163,7 @@ bool CInputManager::OnKey(const CKey& key)
 bool CInputManager::HandleKey(const CKey& key)
 {
   // get the current active window
-  int iWin = CServiceBroker::GetGUI()->GetWindowManager().GetFocusedWindow();
+  int iWin = CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindowOrDialog();
 
   // this will be checked for certain keycodes that need
   // special handling if the screensaver is active

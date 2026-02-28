@@ -25,6 +25,7 @@
 #include "settings/SettingsComponent.h"
 #include "utils/URIUtils.h"
 #include "utils/Variant.h"
+#include "windows/GUIWindowFileManager.h"
 
 using namespace XFILE;
 

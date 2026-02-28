@@ -9,7 +9,6 @@
 #include "GUIWindowHome.h"
 
 #include "ServiceBroker.h"
-#include "application/Application.h"
 #include "application/ApplicationComponents.h"
 #include "application/ApplicationPlayer.h"
 #include "guilib/GUIComponent.h"
@@ -49,7 +48,9 @@ bool CGUIWindowHome::OnAction(const CAction &action)
     const auto appPlayer = components.GetComponent<CApplicationPlayer>();
     if (appPlayer->IsPlaying())
     {
-      g_application.SwitchToFullScreen();
+      CGUIComponent* gui = CServiceBroker::GetGUI();
+      if (gui)
+        gui->GetWindowManager().SwitchToFullScreen();
 
       return true;
     }

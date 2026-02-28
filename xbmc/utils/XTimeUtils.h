@@ -12,7 +12,7 @@
 #include <string>
 #include <thread>
 
-#if !defined(TARGET_WINDOWS) && !defined(NXDK)
+#if !defined(TARGET_WINDOWS) && !defined(_XBOX)
 #include "PlatformDefs.h"
 #else
 // This is needed, a forward declaration of FILETIME

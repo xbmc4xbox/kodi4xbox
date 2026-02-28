@@ -32,9 +32,9 @@ DllDynamic::DllDynamic()
   m_DelayUnload=true;
 }
 
-DllDynamic::DllDynamic(const std::string& strDllName)
+DllDynamic::DllDynamic(const std::string& strDllName):
+  m_strDllName(strDllName)
 {
-  m_strDllName=strDllName;
   m_dll=NULL;
   m_DelayUnload=true;
 }
@@ -54,7 +54,7 @@ bool DllDynamic::Load()
 
   if (!ResolveExports())
   {
-    CLog::Log(LOGERROR, "Unable to resolve exports from dll {}", m_strDllName.c_str());
+    CLog::Log(LOGERROR, "Unable to resolve exports from dll {}", m_strDllName);
     Unload();
     return false;
   }

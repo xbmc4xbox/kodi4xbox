@@ -12,7 +12,7 @@
 #include "settings/ISubSettings.h"
 #include "settings/lib/Setting.h"
 #include "threads/CriticalSection.h"
-#include "guilib/GraphicContext.h"
+#include "windowing/GraphicContext.h"
 
 #include <map>
 #include <string>

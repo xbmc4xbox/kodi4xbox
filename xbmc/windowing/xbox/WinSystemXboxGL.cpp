@@ -20,10 +20,22 @@
 
 #include "WinSystemXboxGL.h"
 
+#include "guilib/gui3d.h"
 #include "settings/DisplaySettings.h"
+#include "windowing/WindowSystemFactory.h"
 
 #include <hal/video.h>
 #include <pbgl.h>
+
+void CWinSystemXboxGL::Register()
+{
+  KODI::WINDOWING::CWindowSystemFactory::RegisterWindowSystem(CreateWinSystem);
+}
+
+std::unique_ptr<CWinSystemBase> CWinSystemXboxGL::CreateWinSystem()
+{
+  return std::make_unique<CWinSystemXboxGL>();
+}
 
 CWinSystemXboxGL::CWinSystemXboxGL()
 {

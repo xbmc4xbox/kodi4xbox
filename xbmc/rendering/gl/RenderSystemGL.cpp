@@ -24,9 +24,9 @@
 #ifdef HAS_GL
 
 #include "RenderSystemGL.h"
-#include "guilib/GraphicContext.h"
+#include "windowing/GraphicContext.h"
 #include "settings/AdvancedSettings.h"
-#include "guilib/MatrixGLES.h"
+#include "rendering/MatrixGL.h"
 #include "settings/DisplaySettings.h"
 #include "utils/log.h"
 #include "utils/GLUtils.h"
@@ -265,7 +265,7 @@ bool CRenderSystemGL::EndRender()
   return true;
 }
 
-bool CRenderSystemGL::ClearBuffers(color_t color)
+bool CRenderSystemGL::ClearBuffers(UTILS::COLOR::Color color)
 {
   if (!m_bRenderCreated)
     return false;

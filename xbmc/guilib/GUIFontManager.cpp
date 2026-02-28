@@ -19,7 +19,7 @@
  */
 
 #include "GUIFontManager.h"
-#include "GraphicContext.h"
+#include "windowing/GraphicContext.h"
 #include "GUIComponent.h"
 #include "GUIWindowManager.h"
 #include "addons/Skin.h"
@@ -58,12 +58,12 @@ void GUIFontManager::RescaleFontSizeAndAspect(float *size, float *aspect, const 
   // as fonts aren't scaled at render time (due to aliasing) we must scale
   // the size of the fonts before they are drawn to bitmaps
   float scaleX, scaleY;
-  g_graphicsContext.GetGUIScaling(sourceRes, scaleX, scaleY);
+  CServiceBroker::GetWinSystem()->GetGfxContext().GetGUIScaling(sourceRes, scaleX, scaleY);
 
   if (preserveAspect)
   {
     // font always displayed in the aspect specified by the aspect parameter
-    *aspect /= g_graphicsContext.GetResInfo().fPixelRatio;
+    *aspect /= CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo().fPixelRatio;
   }
   else
   {
@@ -93,7 +93,7 @@ static bool CheckFont(std::string& strPath, const std::string& newPath,
   return true;
 }
 
-CGUIFont* GUIFontManager::LoadTTF(const std::string& strFontName, const std::string& strFilename, color_t textColor, color_t shadowColor, const int iSize, const int iStyle, bool border, float lineSpacing, float aspect, const RESOLUTION_INFO *sourceRes, bool preserveAspect)
+CGUIFont* GUIFontManager::LoadTTF(const std::string& strFontName, const std::string& strFilename, UTILS::COLOR::Color textColor, UTILS::COLOR::Color shadowColor, const int iSize, const int iStyle, bool border, float lineSpacing, float aspect, const RESOLUTION_INFO *sourceRes, bool preserveAspect)
 {
   float originalAspect = aspect;
 
@@ -112,7 +112,7 @@ CGUIFont* GUIFontManager::LoadTTF(const std::string& strFontName, const std::str
   std::string strPath;
   if (!CURL::IsFullPath(strFilename))
   {
-    strPath = URIUtils::AddFileToFolder(g_graphicsContext.GetMediaDir(), "fonts", strFilename);
+    strPath = URIUtils::AddFileToFolder(CServiceBroker::GetWinSystem()->GetGfxContext().GetMediaDir(), "fonts", strFilename);
   }
   else
     strPath = strFilename;
@@ -398,8 +398,8 @@ void GUIFontManager::LoadFonts(const TiXmlNode* fontNode)
     int iSize = 20;
     float aspect = 1.0f;
     float lineSpacing = 1.0f;
-    color_t shadowColor = 0;
-    color_t textColor = 0;
+    UTILS::COLOR::Color shadowColor = 0;
+    UTILS::COLOR::Color textColor = 0;
     int iStyle = FONT_STYLE_NORMAL;
 
     XMLUtils::GetString(fontNode, "name", fontName);

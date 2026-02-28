@@ -27,6 +27,8 @@
  *
  */
 
+#include "utils/ColorUtils.h"
+
 #include <assert.h>
 #include <math.h>
 #include <string>
@@ -34,9 +36,8 @@
 #include <vector>
 
 typedef uint32_t character_t;
-typedef uint32_t color_t;
 typedef std::vector<character_t> vecText;
-typedef std::vector<color_t> vecColors;
+typedef std::vector<UTILS::COLOR::Color> vecColors;
 
 class CGUIFontTTFBase;
 
@@ -89,6 +90,7 @@ public:
     m_textWidth = 0;
     m_totalWidth = 0;
     m_widthValid = false;
+    m_loopCount = 0;
   }
   float GetPixelsPerFrame();
 
@@ -101,6 +103,8 @@ public:
   mutable float m_textWidth;
   mutable float m_totalWidth;
   mutable bool m_widthValid;
+
+  unsigned int m_loopCount;
 
   static const int defaultSpeed = 60;
 private:
@@ -115,13 +119,13 @@ private:
 class CGUIFont
 {
 public:
-  CGUIFont(const std::string& strFontName, uint32_t style, color_t textColor,
-     color_t shadowColor, float lineSpacing, float origHeight, CGUIFontTTFBase *font);
+  CGUIFont(const std::string& strFontName, uint32_t style, UTILS::COLOR::Color textColor,
+     UTILS::COLOR::Color shadowColor, float lineSpacing, float origHeight, CGUIFontTTFBase *font);
   virtual ~CGUIFont();
 
   std::string& GetFontName();
 
-  void DrawText( float x, float y, color_t color, color_t shadowColor,
+  void DrawText( float x, float y, UTILS::COLOR::Color color, UTILS::COLOR::Color shadowColor,
                  const vecText &text, uint32_t alignment, float maxPixelWidth)
   {
     vecColors colors;
@@ -129,10 +133,10 @@ public:
     DrawText(x, y, colors, shadowColor, text, alignment, maxPixelWidth);
   };
 
-  void DrawText( float x, float y, const vecColors &colors, color_t shadowColor,
+  void DrawText( float x, float y, const vecColors &colors, UTILS::COLOR::Color shadowColor,
                  const vecText &text, uint32_t alignment, float maxPixelWidth);
 
-  void DrawScrollingText( float x, float y, const vecColors &colors, color_t shadowColor,
+  void DrawScrollingText( float x, float y, const vecColors &colors, UTILS::COLOR::Color shadowColor,
                  const vecText &text, uint32_t alignment, float maxPixelWidth, const CScrollInfo &scrollInfo);
 
   bool UpdateScrollInfo(const vecText &text, CScrollInfo &scrollInfo);
@@ -163,8 +167,8 @@ public:
 protected:
   std::string m_strFontName;
   uint32_t m_style;
-  color_t m_shadowColor;
-  color_t m_textColor;
+  UTILS::COLOR::Color m_shadowColor;
+  UTILS::COLOR::Color m_textColor;
   float m_lineSpacing;
   float m_origHeight;
   CGUIFontTTFBase *m_font; // the font object has the size information

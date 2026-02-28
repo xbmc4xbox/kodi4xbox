@@ -129,9 +129,6 @@ constexpr const int GUI_MSG_SETTING_UPDATED         = GUI_MSG_USER + 35;
 // Message sent to CGUIWindowSlideshow to show picture
 constexpr const int GUI_MSG_SHOW_PICTURE            = GUI_MSG_USER + 36;
 
-// Sent to text field to support 'input method'
-constexpr const int GUI_MSG_INPUT_TEXT_EDIT         = GUI_MSG_USER + 38;
-
 // Sent to CGUIWindowEventLog
 constexpr const int GUI_MSG_EVENT_ADDED             = GUI_MSG_USER + 39;
 constexpr const int GUI_MSG_EVENT_REMOVED           = GUI_MSG_USER + 40;

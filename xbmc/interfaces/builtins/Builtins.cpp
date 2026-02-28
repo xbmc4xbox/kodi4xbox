@@ -23,6 +23,7 @@
 #include "SystemBuiltins.h"
 #include "WeatherBuiltins.h"
 #include "input/InputManager.h"
+#include "powermanagement/PowerTypes.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 #include "utils/ExecString.h"
@@ -112,7 +113,6 @@ bool CBuiltins::IsSystemPowerdownCommand(const std::string& execString)
   }
   else if (execute == "shutdown")
   {
-#if 0
     switch (CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_POWERMANAGEMENT_SHUTDOWNSTATE))
     {
       case POWERSTATE_SHUTDOWN:
@@ -123,7 +123,6 @@ bool CBuiltins::IsSystemPowerdownCommand(const std::string& execString)
       default:
         return false;
     }
-#endif
   }
   return false;
 }

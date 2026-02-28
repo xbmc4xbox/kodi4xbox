@@ -16,6 +16,7 @@
 #include "application/ApplicationPlayer.h"
 #include "application/ApplicationPowerHandling.h"
 #include "application/ApplicationSkinHandling.h"
+#include "application/ApplicationVolumeHandling.h"
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIWindowManager.h"
 #include "messaging/ApplicationMessenger.h"
@@ -112,11 +113,9 @@ void CApplicationSettingsHandling::OnSettingChanged(const std::shared_ptr<const 
   if (appSkin->OnSettingChanged(*setting))
     return;
 
-#if 0
   const auto appVolume = components.GetComponent<CApplicationVolumeHandling>();
   if (appVolume->OnSettingChanged(*setting))
     return;
-#endif
 
   const auto appPower = components.GetComponent<CApplicationPowerHandling>();
   if (appPower->OnSettingChanged(*setting))
@@ -124,8 +123,13 @@ void CApplicationSettingsHandling::OnSettingChanged(const std::shared_ptr<const 
 
   const std::string& settingId = setting->GetId();
 
-
-  if (settingId == CSettings::SETTING_AUDIOOUTPUT_PASSTHROUGH)
+  if (settingId == CSettings::SETTING_VIDEOSCREEN_FAKEFULLSCREEN)
+  {
+    if (CServiceBroker::GetWinSystem()->GetGfxContext().IsFullScreenRoot())
+      CServiceBroker::GetWinSystem()->GetGfxContext().SetVideoResolution(
+          CServiceBroker::GetWinSystem()->GetGfxContext().GetVideoResolution(), true);
+  }
+  else if (settingId == CSettings::SETTING_AUDIOOUTPUT_PASSTHROUGH)
   {
     CServiceBroker::GetAppMessenger()->PostMsg(TMSG_MEDIA_RESTART);
   }
@@ -197,22 +201,14 @@ bool CApplicationSettingsHandling::OnSettingUpdate(const std::shared_ptr<CSettin
 
 bool CApplicationSettingsHandling::Load(const TiXmlNode* settings)
 {
-#if 0
   auto& components = CServiceBroker::GetAppComponents();
   const auto appVolume = components.GetComponent<CApplicationVolumeHandling>();
   return appVolume->Load(settings);
-#else
-  return true;
-#endif
 }
 
 bool CApplicationSettingsHandling::Save(TiXmlNode* settings) const
 {
-#if 0
   const auto& components = CServiceBroker::GetAppComponents();
   const auto appVolume = components.GetComponent<CApplicationVolumeHandling>();
   return appVolume->Save(settings);
-#else
-  return true;
-#endif
 }

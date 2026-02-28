@@ -372,7 +372,7 @@ bool DatabaseUtils::GetSelectFields(const Fields &fields, const MediaType &media
 
     if (GetField(*it, mediaType, DatabaseQueryPartSelect).empty())
     {
-      CLog::Log(LOGDEBUG, "DatabaseUtils::GetSortFieldList: unknown field {}", static_cast<int>(*it));
+      CLog::Log(LOGDEBUG, "DatabaseUtils::GetSortFieldList: unknown field {}", *it);
       continue;
     }
     selectFields.push_back(*it);

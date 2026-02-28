@@ -25,12 +25,12 @@
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
 #include "guilib/Texture.h"
-#include "windowing/WindowingFactory.h"
 #include "input/Key.h"
 #include "interfaces/AnnouncementManager.h"
 #include "pictures/GUIViewStatePictures.h"
 #include "pictures/PictureThumbLoader.h"
 #include "playlists/PlayListTypes.h"
+#include "rendering/RenderSystem.h"
 #include "settings/DisplaySettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
@@ -116,9 +116,9 @@ void CBackgroundPicLoader::Process()
             int iSize = texture->GetWidth() * texture->GetHeight() - MAX_PICTURE_SIZE;
             if ((iSize + (int)texture->GetWidth() > 0) || (iSize + (int)texture->GetHeight() > 0))
               bFullSize = true;
-            if (!bFullSize && texture->GetWidth() == g_Windowing.GetMaxTextureSize())
+            if (!bFullSize && texture->GetWidth() == CServiceBroker::GetRenderSystem()->GetMaxTextureSize())
               bFullSize = true;
-            if (!bFullSize && texture->GetHeight() == g_Windowing.GetMaxTextureSize())
+            if (!bFullSize && texture->GetHeight() == CServiceBroker::GetRenderSystem()->GetMaxTextureSize())
               bFullSize = true;
           }
         }
@@ -233,7 +233,7 @@ void CGUIWindowSlideShow::Reset()
   m_iLastFailedNextSlide = -1;
   m_slides.clear();
   AnnouncePlaylistClear();
-  m_Resolution = g_graphicsContext.GetVideoResolution();
+  m_Resolution = CServiceBroker::GetWinSystem()->GetGfxContext().GetVideoResolution();
 }
 
 void CGUIWindowSlideShow::OnDeinitWindow(int nextWindowID)
@@ -241,7 +241,7 @@ void CGUIWindowSlideShow::OnDeinitWindow(int nextWindowID)
   if (m_Resolution != CDisplaySettings::GetInstance().GetCurrentResolution())
   {
     //FIXME: Use GUI resolution for now
-    //g_graphicsContext.SetVideoResolution(CDisplaySettings::GetInstance().GetCurrentResolution(), true);
+    //CServiceBroker::GetWinSystem()->GetGfxContext().SetVideoResolution(CDisplaySettings::GetInstance().GetCurrentResolution(), true);
   }
 
   if (nextWindowID != WINDOW_FULLSCREEN_VIDEO &&
@@ -374,7 +374,7 @@ void CGUIWindowSlideShow::SetDirection(int direction)
 
 void CGUIWindowSlideShow::Process(unsigned int currentTime, CDirtyRegionList &regions)
 {
-  const RESOLUTION_INFO res = g_graphicsContext.GetResInfo();
+  const RESOLUTION_INFO res = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo();
 
   // reset the screensaver if we're in a slideshow
   // (unless we are the screensaver!)
@@ -388,7 +388,7 @@ void CGUIWindowSlideShow::Process(unsigned int currentTime, CDirtyRegionList &re
 
   // if we haven't processed yet, we should mark the whole screen
   if (!HasProcessed())
-    regions.push_back(CDirtyRegion(CRect(0.0f, 0.0f, (float)g_graphicsContext.GetWidth(), (float)g_graphicsContext.GetHeight())));
+    regions.push_back(CDirtyRegion(CRect(0.0f, 0.0f, (float)CServiceBroker::GetWinSystem()->GetGfxContext().GetWidth(), (float)CServiceBroker::GetWinSystem()->GetGfxContext().GetHeight())));
 
   if (m_iCurrentSlide < 0 || m_iCurrentSlide >= static_cast<int>(m_slides.size()))
     m_iCurrentSlide = 0;
@@ -471,7 +471,7 @@ void CGUIWindowSlideShow::Process(unsigned int currentTime, CDirtyRegionList &re
 
   if (m_bErrorMessage)
   { // hack, just mark it all
-    regions.push_back(CDirtyRegion(CRect(0.0f, 0.0f, (float)g_graphicsContext.GetWidth(), (float)g_graphicsContext.GetHeight())));
+    regions.push_back(CDirtyRegion(CRect(0.0f, 0.0f, (float)CServiceBroker::GetWinSystem()->GetGfxContext().GetWidth(), (float)CServiceBroker::GetWinSystem()->GetGfxContext().GetHeight())));
     return;
   }
 
@@ -641,7 +641,7 @@ void CGUIWindowSlideShow::Process(unsigned int currentTime, CDirtyRegionList &re
     MarkDirtyRegion();
   }
   CGUIWindow::Process(currentTime, regions);
-  m_renderRegion.SetRect(0, 0, (float)g_graphicsContext.GetWidth(), (float)g_graphicsContext.GetHeight());
+  m_renderRegion.SetRect(0, 0, (float)CServiceBroker::GetWinSystem()->GetGfxContext().GetWidth(), (float)CServiceBroker::GetWinSystem()->GetGfxContext().GetHeight());
 }
 
 void CGUIWindowSlideShow::Render()
@@ -649,7 +649,7 @@ void CGUIWindowSlideShow::Render()
   if (m_slides.empty())
     return;
 
-  CGraphicContext& gfxCtx = g_graphicsContext;
+  CGraphicContext& gfxCtx = CServiceBroker::GetWinSystem()->GetGfxContext();
   gfxCtx.Clear(0xff000000);
 
   if (m_slides.at(m_iCurrentSlide)->IsVideo())
@@ -761,7 +761,7 @@ EVENT_RESULT CGUIWindowSlideShow::OnMouseEvent(const CPoint &point, const CMouse
         OnAction(CAction(ACTION_PREV_PICTURE));
     }
   }
-  else if (event.m_id == ACTION_GESTURE_END/* || event.m_id == ACTION_GESTURE_ABORT*/)
+  else if (event.m_id == ACTION_GESTURE_END || event.m_id == ACTION_GESTURE_ABORT)
   {
     if (m_fRotate != 0.0f)
     {
@@ -897,7 +897,7 @@ bool CGUIWindowSlideShow::OnAction(const CAction &action)
   case ACTION_GESTURE_SWIPE_DOWN:
     if (m_iZoomFactor == 1 || !m_Image[m_iCurrentPic].m_bCanMoveVertically)
     {
-      bool swipeOnLeft = action.GetAmount() < g_graphicsContext.GetWidth() / 2.0f;
+      bool swipeOnLeft = action.GetAmount() < CServiceBroker::GetWinSystem()->GetGfxContext().GetWidth() / 2.0f;
       bool swipeUp = action.GetID() == ACTION_GESTURE_SWIPE_UP;
       if (swipeUp == swipeOnLeft)
         Rotate(90.0f);
@@ -931,7 +931,6 @@ bool CGUIWindowSlideShow::OnAction(const CAction &action)
     // this action is used and works, when CAction object provides both x and y coordinates
     Move(action.GetAmount()*PICTURE_MOVE_AMOUNT_ANALOG, -action.GetAmount(1)*PICTURE_MOVE_AMOUNT_ANALOG);
     break;
-#ifndef _XBOX
   case ACTION_ANALOG_MOVE_X_LEFT:
     Move(-action.GetAmount()*PICTURE_MOVE_AMOUNT_ANALOG, 0.0f);
     break;
@@ -944,7 +943,6 @@ bool CGUIWindowSlideShow::OnAction(const CAction &action)
   case ACTION_ANALOG_MOVE_Y_DOWN:
     Move(0.0f, action.GetAmount()*PICTURE_MOVE_AMOUNT_ANALOG);
     break;
-#endif
 
   default:
     return CGUIDialog::OnAction(action);
@@ -964,7 +962,7 @@ void CGUIWindowSlideShow::RenderErrorMessage()
   }
 
   CGUIFont *pFont = static_cast<const CGUILabelControl*>(control)->GetLabelInfo().font;
-  CGUITextLayout::DrawText(pFont, 0.5f*g_graphicsContext.GetWidth(), 0.5f*g_graphicsContext.GetHeight(), 0xffffffff, 0, g_localizeStrings.Get(747), XBFONT_CENTER_X | XBFONT_CENTER_Y);
+  CGUITextLayout::DrawText(pFont, 0.5f*CServiceBroker::GetWinSystem()->GetGfxContext().GetWidth(), 0.5f*CServiceBroker::GetWinSystem()->GetGfxContext().GetHeight(), 0xffffffff, 0, g_localizeStrings.Get(747), XBFONT_CENTER_X | XBFONT_CENTER_Y);
 }
 
 bool CGUIWindowSlideShow::OnMessage(CGUIMessage& message)
@@ -977,9 +975,9 @@ bool CGUIWindowSlideShow::OnMessage(CGUIMessage& message)
 
       //FIXME: Use GUI resolution for now
       if (false /*m_Resolution != CDisplaySettings::GetInstance().GetCurrentResolution() && m_Resolution != INVALID && m_Resolution!=AUTORES*/)
-        g_graphicsContext.SetVideoResolution(m_Resolution, false);
+        CServiceBroker::GetWinSystem()->GetGfxContext().SetVideoResolution(m_Resolution, false);
       else
-        m_Resolution = g_graphicsContext.GetVideoResolution();
+        m_Resolution = CServiceBroker::GetWinSystem()->GetGfxContext().GetVideoResolution();
 
       CGUIDialog::OnMessage(message);
 
@@ -1338,8 +1336,8 @@ void CGUIWindowSlideShow::AddItems(const std::string &strPath, path_set *recursi
 
 void CGUIWindowSlideShow::GetCheckedSize(float width, float height, int &maxWidth, int &maxHeight)
 {
-  maxWidth = g_Windowing.GetMaxTextureSize();
-  maxHeight = g_Windowing.GetMaxTextureSize();
+  maxWidth = CServiceBroker::GetRenderSystem()->GetMaxTextureSize();
+  maxHeight = CServiceBroker::GetRenderSystem()->GetMaxTextureSize();
 }
 
 std::string CGUIWindowSlideShow::GetPicturePath(CFileItem *item)

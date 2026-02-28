@@ -22,7 +22,7 @@
 #include "utils/Variant.h"
 #include "utils/XMLUtils.h"
 #include "utils/log.h"
-#include "guilib/GraphicContext.h"
+#include "windowing/GraphicContext.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -191,7 +191,7 @@ bool CDisplaySettings::OnSettingChanging(const std::shared_ptr<const CSetting>& 
     RESOLUTION newRes = (RESOLUTION)std::static_pointer_cast<const CSettingInt>(setting)->GetValue();
 
     SetCurrentResolution(newRes, false);
-    g_graphicsContext.SetVideoResolution(newRes);
+    CServiceBroker::GetWinSystem()->GetGfxContext().SetVideoResolution(newRes, false);
 
     // check if this setting is temporarily blocked from showing the dialog
     if (oldRes != newRes)
@@ -211,7 +211,7 @@ bool CDisplaySettings::OnSettingChanging(const std::shared_ptr<const CSetting>& 
   }
 #if 0 // XBOX SPECIFIC SETTINGS
   else if (settingId == "videoscreen.flickerfilter" || settingId == "videoscreen.soften")
-    g_graphicsContext.SetVideoResolution(CDisplaySettings::Get().GetCurrentResolution(), TRUE);
+    CServiceBroker::GetWinSystem()->GetGfxContext().SetVideoResolution(CDisplaySettings::Get().GetCurrentResolution(), TRUE);
   else if (StringUtils::StartsWith(settingId, "videooutput."))
   {
     if (settingId == "videooutput.aspect")
@@ -431,7 +431,7 @@ void CDisplaySettings::SettingOptionsResolutionsFiller(const SettingConstPtr& se
   RESOLUTION res = RES_INVALID;
 
   std::vector<RESOLUTION> resolutions;
-  g_graphicsContext.GetAllowedResolutions(resolutions);
+  CServiceBroker::GetWinSystem()->GetGfxContext().GetAllowedResolutions(resolutions);
   for (auto resolution : resolutions)
   {
     RESOLUTION_INFO res1 = CDisplaySettings::GetInstance().GetCurrentResolutionInfo();

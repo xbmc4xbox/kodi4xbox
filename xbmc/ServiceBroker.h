@@ -47,6 +47,9 @@ class IApplicationComponent;
 class CFavouritesService;
 class CInputManager;
 class CFileExtensionProvider;
+class CWinSystemBase;
+class CRenderSystemBase;
+class CPowerManager;
 class CWeatherManager;
 class CPlayerCoreFactory;
 class CDatabaseManager;
@@ -54,6 +57,8 @@ class CGUIComponent;
 class CSettingsComponent;
 class CMediaManager;
 class CCPUInfo;
+class CLog;
+class CPlatform;
 class CTextureCache;
 class CJobManager;
 class CKeyboardLayoutManager;
@@ -86,6 +91,7 @@ public:
   static KODI::ADDONS::CExtsMimeSupportList& GetExtsMimeSupportList();
   static CContextMenuManager& GetContextMenuManager();
   static CDataCacheCore& GetDataCacheCore();
+  static CPlatform& GetPlatform();
   static PLAYLIST::CPlayListPlayer& GetPlaylistPlayer();
   static CFavouritesService& GetFavouritesService();
   static ADDON::CServiceAddonManager& GetServiceAddons();
@@ -94,6 +100,7 @@ public:
   static CFileExtensionProvider& GetFileExtensionProvider();
   static bool IsAddonInterfaceUp();
   static bool IsServiceManagerUp();
+  static CPowerManager& GetPowerManager();
   static CWeatherManager& GetWeatherManager();
   static CPlayerCoreFactory& GetPlayerCoreFactory();
   static CDatabaseManager& GetDatabaseManager();
@@ -107,6 +114,11 @@ public:
   static void RegisterSettingsComponent(const std::shared_ptr<CSettingsComponent>& settings);
   static void UnregisterSettingsComponent();
   static std::shared_ptr<CSettingsComponent> GetSettingsComponent();
+
+  static void RegisterWinSystem(CWinSystemBase* winsystem);
+  static void UnregisterWinSystem();
+  static CWinSystemBase* GetWinSystem();
+  static CRenderSystemBase* GetRenderSystem();
 
   static std::shared_ptr<CCPUInfo> GetCPUInfo();
   static void RegisterCPUInfo(std::shared_ptr<CCPUInfo> cpuInfo);
@@ -132,8 +144,10 @@ public:
 
 private:
   std::shared_ptr<CAppParams> m_appParams;
+  std::unique_ptr<CLog> m_logging;
   std::shared_ptr<ANNOUNCEMENT::CAnnouncementManager> m_pAnnouncementManager;
   CGUIComponent* m_pGUI;
+  CWinSystemBase* m_pWinSystem;
   std::shared_ptr<CSettingsComponent> m_pSettingsComponent;
   std::shared_ptr<CCPUInfo> m_cpuInfo;
   std::shared_ptr<CTextureCache> m_textureCache;

@@ -13,6 +13,7 @@
 #include "profiles/ProfileManager.h"
 #include "settings/SettingsComponent.h"
 #include "utils/log.h"
+#include "windowing/WinSystem.h"
 
 #include <stdexcept>
 #include <utility>
@@ -20,7 +21,7 @@
 using namespace KODI;
 
 CServiceBroker::CServiceBroker()
-  : m_pGUI(nullptr)
+  : m_pGUI(nullptr), m_pWinSystem(nullptr)
 {
 }
 
@@ -87,6 +88,11 @@ CDataCacheCore& CServiceBroker::GetDataCacheCore()
   return g_application.m_ServiceManager->GetDataCacheCore();
 }
 
+CPlatform& CServiceBroker::GetPlatform()
+{
+  return g_application.m_ServiceManager->GetPlatform();
+}
+
 PLAYLIST::CPlayListPlayer& CServiceBroker::GetPlaylistPlayer()
 {
   return g_application.m_ServiceManager->GetPlaylistPlayer();
@@ -140,6 +146,34 @@ bool CServiceBroker::IsAddonInterfaceUp()
 bool CServiceBroker::IsServiceManagerUp()
 {
   return g_application.m_ServiceManager && g_application.m_ServiceManager->init_level == 3;
+}
+
+CWinSystemBase* CServiceBroker::GetWinSystem()
+{
+  return g_serviceBroker.m_pWinSystem;
+}
+
+void CServiceBroker::RegisterWinSystem(CWinSystemBase* winsystem)
+{
+  g_serviceBroker.m_pWinSystem = winsystem;
+}
+
+void CServiceBroker::UnregisterWinSystem()
+{
+  g_serviceBroker.m_pWinSystem = nullptr;
+}
+
+CRenderSystemBase* CServiceBroker::GetRenderSystem()
+{
+  if (g_serviceBroker.m_pWinSystem)
+    return g_serviceBroker.m_pWinSystem->GetRenderSystem();
+
+  return nullptr;
+}
+
+CPowerManager& CServiceBroker::GetPowerManager()
+{
+  return g_application.m_ServiceManager->GetPowerManager();
 }
 
 CWeatherManager& CServiceBroker::GetWeatherManager()

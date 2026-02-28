@@ -488,9 +488,9 @@ bool CPlayerController::OnAction(const CAction &action)
         return true;
       }
 
-#if 0
       case ACTION_PLAYER_RESOLUTION_SELECT:
       {
+#if 0
         std::vector<CVariant> indexList = CServiceBroker::GetSettingsComponent()->GetSettings()->GetList(CSettings::SETTING_VIDEOSCREEN_WHITELIST);
 
         CGUIDialogSelect *dialog = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIDialogSelect>(WINDOW_DIALOG_SELECT);
@@ -498,11 +498,11 @@ bool CPlayerController::OnAction(const CAction &action)
         {
           int current = 0;
           int idx = 0;
-          auto currentRes = g_graphicsContext.GetVideoResolution();
+          auto currentRes = CServiceBroker::GetWinSystem()->GetGfxContext().GetVideoResolution();
           for (const CVariant &mode : indexList)
           {
             auto res = CDisplaySettings::GetInstance().GetResFromString(mode.asString());
-            const RESOLUTION_INFO info = g_graphicsContext.GetResInfo(res);
+            const RESOLUTION_INFO info = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo(res);
             dialog->Add(info.strMode);
             if (res == currentRes)
               current = idx;
@@ -518,9 +518,9 @@ bool CPlayerController::OnAction(const CAction &action)
             CServiceBroker::GetWinSystem()->GetGfxContext().SetVideoResolution(res, false);
           }
         }
+#endif
         return true;
       }
-#endif
 
       default:
         break;

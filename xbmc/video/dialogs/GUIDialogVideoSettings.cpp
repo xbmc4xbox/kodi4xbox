@@ -441,13 +441,7 @@ void CGUIDialogVideoSettings::InitializeSettings()
   // tone mapping
   if (appPlayer->Supports(RENDERFEATURE_TONEMAP))
   {
-#if 0
-    bool visible = !(CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(
-                         CServiceBroker::GetWinSystem()->SETTING_WINSYSTEM_IS_HDR_DISPLAY) &&
-                     CServiceBroker::GetWinSystem()->IsHDRDisplay());
-#else
     bool visible = false;
-#endif
     entries.clear();
     entries.push_back(TranslatableIntegerSettingOption(36554, VS_TONEMAPMETHOD_OFF));
     entries.push_back(TranslatableIntegerSettingOption(36555, VS_TONEMAPMETHOD_REINHARD));
@@ -463,13 +457,6 @@ void CGUIDialogVideoSettings::InitializeSettings()
 
   // stereoscopic settings
   entries.clear();
-#if 0
-  entries.push_back(TranslatableIntegerSettingOption(16316, RENDER_STEREO_MODE_OFF));
-  entries.push_back(TranslatableIntegerSettingOption(36503, RENDER_STEREO_MODE_SPLIT_HORIZONTAL));
-  entries.push_back(TranslatableIntegerSettingOption(36504, RENDER_STEREO_MODE_SPLIT_VERTICAL));
-  AddSpinner(groupStereoscopic, SETTING_VIDEO_STEREOSCOPICMODE, 36535, SettingLevel::Basic, videoSettings.m_StereoMode, entries);
-  AddToggle(groupStereoscopic, SETTING_VIDEO_STEREOSCOPICINVERT, 36536, SettingLevel::Basic, videoSettings.m_StereoInvert);
-#endif
 
   // general settings
   AddButton(groupSaveAsDefault, SETTING_VIDEO_MAKE_DEFAULT, 12376, SettingLevel::Basic);

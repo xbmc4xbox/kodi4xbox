@@ -21,7 +21,7 @@
 #include <stdint.h>
 #include <vector>
 #include "GUIFontTTF.h"
-#include "GraphicContext.h"
+#include "windowing/GraphicContext.h"
 
 using namespace std::chrono_literals;
 
@@ -164,8 +164,8 @@ Value &CGUIFontCacheImpl<Position, Value>::Lookup(Position &pos,
   const CGUIFontCacheKey<Position> key(pos,
                                        const_cast<vecColors &>(colors), const_cast<vecText &>(text),
                                        alignment, maxPixelWidth,
-                                       scrolling, g_graphicsContext.GetGUIMatrix(),
-                                       g_graphicsContext.GetGUIScaleX(), g_graphicsContext.GetGUIScaleY());
+                                       scrolling, CServiceBroker::GetWinSystem()->GetGfxContext().GetGUIMatrix(),
+                                       CServiceBroker::GetWinSystem()->GetGfxContext().GetGUIScaleX(), CServiceBroker::GetWinSystem()->GetGfxContext().GetGUIScaleY());
 
   auto i = m_list.FindKey(key);
   if (i == m_list.hashMap.end())

@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include "platform/Platform.h"
+
 #include <memory>
 
 namespace ADDON
@@ -26,6 +28,8 @@ class CPlayListPlayer;
 class CContextMenuManager;
 class CDataCacheCore;
 class CFavouritesService;
+class CWinSystemBase;
+class CPowerManager;
 class CWeatherManager;
 
 namespace KODI
@@ -65,6 +69,9 @@ public:
   ADDON::CRepositoryUpdater& GetRepositoryUpdater();
   CContextMenuManager& GetContextMenuManager();
   CDataCacheCore& GetDataCacheCore();
+  /**\brief Get the platform object. This is save to be called after Init1() was called
+   */
+  CPlatform& GetPlatform();
 
   PLAYLIST::CPlayListPlayer& GetPlaylistPlayer();
   int init_level = 0;
@@ -73,6 +80,8 @@ public:
   CInputManager& GetInputManager();
   CFileExtensionProvider& GetFileExtensionProvider();
 
+  CPowerManager& GetPowerManager();
+
   CWeatherManager& GetWeatherManager();
 
   CPlayerCoreFactory& GetPlayerCoreFactory();
@@ -80,6 +89,10 @@ public:
   CDatabaseManager& GetDatabaseManager();
 
   CMediaManager& GetMediaManager();
+
+#if !defined(TARGET_WINDOWS) && defined(HAS_DVD_DRIVE)
+  MEDIA_DETECT::CDetectDVDMedia& GetDetectDVDMedia();
+#endif
 
 protected:
   struct delete_dataCacheCore
@@ -104,12 +117,17 @@ protected:
   std::unique_ptr<ADDON::CRepositoryUpdater> m_repositoryUpdater;
   std::unique_ptr<CContextMenuManager, delete_contextMenuManager> m_contextMenuManager;
   std::unique_ptr<CDataCacheCore, delete_dataCacheCore> m_dataCacheCore;
+  std::unique_ptr<CPlatform> m_Platform;
   std::unique_ptr<PLAYLIST::CPlayListPlayer> m_playlistPlayer;
   std::unique_ptr<CFavouritesService, delete_favouritesService> m_favouritesService;
   std::unique_ptr<CInputManager> m_inputManager;
   std::unique_ptr<CFileExtensionProvider> m_fileExtensionProvider;
+  std::unique_ptr<CPowerManager> m_powerManager;
   std::unique_ptr<CWeatherManager> m_weatherManager;
   std::unique_ptr<CPlayerCoreFactory> m_playerCoreFactory;
   std::unique_ptr<CDatabaseManager> m_databaseManager;
   std::unique_ptr<CMediaManager> m_mediaManager;
+#if !defined(TARGET_WINDOWS) && defined(HAS_DVD_DRIVE)
+  std::unique_ptr<MEDIA_DETECT::CDetectDVDMedia> m_DetectDVDType;
+#endif
 };

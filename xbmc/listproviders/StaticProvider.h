@@ -22,7 +22,7 @@ public:
   ~CStaticListProvider() override;
 
   // Implementation of IListProvider
-  IListProvider* Clone() override;
+  std::unique_ptr<IListProvider> Clone() override;
   bool Update(bool forceRefresh) override;
   void Fetch(std::vector<CGUIListItemPtr> &items) override;
   bool OnClick(const CGUIListItemPtr &item) override;

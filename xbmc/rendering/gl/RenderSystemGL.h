@@ -37,7 +37,7 @@ public:
   bool BeginRender() override;
   bool EndRender() override;
   void PresentRender(bool rendered, bool videoLayer) override;
-  bool ClearBuffers(color_t color) override;
+  bool ClearBuffers(UTILS::COLOR::Color color) override;
   bool IsExtSupported(const char* extension) override;
 
   void SetVSync(bool vsync);

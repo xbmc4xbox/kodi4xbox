@@ -31,7 +31,7 @@
 #include <utility>
 #include <vector>
 
-#include "GraphicContext.h"
+#include "windowing/GraphicContext.h"
 #include "IMsgTargetCallback.h"
 #include "utils/GlobalsHandling.h"
 
@@ -68,7 +68,7 @@ public:
 
   void Unload(const std::string& strFontName);
   void LoadFonts(const std::string &fontSet);
-  CGUIFont* LoadTTF(const std::string& strFontName, const std::string& strFilename, color_t textColor, color_t shadowColor, const int iSize, const int iStyle, bool border = false, float lineSpacing = 1.0f, float aspect = 1.0f, const RESOLUTION_INFO *res = NULL, bool preserveAspect = false);
+  CGUIFont* LoadTTF(const std::string& strFontName, const std::string& strFilename, UTILS::COLOR::Color textColor, UTILS::COLOR::Color shadowColor, const int iSize, const int iStyle, bool border = false, float lineSpacing = 1.0f, float aspect = 1.0f, const RESOLUTION_INFO *res = NULL, bool preserveAspect = false);
   CGUIFont* GetFont(const std::string& strFontName, bool fallback = true);
 
   /*! \brief return a default font

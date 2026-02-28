@@ -12,7 +12,7 @@
 #include "settings/lib/ISettingCallback.h"
 #include "threads/CriticalSection.h"
 #include "utils/Observer.h"
-#include "guilib/GraphicContext.h" // RESOLUTION
+#include "windowing/Resolution.h"
 
 #include <map>
 #include <set>

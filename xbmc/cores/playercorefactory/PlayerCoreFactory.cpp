@@ -9,7 +9,6 @@
 #include "PlayerCoreFactory.h"
 
 #include "FileItem.h"
-#include "ServiceBroker.h"
 #include "PlayerCoreConfig.h"
 #include "PlayerSelectionRule.h"
 #include "URL.h"

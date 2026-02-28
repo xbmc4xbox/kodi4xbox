@@ -763,7 +763,7 @@ void CGUIWindowMusicBase::OnRetrieveMusicInfo(CFileItemList& items)
   m_musicInfoLoader.SetProgressCallback(m_dlgProgress);
   m_musicInfoLoader.Load(items);
 
-  bool bShowProgress = !CServiceBroker::GetGUI()->GetWindowManager().HasModalDialog();
+  bool bShowProgress = !CServiceBroker::GetGUI()->GetWindowManager().HasModalDialog(true);
   bool bProgressVisible = false;
 
   auto start = std::chrono::steady_clock::now();

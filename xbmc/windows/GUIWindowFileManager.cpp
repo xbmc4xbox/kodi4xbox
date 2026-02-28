@@ -349,6 +349,7 @@ void CGUIWindowFileManager::OnSort(int iList)
     // Set free space on disc
     if (pItem->m_bIsShareOrDrive)
     {
+#if 0
       if (pItem->IsHD())
       {
         std::error_code ec;
@@ -369,6 +370,7 @@ void CGUIWindowFileManager::OnSort(int iList)
           pItem->SetFileSizeLabel();
         }
       }
+#endif
     } // if (pItem->m_bIsShareOrDrive)
 
   }
@@ -698,16 +700,7 @@ bool CGUIWindowFileManager::HaveDiscOrConnection( std::string& strPath, int iDri
   }
   else if ( iDriveType == CMediaSource::SOURCE_TYPE_REMOTE )
   {
-#if 0
-    //! @todo Handle not connected to a remote share
-    if (!CServiceBroker::GetNetwork().IsConnected())
-    {
-      HELPERS::ShowOKDialogText(CVariant{220}, CVariant{221});
-      return false;
-    }
-#else
     return false;
-#endif
   }
   else
     return true;
@@ -929,7 +922,7 @@ bool CGUIWindowFileManager::GetDirectory(int iList, const std::string &strDirect
   CURL pathToUrl(strDirectory);
 
   CGetDirectoryItems getItems(m_rootDir, pathToUrl, items);
-  if (!CGUIDialogBusy::Wait(&getItems))
+  if (!CGUIDialogBusy::Wait(&getItems, 100, true))
   {
     return false;
   }

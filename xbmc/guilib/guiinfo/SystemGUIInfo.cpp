@@ -26,6 +26,7 @@
 #include "guilib/guiinfo/GUIInfo.h"
 #include "guilib/guiinfo/GUIInfoHelper.h"
 #include "guilib/guiinfo/GUIInfoLabels.h"
+#include "powermanagement/PowerManager.h"
 #include "profiles/ProfileManager.h"
 #include "settings/AdvancedSettings.h"
 #include "settings/MediaSettings.h"
@@ -180,10 +181,23 @@ bool CSystemGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
       return true;
     case SYSTEM_SCREEN_RESOLUTION:
     {
-      value = StringUtils::Format("{}x{} {}",
-                                      g_graphicsContext.GetResInfo().iWidth,
-                                      g_graphicsContext.GetResInfo().iHeight,
-                                      g_graphicsContext.GetResInfo().strMode.c_str());
+      const auto winSystem = CServiceBroker::GetWinSystem();
+      if (winSystem)
+      {
+        const RESOLUTION_INFO& resInfo = winSystem->GetGfxContext().GetResInfo();
+
+        if (winSystem->IsFullScreen())
+          value = StringUtils::Format("{}x{} @ {:.2f} Hz - {}", resInfo.iScreenWidth,
+                                      resInfo.iScreenHeight, resInfo.fRefreshRate,
+                                      g_localizeStrings.Get(244));
+        else
+          value = StringUtils::Format("{}x{} - {}", resInfo.iScreenWidth, resInfo.iScreenHeight,
+                                      g_localizeStrings.Get(242));
+      }
+      else
+      {
+        value = "";
+      }
       return true;
     }
     case SYSTEM_BUILD_VERSION_SHORT:
@@ -230,15 +244,15 @@ bool CSystemGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
       return true;
     }
     case SYSTEM_SCREEN_MODE:
-      value = g_graphicsContext.GetResInfo().strMode;
+      value = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo().strMode;
       return true;
     case SYSTEM_SCREEN_WIDTH:
       value = StringUtils::Format(
-          "{}", g_graphicsContext.GetResInfo().iWidth);
+          "{}", CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo().iScreenWidth);
       return true;
     case SYSTEM_SCREEN_HEIGHT:
       value = StringUtils::Format(
-          "{}", g_graphicsContext.GetResInfo().iHeight);
+          "{}", CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo().iScreenHeight);
       return true;
     case SYSTEM_FPS:
       value = StringUtils::Format("{:02.2f}", m_fps);
@@ -302,7 +316,6 @@ bool CSystemGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
           "{:4.2f}",
           CServiceBroker::GetCPUInfo()->GetCoreInfo(std::stoi(info.GetData3())).m_usagePercent);
       return true;
-#ifndef _XBOX
     case SYSTEM_RENDER_VENDOR:
       value = CServiceBroker::GetRenderSystem()->GetRenderVendor();
       return true;
@@ -312,7 +325,6 @@ bool CSystemGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
     case SYSTEM_RENDER_VERSION:
       value = CServiceBroker::GetRenderSystem()->GetRenderVersionString();
       return true;
-#endif
     case SYSTEM_ADDON_UPDATE_COUNT:
       value = CServiceBroker::GetAddonMgr().GetLastAvailableUpdatesCountAsString();
       return true;
@@ -322,29 +334,10 @@ bool CSystemGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
       StringUtils::ToCapitalize(value);
       return true;
 #endif
-#ifndef _XBOX
     case SYSTEM_SUPPORTED_HDR_TYPES:
     {
-      if (CServiceBroker::GetWinSystem()->IsHDRDisplay())
-      {
-        // Assumes HDR10 minimum requirement for HDR
-        std::string types = "HDR10";
-
-        const CHDRCapabilities caps = CServiceBroker::GetWinSystem()->GetDisplayHDRCapabilities();
-
-        if (caps.SupportsHLG())
-          types += ", HLG";
-        if (caps.SupportsHDR10Plus())
-          types += ", HDR10+";
-        if (caps.SupportsDolbyVision())
-          types += ", Dolby Vision";
-
-        value = types;
-      }
-
       return true;
     }
-#endif
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     // NETWORK_*
@@ -561,16 +554,16 @@ bool CSystemGUIInfo::GetBool(bool& value, const CGUIListItem *gitem, int context
       return true;
 #endif
     case SYSTEM_CAN_POWERDOWN:
-      value = true;
+      value = CServiceBroker::GetPowerManager().CanPowerdown();
       return true;
     case SYSTEM_CAN_SUSPEND:
-      value = false;
+      value = CServiceBroker::GetPowerManager().CanSuspend();
       return true;
     case SYSTEM_CAN_HIBERNATE:
-      value = false;
+      value = CServiceBroker::GetPowerManager().CanHibernate();
       return true;
     case SYSTEM_CAN_REBOOT:
-      value = true;
+      value = CServiceBroker::GetPowerManager().CanReboot();
       return true;
     case SYSTEM_SCREENSAVER_ACTIVE:
     case SYSTEM_IS_SCREENSAVER_INHIBITED:
@@ -621,7 +614,7 @@ bool CSystemGUIInfo::GetBool(bool& value, const CGUIListItem *gitem, int context
       value = CServiceBroker::GetSettingsComponent()->GetProfileManager()->GetMasterProfile().getLockMode() != LOCK_MODE_EVERYONE && g_passwordManager.bMasterUser;
       return true;
     case SYSTEM_ISFULLSCREEN:
-      value = true;
+      value = CServiceBroker::GetWinSystem()->IsFullScreen();
       return true;
     case SYSTEM_ISSTANDALONE:
       value = CServiceBroker::GetAppParams()->IsStandAlone();

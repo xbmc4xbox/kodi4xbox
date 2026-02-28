@@ -200,7 +200,7 @@ void CGUIWindowPictures::OnPrepareFileItems(CFileItemList& items)
   loader.SetProgressCallback(m_dlgProgress);
   loader.Load(items);
 
-  bool bShowProgress = !CServiceBroker::GetGUI()->GetWindowManager().HasModalDialog();
+  bool bShowProgress = !CServiceBroker::GetGUI()->GetWindowManager().HasModalDialog(true);
   bool bProgressVisible = false;
 
   auto start = std::chrono::steady_clock::now();

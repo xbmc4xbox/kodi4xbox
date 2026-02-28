@@ -21,7 +21,7 @@
  */
 static int ControlMove(const std::vector<std::string>& params)
 {
-  CGUIMessage message(GUI_MSG_MOVE_OFFSET, CServiceBroker::GetGUI()->GetWindowManager().GetFocusedWindow(),
+  CGUIMessage message(GUI_MSG_MOVE_OFFSET, CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindowOrDialog(),
                       atoi(params[0].c_str()), atoi(params[1].c_str()));
   CServiceBroker::GetGUI()->GetWindowManager().SendMessage(message);
 
@@ -44,7 +44,7 @@ static int SendClick(const std::vector<std::string>& params)
   }
   else
   { // single param - assume you meant the focused window
-    CGUIMessage message(GUI_MSG_CLICKED, atoi(params[0].c_str()), CServiceBroker::GetGUI()->GetWindowManager().GetFocusedWindow());
+    CGUIMessage message(GUI_MSG_CLICKED, atoi(params[0].c_str()), CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindowOrDialog());
     CServiceBroker::GetGUI()->GetWindowManager().SendMessage(message);
   }
 
@@ -88,7 +88,7 @@ static int SetFocus(const std::vector<std::string>& params)
   int absID = 0;
   if (params.size() > 2 && StringUtils::EqualsNoCase(params[2].c_str(), "absolute"))
     absID = 1;
-  CGUIMessage msg(GUI_MSG_SETFOCUS, CServiceBroker::GetGUI()->GetWindowManager().GetFocusedWindow(), controlID, subItem, absID);
+  CGUIMessage msg(GUI_MSG_SETFOCUS, CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindowOrDialog(), controlID, subItem, absID);
   CServiceBroker::GetGUI()->GetWindowManager().SendMessage(msg);
 
   return 0;
@@ -102,7 +102,7 @@ static int SetVisible(const std::vector<std::string>& params)
 {
   int controlID = std::stol(params[0]);
   CGUIMessage msg{GUI_MSG_VISIBLE,
-                  CServiceBroker::GetGUI()->GetWindowManager().GetFocusedWindow(),
+                  CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindowOrDialog(),
                   controlID};
   CServiceBroker::GetGUI()->GetWindowManager().SendMessage(msg);
 
@@ -117,7 +117,7 @@ static int SetHidden(const std::vector<std::string>& params)
 {
   int controlID = std::stol(params[0]);
   CGUIMessage msg{GUI_MSG_HIDDEN,
-                  CServiceBroker::GetGUI()->GetWindowManager().GetFocusedWindow(),
+                  CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindowOrDialog(),
                   controlID};
   CServiceBroker::GetGUI()->GetWindowManager().SendMessage(msg);
 
@@ -134,7 +134,7 @@ static int SetHidden(const std::vector<std::string>& params)
 static int ShiftPage(const std::vector<std::string>& params)
 {
   int id = atoi(params[0].c_str());
-  CGUIMessage message(Message, CServiceBroker::GetGUI()->GetWindowManager().GetFocusedWindow(), id);
+  CGUIMessage message(Message, CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindowOrDialog(), id);
   CServiceBroker::GetGUI()->GetWindowManager().SendMessage(message);
 
   return 0;

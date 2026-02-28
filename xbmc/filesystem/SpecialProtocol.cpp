@@ -17,7 +17,7 @@
 #include "settings/SettingsComponent.h"
 #include "utils/URIUtils.h"
 #include "utils/log.h"
-#include "guilib/GraphicContext.h"
+#include "windowing/GraphicContext.h"
 
 #include <cassert>
 
@@ -171,7 +171,10 @@ std::string CSpecialProtocol::TranslatePath(const CURL &url)
     translatedPath = URIUtils::AddFileToFolder(CUtil::VideoPlaylistsLocation(), FileName);
   else if (RootDir == "skin")
   {
-    translatedPath = URIUtils::AddFileToFolder(g_graphicsContext.GetMediaDir(), FileName);
+    auto winSystem = CServiceBroker::GetWinSystem();
+    // windowing may not have been initialized yet
+    if (winSystem)
+      translatedPath = URIUtils::AddFileToFolder(winSystem->GetGfxContext().GetMediaDir(), FileName);
   }
   // from here on, we have our "real" special paths
   else if (RootDir == "xbmc" ||

@@ -22,7 +22,19 @@
 #include "favourites/FavouritesService.h"
 #include "input/InputManager.h"
 #include "interfaces/generic/ScriptInvocationManager.h"
+#if defined(HAS_FILESYSTEM_SMB)
+#include "network/IWSDiscovery.h"
+#if defined(TARGET_WINDOWS)
+#include "platform/win32/network/WSDiscoveryWin32.h"
+#else // !defined(TARGET_WINDOWS)
+#include "platform/posix/filesystem/SMBWSDiscovery.h"
+#endif // defined(TARGET_WINDOWS)
+#endif // HAS_FILESYSTEM_SMB
+#include "powermanagement/PowerManager.h"
 #include "profiles/ProfileManager.h"
+#if !defined(TARGET_WINDOWS) && defined(HAS_DVD_DRIVE)
+#include "storage/DetectDVDType.h"
+#endif
 #include "storage/MediaManager.h"
 #include "utils/FileExtensionProvider.h"
 #include "utils/log.h"
@@ -71,6 +83,16 @@ void CServiceManager::DeinitTesting()
 
 bool CServiceManager::InitStageOne()
 {
+  m_Platform.reset(CPlatform::CreateInstance());
+  if (!m_Platform->InitStageOne())
+    return false;
+
+#ifdef HAS_PYTHON
+  m_XBPython.reset(new XBPython());
+  CScriptInvocationManager::GetInstance().RegisterLanguageInvocationHandler(m_XBPython.get(),
+                                                                            ".py");
+#endif
+
   m_playlistPlayer.reset(new PLAYLIST::CPlayListPlayer());
 
   init_level = 1;
@@ -103,15 +125,31 @@ bool CServiceManager::InitStageTwo(const std::string& profilesUserDataFolder)
   m_serviceAddons.reset(new ADDON::CServiceAddonManager(*m_addonMgr));
 
   m_contextMenuManager.reset(new CContextMenuManager(*m_addonMgr));
+
   m_inputManager.reset(new CInputManager());
   m_inputManager->InitializeInputs();
 
   m_fileExtensionProvider.reset(new CFileExtensionProvider(*m_addonMgr));
 
+  m_powerManager.reset(new CPowerManager());
+  m_powerManager->Initialize();
+  m_powerManager->SetDefaults();
+
   m_weatherManager.reset(new CWeatherManager());
 
   m_mediaManager.reset(new CMediaManager());
   m_mediaManager->Initialize();
+
+#if !defined(TARGET_WINDOWS) && defined(HAS_DVD_DRIVE)
+  m_DetectDVDType = std::make_unique<MEDIA_DETECT::CDetectDVDMedia>();
+#endif
+
+#if defined(HAS_FILESYSTEM_SMB)
+  m_WSDiscovery = WSDiscovery::IWSDiscovery::GetInstance();
+#endif
+
+  if (!m_Platform->InitStageTwo())
+    return false;
 
   init_level = 2;
   return true;
@@ -120,9 +158,18 @@ bool CServiceManager::InitStageTwo(const std::string& profilesUserDataFolder)
 // stage 3 is called after successful initialization of WindowManager
 bool CServiceManager::InitStageThree(const std::shared_ptr<CProfileManager>& profileManager)
 {
+#if !defined(TARGET_WINDOWS) && defined(HAS_DVD_DRIVE)
+  // Start Thread for DVD Mediatype detection
+  CLog::Log(LOGINFO, "[Media Detection] starting service for optical media detection");
+  m_DetectDVDType->Create(false);
+#endif
+
   m_contextMenuManager->Init();
 
   m_playerCoreFactory.reset(new CPlayerCoreFactory(*profileManager));
+
+  if (!m_Platform->InitStageThree())
+    return false;
 
   init_level = 3;
   return true;
@@ -131,15 +178,26 @@ bool CServiceManager::InitStageThree(const std::shared_ptr<CProfileManager>& pro
 void CServiceManager::DeinitStageThree()
 {
   init_level = 2;
+#if !defined(TARGET_WINDOWS) && defined(HAS_DVD_DRIVE)
+  m_DetectDVDType->StopThread();
+  m_DetectDVDType.reset();
+#endif
   m_playerCoreFactory.reset();
   m_contextMenuManager->Deinit();
+
+  m_Platform->DeinitStageThree();
 }
 
 void CServiceManager::DeinitStageTwo()
 {
   init_level = 1;
 
+#if defined(HAS_FILESYSTEM_SMB)
+  m_WSDiscovery.reset();
+#endif
+
   m_weatherManager.reset();
+  m_powerManager.reset();
   m_fileExtensionProvider.reset();
   m_inputManager.reset();
   m_contextMenuManager.reset();
@@ -154,6 +212,8 @@ void CServiceManager::DeinitStageTwo()
 
   m_mediaManager->Stop();
   m_mediaManager.reset();
+
+  m_Platform->DeinitStageTwo();
 }
 
 void CServiceManager::DeinitStageOne()
@@ -161,7 +221,21 @@ void CServiceManager::DeinitStageOne()
   init_level = 0;
 
   m_playlistPlayer.reset();
+#ifdef HAS_PYTHON
+  CScriptInvocationManager::GetInstance().UnregisterLanguageInvocationHandler(m_XBPython.get());
+  m_XBPython.reset();
+#endif
+
+  m_Platform->DeinitStageOne();
+  m_Platform.reset();
 }
+
+#if defined(HAS_FILESYSTEM_SMB)
+WSDiscovery::IWSDiscovery& CServiceManager::GetWSDiscovery()
+{
+  return *m_WSDiscovery;
+}
+#endif
 
 ADDON::CAddonMgr& CServiceManager::GetAddonMgr()
 {
@@ -188,6 +262,20 @@ ADDON::CRepositoryUpdater& CServiceManager::GetRepositoryUpdater()
   return *m_repositoryUpdater;
 }
 
+#ifdef HAS_PYTHON
+XBPython& CServiceManager::GetXBPython()
+{
+  return *m_XBPython;
+}
+#endif
+
+#if !defined(TARGET_WINDOWS) && defined(HAS_DVD_DRIVE)
+MEDIA_DETECT::CDetectDVDMedia& CServiceManager::GetDetectDVDMedia()
+{
+  return *m_DetectDVDType;
+}
+#endif
+
 CContextMenuManager& CServiceManager::GetContextMenuManager()
 {
   return *m_contextMenuManager;
@@ -196,6 +284,11 @@ CContextMenuManager& CServiceManager::GetContextMenuManager()
 CDataCacheCore& CServiceManager::GetDataCacheCore()
 {
   return *m_dataCacheCore;
+}
+
+CPlatform& CServiceManager::GetPlatform()
+{
+  return *m_Platform;
 }
 
 PLAYLIST::CPlayListPlayer& CServiceManager::GetPlaylistPlayer()
@@ -216,6 +309,11 @@ CInputManager& CServiceManager::GetInputManager()
 CFileExtensionProvider& CServiceManager::GetFileExtensionProvider()
 {
   return *m_fileExtensionProvider;
+}
+
+CPowerManager& CServiceManager::GetPowerManager()
+{
+  return *m_powerManager;
 }
 
 // deleters for unique_ptr

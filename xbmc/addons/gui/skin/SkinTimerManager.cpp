@@ -97,7 +97,6 @@ void CSkinTimerManager::LoadTimerInternal(const TiXmlElement* node)
         node->FirstChild("stop")->FirstChild()->ValueStr());
   }
 
-#if 0
   // process onstart actions
   CGUIAction startActions;
   startActions.EnableSendThreadMessageMode();
@@ -134,9 +133,6 @@ void CSkinTimerManager::LoadTimerInternal(const TiXmlElement* node)
 
   m_timers[timerName] = std::make_unique<CSkinTimer>(CSkinTimer(
       timerName, startInfo, resetInfo, stopInfo, startActions, stopActions, resetOnStart));
-#else
-  CLog::Log(LOGWARNING, "Skin timers are not fully implemented");
-#endif
 }
 
 bool CSkinTimerManager::TimerIsRunning(const std::string& timer) const

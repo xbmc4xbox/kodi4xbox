@@ -23,10 +23,11 @@
 #include "GUITextureGL.h"
 #endif
 #include "Texture.h"
+#include "ServiceBroker.h"
 #include "utils/log.h"
 #include "utils/GLUtils.h"
-#include "guilib/Geometry.h"
-#include "windowing/WindowingFactory.h"
+#include "utils/Geometry.h"
+#include "windowing/WinSystem.h"
 
 #ifdef NXDK
 #define glMultiTexCoord2fARB glMultiTexCoord2f
@@ -34,16 +35,27 @@
 
 #if defined(HAS_GL)
 
+CGUITextureGL* CGUITextureGL::CreateTexture(
+    float posX, float posY, float width, float height, const CTextureInfo& texture)
+{
+  return new CGUITextureGL(posX, posY, width, height, texture);
+}
+
 CGUITextureGL::CGUITextureGL(float posX, float posY, float width, float height, const CTextureInfo &texture)
 : CGUITextureBase(posX, posY, width, height, texture)
 {
   memset(m_col, 0, sizeof(m_col));
 }
 
-void CGUITextureGL::Begin(color_t color)
+CGUITextureGL* CGUITextureGL::Clone() const
+{
+  return new CGUITextureGL(*this);
+}
+
+void CGUITextureGL::Begin(UTILS::COLOR::Color color)
 {
   int range, unit = 0;
-  if(g_Windowing.UseLimitedColor())
+  if(CServiceBroker::GetWinSystem()->UseLimitedColor())
     range = 235 - 16;
   else
     range = 255 -  0;
@@ -97,7 +109,7 @@ void CGUITextureGL::Begin(color_t color)
     VerifyGLState();
   }
 
-  if(g_Windowing.UseLimitedColor())
+  if(CServiceBroker::GetWinSystem()->UseLimitedColor())
   {
     texture->BindToUnit(unit++); // dummy bind
     const GLfloat rgba[4] = {16.0f / 255.0f, 16.0f / 255.0f, 16.0f / 255.0f, 0.0f};
@@ -180,7 +192,7 @@ void CGUITextureGL::Draw(float *x, float *y, float *z, const CRect &texture, con
   glVertex3f(x[3], y[3], z[3]);
 }
 
-void CGUITextureGL::DrawQuad(const CRect &rect, color_t color, CTexture *texture, const CRect *texCoords)
+void CGUITextureGL::DrawQuad(const CRect &rect, UTILS::COLOR::Color color, CTexture *texture, const CRect *texCoords)
 {
   if (texture)
   {

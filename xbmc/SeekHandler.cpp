@@ -27,7 +27,7 @@
 #include "utils/StringUtils.h"
 #include "utils/Variant.h"
 #include "utils/log.h"
-#include "guilib/GraphicContext.h"
+#include "windowing/GraphicContext.h"
 
 #include <cmath>
 #include <mutex>
@@ -139,7 +139,7 @@ void CSeekHandler::Seek(bool forward, float amount, float duration /* = 0 */, bo
     if( duration )
       speed *= duration;
     else
-      speed /= g_graphicsContext.GetFPS();
+      speed /= CServiceBroker::GetWinSystem()->GetGfxContext().GetFPS();
 
     double totalTime = g_application.GetTotalTime();
     if (totalTime < 0)

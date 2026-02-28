@@ -21,8 +21,12 @@
 #ifndef WINDOW_SYSTEM_BASE_H
 #define WINDOW_SYSTEM_BASE_H
 
-#include "guilib/Resolution.h"
+#include "Resolution.h"
+
 #include <vector>
+
+class CGraphicContext;
+class CRenderSystemBase;
 
 typedef enum _WindowSystemType
 {
@@ -49,6 +53,11 @@ public:
   CWinSystemBase();
   virtual ~CWinSystemBase();
   WindowSystemType GetWinSystem() { return m_eWindowSystem; }
+
+  // Access render system interface
+  virtual CRenderSystemBase *GetRenderSystem() { return nullptr; }
+
+  virtual const std::string GetName() { return "platform default"; }
 
   // windowing interfaces
   virtual bool InitWindowSystem();
@@ -105,6 +114,8 @@ public:
 
   std::string GetClipboardText(void);
 
+  CGraphicContext& GetGfxContext();
+
 protected:
   void UpdateDesktopResolution(RESOLUTION_INFO& newRes, int screen, int width, int height, float refreshRate, uint32_t dwFlags = 0);
 
@@ -113,6 +124,8 @@ protected:
   int               m_nHeight;
   bool              m_bWindowCreated;
   float             m_fRefreshRate;
+
+  std::unique_ptr<CGraphicContext> m_gfxContext;
 };
 
 

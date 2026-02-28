@@ -2817,7 +2817,7 @@ bool CFileItemList::Save(int windowID)
     CArchive ar(&file, CArchive::store);
     ar << *this;
     CLog::Log(LOGDEBUG, "  -- items: {}, sort method: {}, ascending: {}", iSize,
-              static_cast<int>(m_sortDescription.sortBy),
+              m_sortDescription.sortBy,
               m_sortDescription.sortOrder == SortOrderAscending ? "true" : "false");
     ar.Close();
     file.Close();

@@ -17,24 +17,10 @@
 #include <string>
 #include <vector>
 
-#if 0
-namespace KODI
-{
-namespace ADDONS
-{
-class CImageDecoder;
-} /* namespace ADDONS */
-} /* namespace KODI */
-#endif
-
 class CVariant;
 
 class CPictureInfoTag : public IArchivable, public ISerializable, public ISortable
 {
-#if 0
-  friend class KODI::ADDONS::CImageDecoder;
-#endif
-
   // Mimic structs from libexif.h but with C++ types instead of arrays
   struct ExifInfo
   {

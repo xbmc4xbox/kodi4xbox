@@ -19,11 +19,16 @@
  */
 
 #include "WinSystem.h"
-#include "guilib/GraphicContext.h"
+
+#include "ServiceBroker.h"
 #include "settings/DisplaySettings.h"
-#include "settings/lib/Setting.h"
 #include "settings/Settings.h"
+#include "settings/SettingsComponent.h"
+#include "settings/lib/Setting.h"
 #include "utils/StringUtils.h"
+#include "windowing/GraphicContext.h"
+
+#include <mutex>
 
 CWinSystemBase::CWinSystemBase()
 {
@@ -32,6 +37,7 @@ CWinSystemBase::CWinSystemBase()
   m_nHeight = 0;
   m_bWindowCreated = false;
   m_fRefreshRate = 0.0f;
+  m_gfxContext.reset(new CGraphicContext());
 }
 
 CWinSystemBase::~CWinSystemBase()
@@ -107,7 +113,7 @@ void CWinSystemBase::SetWindowResolution(int width, int height)
   window.iScreenWidth = width;
   window.iScreenHeight = height;
   window.iSubtitles = (int)(0.965 * window.iHeight);
-  g_graphicsContext.ResetOverscan(window);
+  CServiceBroker::GetWinSystem()->GetGfxContext().ResetOverscan(window);
 }
 
 int CWinSystemBase::DesktopResolution(int screen)
@@ -242,4 +248,9 @@ std::string CWinSystemBase::GetClipboardText(void)
 int CWinSystemBase::NoOfBuffers(void)
 {
   return 0;
+}
+
+CGraphicContext& CWinSystemBase::GetGfxContext()
+{
+  return *m_gfxContext;
 }

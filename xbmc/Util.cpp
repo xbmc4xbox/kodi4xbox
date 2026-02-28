@@ -18,7 +18,7 @@
 #include "URL.h"
 #include "filesystem/File.h"
 #include "guilib/LocalizeStrings.h"
-#include "guilib/GraphicContext.h"
+#include "windowing/GraphicContext.h"
 #include "guilib/TextureManager.h"
 #include "storage/MediaManager.h"
 #include "settings/AdvancedSettings.h"
@@ -930,7 +930,7 @@ void CUtil::GetSkinThemes(std::vector<std::string>& vecTheme)
   static const std::string TexturesXbt = "Textures.xbt";
 #endif
 
-  std::string strPath = URIUtils::AddFileToFolder(g_graphicsContext.GetMediaDir(), "media");
+  std::string strPath = URIUtils::AddFileToFolder(CServiceBroker::GetWinSystem()->GetGfxContext().GetMediaDir(), "media");
   CFileItemList items;
   CDirectory::GetDirectory(strPath, items, "", DIR_FLAG_DEFAULTS);
   // Search for Themes in the Current skin!

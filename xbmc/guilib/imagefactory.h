@@ -10,7 +10,6 @@
 
 #include "URL.h"
 #include "iimage.h"
-#include "threads/CriticalSection.h"
 
 class ImageFactory
 {
@@ -21,7 +20,4 @@ public:
   static IImage* CreateLoader(const std::string& strFileName);
   static IImage* CreateLoader(const CURL& url);
   static IImage* CreateLoaderFromMimeType(const std::string& strMimeType);
-
-private:
-  static CCriticalSection m_createSec; //!< Critical section for add-on creation.
 };

@@ -195,9 +195,9 @@ CDirectoryProvider::~CDirectoryProvider()
   Reset();
 }
 
-IListProvider* CDirectoryProvider::Clone()
+std::unique_ptr<IListProvider> CDirectoryProvider::Clone()
 {
-  return new CDirectoryProvider(*this);
+  return std::make_unique<CDirectoryProvider>(*this);
 }
 
 bool CDirectoryProvider::Update(bool forceRefresh)

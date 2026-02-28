@@ -32,7 +32,8 @@
 #include <vector>
 
 #include "utils/auto_buffer.h"
-#include "Geometry.h"
+#include "utils/ColorUtils.h"
+#include "utils/Geometry.h"
 
 #ifdef HAS_DX
 #include "DirectXMath.h"
@@ -59,9 +60,8 @@ typedef struct FT_BitmapGlyphRec_ *FT_BitmapGlyph;
 typedef struct FT_StrokerRec_ *FT_Stroker;
 
 typedef uint32_t character_t;
-typedef uint32_t color_t;
 typedef std::vector<character_t> vecText;
-typedef std::vector<color_t> vecColors;
+typedef std::vector<UTILS::COLOR::Color> vecColors;
 
 /*!
  \ingroup textures
@@ -131,7 +131,7 @@ protected:
   // Stuff for pre-rendering for speed
   inline Character *GetCharacter(character_t letter);
   bool CacheCharacter(wchar_t letter, uint32_t style, Character *ch);
-  void RenderCharacter(float posX, float posY, const Character *ch, color_t color, bool roundX, std::vector<SVertex> &vertices);
+  void RenderCharacter(float posX, float posY, const Character *ch, UTILS::COLOR::Color color, bool roundX, std::vector<SVertex> &vertices);
   void ClearCharacterCache();
 
   virtual std::unique_ptr<CTexture> ReallocTexture(unsigned int& newHeight) = 0;
@@ -155,7 +155,7 @@ protected:
   unsigned int GetTextureLineHeight() const;
   static const unsigned int spacing_between_characters_in_texture;
 
-  color_t m_color;
+  UTILS::COLOR::Color m_color;
 
   Character *m_char;                 // our characters
   Character *m_charquick[LOOKUPTABLE_SIZE];     // ascii chars (7 styles) here

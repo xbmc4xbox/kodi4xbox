@@ -31,6 +31,7 @@
 #include "guilib/LocalizeStrings.h"
 #include "input/Key.h"
 #include "messaging/helpers/DialogHelper.h"
+#include "platform/Platform.h"
 #include "settings/MediaSourceSettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
@@ -228,13 +229,13 @@ bool CGUIWindowAddonBrowser::OnClick(int iItem, const std::string& player)
   if (item->GetPath() == "addons://update_all/")
   {
     UpdateAddons updater;
-    CGUIDialogBusy::Wait(&updater);
+    CGUIDialogBusy::Wait(&updater, 100, true);
     return true;
   }
   if (item->GetPath() == "addons://update_allowed/")
   {
     UpdateAllowedAddons updater;
-    CGUIDialogBusy::Wait(&updater);
+    CGUIDialogBusy::Wait(&updater, 100, true);
     return true;
   }
   if (!item->m_bIsFolder)
@@ -630,7 +631,7 @@ std::string CGUIWindowAddonBrowser::GetStartFolder(const std::string& dir)
   {
     if (StringUtils::StartsWith(dir, "addons://default_binary_addons_source/"))
     {
-      const bool all = true/*CServiceBroker::GetPlatform().SupportsUserInstalledBinaryAddons()*/;
+      const bool all = CServiceBroker::GetPlatform().SupportsUserInstalledBinaryAddons();
       std::string startDir = dir;
       StringUtils::Replace(startDir, "/default_binary_addons_source/", all ? "/all/" : "/user/");
       return startDir;

@@ -129,30 +129,6 @@ bool CPictureInfoTag::Load(const std::string &path)
 {
   m_isLoaded = false;
 
-#if 0
-  // Get file extensions to find addon related to it.
-  std::string strExtension = URIUtils::GetExtension(path);
-  StringUtils::ToLower(strExtension);
-  if (!strExtension.empty() && CServiceBroker::IsAddonInterfaceUp())
-  {
-    // Load via available image decoder addons
-    auto addonInfos = CServiceBroker::GetExtsMimeSupportList().GetExtensionSupportedAddonInfos(
-        strExtension, CExtsMimeSupportList::FilterSelect::all);
-    for (const auto& addonInfo : addonInfos)
-    {
-      if (addonInfo.first != ADDON::AddonType::IMAGEDECODER)
-        continue;
-
-      std::unique_ptr<CImageDecoder> result = std::make_unique<CImageDecoder>(addonInfo.second, "");
-      if (result->LoadInfoTag(path, this))
-      {
-        m_isLoaded = true;
-        break;
-      }
-    }
-  }
-#endif
-
   // Load by Kodi's included own way
   if (!m_isLoaded)
   {

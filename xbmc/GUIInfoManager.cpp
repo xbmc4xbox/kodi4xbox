@@ -11430,14 +11430,20 @@ void CGUIInfoManager::OnApplicationMessage(KODI::MESSAGING::ThreadMessage* pMsg)
 
 void CGUIInfoManager::RegisterInfoProvider(IGUIInfoProvider *provider)
 {
-  std::unique_lock<CCriticalSection> lock(g_graphicsContext);
+  if (!CServiceBroker::GetWinSystem())
+    return;
+
+  std::unique_lock<CCriticalSection> lock(CServiceBroker::GetWinSystem()->GetGfxContext());
 
   m_infoProviders.RegisterProvider(provider, false);
 }
 
 void CGUIInfoManager::UnregisterInfoProvider(IGUIInfoProvider *provider)
 {
-  std::unique_lock<CCriticalSection> lock(g_graphicsContext);
+  if (!CServiceBroker::GetWinSystem())
+    return;
+
+  std::unique_lock<CCriticalSection> lock(CServiceBroker::GetWinSystem()->GetGfxContext());
 
   m_infoProviders.UnregisterProvider(provider);
 }

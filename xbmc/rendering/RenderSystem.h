@@ -23,8 +23,8 @@
 
 #pragma once
 
-#include "guilib/Geometry.h"
-#include "guilib/TransformMatrix.h"
+#include "utils/Geometry.h"
+#include "utils/TransformMatrix.h"
 #include "guilib/DirtyRegion.h"
 #include <stdint.h>
 #include <string>
@@ -42,7 +42,8 @@ typedef enum _RenderingSystemType
 *   This interface is very basic since a lot of the actual details will go in to the derived classes
 */
 
-typedef uint32_t color_t;
+class CGUIImage;
+class CGUITextLayout;
 
 enum
 {
@@ -103,7 +104,7 @@ public:
   virtual bool BeginRender() = 0;
   virtual bool EndRender() = 0;
   virtual void PresentRender(bool rendered, bool videoLayer) = 0;
-  virtual bool ClearBuffers(color_t color) = 0;
+  virtual bool ClearBuffers(UTILS::COLOR::Color color) = 0;
   virtual bool IsExtSupported(const char* extension) = 0;
 
   virtual void SetViewPort(CRect& viewPort) = 0;
@@ -147,6 +148,8 @@ public:
   unsigned int GetMinDXTPitch() const { return m_minDXTPitch; }
   unsigned int GetRenderQuirks() const { return m_renderQuirks; }
 
+  virtual void ShowSplash(const std::string& message);
+
 protected:
   bool                m_bRenderCreated;
   RenderingSystemType m_enumRenderingSystem;
@@ -163,6 +166,9 @@ protected:
   unsigned int m_renderQuirks;
   RENDER_STEREO_VIEW m_stereoView;
   RENDER_STEREO_MODE m_stereoMode;
+
+  std::unique_ptr<CGUIImage> m_splashImage;
+  std::unique_ptr<CGUITextLayout> m_splashMessageLayout;
 };
 
 #endif // RENDER_SYSTEM_H

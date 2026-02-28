@@ -1,53 +1,42 @@
 /*
- *      Copyright (C) 2005-2015 Team Kodi
- *      http://kodi.tv
+ *  Copyright (C) 2005-2020 Team Kodi
+ *  This file is part of Kodi - https://kodi.tv
  *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with Kodi; see the file COPYING.  If not, see
- *  <http://www.gnu.org/licenses/>.
- *
+ *  SPDX-License-Identifier: GPL-2.0-or-later
+ *  See LICENSES/README.md for more information.
  */
 
-#include "system.h"
 #include "GUIDialogContextMenu.h"
+
+#include "FileItem.h"
+#include "GUIDialogFileBrowser.h"
+#include "GUIDialogMediaSource.h"
+#include "GUIDialogYesNo.h"
+#include "GUIPassword.h"
+#include "GUIUserMessages.h"
+#include "ServiceBroker.h"
+#include "TextureDatabase.h"
+#include "URL.h"
+#include "Util.h"
+#include "addons/Scraper.h"
+#include "favourites/FavouritesService.h"
 #include "guilib/GUIButtonControl.h"
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIControlGroupList.h"
-#include "GUIDialogFileBrowser.h"
-#include "GUIUserMessages.h"
-#include "GUIPassword.h"
-#include "ServiceBroker.h"
-#include "Util.h"
-#include "utils/URIUtils.h"
+#include "guilib/GUIWindowManager.h"
+#include "guilib/LocalizeStrings.h"
+#include "input/Key.h"
+#include "media/MediaLockState.h"
+#include "profiles/ProfileManager.h"
+#include "profiles/dialogs/GUIDialogLockSettings.h"
 #include "settings/MediaSourceSettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
-#include "GUIDialogMediaSource.h"
 #include "storage/MediaManager.h"
-#include "profiles/ProfileManager.h"
-#include "profiles/dialogs/GUIDialogLockSettings.h"
-#include "guilib/GUIWindowManager.h"
-#include "input/Key.h"
-#include "GUIDialogYesNo.h"
-#include "addons/AddonManager.h"
-#include "FileItem.h"
-#include "filesystem/File.h"
-#include "guilib/LocalizeStrings.h"
-#include "TextureCache.h"
-#include "URL.h"
+#include "utils/FileUtils.h"
 #include "utils/StringUtils.h"
+#include "utils/URIUtils.h"
 #include "utils/Variant.h"
-#include "addons/Scraper.h"
 
 #define BACKGROUND_IMAGE       999
 #define GROUP_LIST             996
@@ -57,16 +46,16 @@
 
 void CContextButtons::Add(unsigned int button, const std::string &label)
 {
-  for (const_iterator i = begin(); i != end(); ++i)
-    if (i->first == button)
+  for (const auto& i : *this)
+    if (i.first == button)
       return; // already have this button
   push_back(std::pair<unsigned int, std::string>(button, label));
 }
 
 void CContextButtons::Add(unsigned int button, int label)
 {
-  for (const_iterator i = begin(); i != end(); ++i)
-    if (i->first == button)
+  for (const auto& i : *this)
+    if (i.first == button)
       return; // already have added this button
   push_back(std::pair<unsigned int, std::string>(button, g_localizeStrings.Get(label)));
 }
@@ -81,9 +70,7 @@ CGUIDialogContextMenu::CGUIDialogContextMenu(void)
   m_coordY = 0.0f;
 }
 
-CGUIDialogContextMenu::~CGUIDialogContextMenu(void)
-{
-}
+CGUIDialogContextMenu::~CGUIDialogContextMenu(void) = default;
 
 bool CGUIDialogContextMenu::OnMessage(CGUIMessage &message)
 {
@@ -91,6 +78,12 @@ bool CGUIDialogContextMenu::OnMessage(CGUIMessage &message)
   { // someone has been clicked - deinit...
     if (message.GetSenderId() >= BUTTON_START && message.GetSenderId() <= BUTTON_END)
       m_clickedButton = message.GetSenderId() - BUTTON_START;
+    Close();
+    return true;
+  }
+  else if (message.GetMessage() == GUI_MSG_PLAYBACK_AVSTARTED)
+  {
+    // playback was just started from elsewhere - close the dialog
     Close();
     return true;
   }
@@ -113,7 +106,7 @@ void CGUIDialogContextMenu::OnInitWindow()
 {
   m_clickedButton = -1;
   // set initial control focus
-  m_lastControlID = BUTTON_START;
+  m_lastControlID = m_initiallyFocusedButtonIdx + BUTTON_START;
   CGUIDialog::OnInitWindow();
 }
 
@@ -133,17 +126,17 @@ void CGUIDialogContextMenu::SetupButtons()
   CGUIControlGroupList* pGroupList = dynamic_cast<CGUIControlGroupList *>(GetControl(GROUP_LIST));
 
   // add our buttons
-  for (unsigned int i = 0; i < m_buttons.size(); i++)
+  if (pGroupList)
   {
-    CGUIButtonControl *pButton = new CGUIButtonControl(*pButtonTemplate);
-    if (pButton)
-    { // set the button's ID and position
-      int id = BUTTON_START + i;
-      pButton->SetID(id);
-      pButton->SetVisible(true);
-      pButton->SetLabel(m_buttons[i].second);
-      if (pGroupList)
-      {
+    for (unsigned int i = 0; i < m_buttons.size(); i++)
+    {
+      CGUIButtonControl* pButton = new CGUIButtonControl(*pButtonTemplate);
+      if (pButton)
+      { // set the button's ID and position
+        int id = BUTTON_START + i;
+        pButton->SetID(id);
+        pButton->SetVisible(true);
+        pButton->SetLabel(m_buttons[i].second);
         pButton->SetPosition(pButtonTemplate->GetXPosition(), pButtonTemplate->GetYPosition());
         // try inserting context buttons at position specified by template
         // button, if template button is not in grouplist fallback to adding
@@ -155,7 +148,7 @@ void CGUIDialogContextMenu::SetupButtons()
   }
 
   // fix up background images placement and size
-  CGUIControl *pControl = (CGUIControl *)GetControl(BACKGROUND_IMAGE);
+  CGUIControl *pControl = GetControl(BACKGROUND_IMAGE);
   if (pControl)
   {
     // first set size of background image
@@ -192,18 +185,16 @@ void CGUIDialogContextMenu::SetPosition(float posX, float posY)
 
 float CGUIDialogContextMenu::GetHeight() const
 {
-  const CGUIControl *backMain = GetControl(BACKGROUND_IMAGE);
-  if (backMain)
-    return backMain->GetHeight();
+  if (m_backgroundImage)
+    return m_backgroundImage->GetHeight();
   else
     return CGUIDialog::GetHeight();
 }
 
 float CGUIDialogContextMenu::GetWidth() const
 {
-  const CGUIControl *pControl = GetControl(BACKGROUND_IMAGE);
-  if (pControl)
-    return pControl->GetWidth();
+  if (m_backgroundImage)
+    return m_backgroundImage->GetWidth();
   else
     return CGUIDialog::GetWidth();
 }
@@ -227,18 +218,12 @@ bool CGUIDialogContextMenu::SourcesMenu(const std::string &strType, const CFileI
 void CGUIDialogContextMenu::GetContextButtons(const std::string &type, const CFileItemPtr& item, CContextButtons &buttons)
 {
   // Add buttons to the ContextMenu that should be visible for both sources and autosourced items
-  if (item && item->IsRemovable())
+  // Optical removable drives automatically have the static Eject button added (see CEjectDisk).
+  // Here we only add the eject button to HDD drives
+  if (item && item->IsRemovable() && !item->IsDVD() && !item->IsCDDA())
   {
-    if (item->IsDVD() || item->IsCDDA())
-    {
-      buttons.Add(CONTEXT_BUTTON_EJECT_DISC, 13391);  // Eject/Load CD/DVD!
-    }
-    else // Must be HDD
-    {
-      buttons.Add(CONTEXT_BUTTON_EJECT_DRIVE, 13420);  // Eject Removable HDD!
-    }
+    buttons.Add(CONTEXT_BUTTON_EJECT_DRIVE, 13420); // Remove safely
   }
-
 
   // Next, Add buttons to the ContextMenu that should ONLY be visible for sources and not autosourced items
   CMediaSource *share = GetShare(type, item.get());
@@ -267,11 +252,15 @@ void CGUIDialogContextMenu::GetContextButtons(const std::string &type, const CFi
   }
   if (share && LOCK_MODE_EVERYONE != CServiceBroker::GetSettingsComponent()->GetProfileManager()->GetMasterProfile().getLockMode())
   {
-    if (share->m_iHasLock == 0 && (CServiceBroker::GetSettingsComponent()->GetProfileManager()->GetCurrentProfile().canWriteSources() || g_passwordManager.bMasterUser))
+    if (share->m_iHasLock == LOCK_STATE_NO_LOCK && (CServiceBroker::GetSettingsComponent()
+                                                        ->GetProfileManager()
+                                                        ->GetCurrentProfile()
+                                                        .canWriteSources() ||
+                                                    g_passwordManager.bMasterUser))
       buttons.Add(CONTEXT_BUTTON_ADD_LOCK, 12332);
-    else if (share->m_iHasLock == 1)
+    else if (share->m_iHasLock == LOCK_STATE_LOCK_BUT_UNLOCKED)
       buttons.Add(CONTEXT_BUTTON_REMOVE_LOCK, 12335);
-    else if (share->m_iHasLock == 2)
+    else if (share->m_iHasLock == LOCK_STATE_LOCKED)
     {
       buttons.Add(CONTEXT_BUTTON_REMOVE_LOCK, 12335);
 
@@ -285,32 +274,29 @@ void CGUIDialogContextMenu::GetContextButtons(const std::string &type, const CFi
         buttons.Add(CONTEXT_BUTTON_CHANGE_LOCK, 12356);
     }
   }
-  if (share && !g_passwordManager.bMasterUser && item->m_iHasLock == 1)
+  if (share && !g_passwordManager.bMasterUser && item->m_iHasLock == LOCK_STATE_LOCK_BUT_UNLOCKED)
     buttons.Add(CONTEXT_BUTTON_REACTIVATE_LOCK, 12353);
 }
 
 bool CGUIDialogContextMenu::OnContextButton(const std::string &type, const CFileItemPtr& item, CONTEXT_BUTTON button)
 {
   // buttons that are available on both sources and autosourced items
-  if (!item) return false;
+  if (!item)
+    return false;
 
   switch (button)
   {
-  case CONTEXT_BUTTON_EJECT_DRIVE:
-    return CServiceBroker::GetMediaManager().Eject(item->GetPath());
-
-#ifdef HAS_DVD_DRIVE
-  case CONTEXT_BUTTON_EJECT_DISC:
-    g_mediaManager.ToggleTray(g_mediaManager.TranslateDevicePath(item->GetPath())[0]);
-#endif
-    return true;
-  default:
-    break;
+    case CONTEXT_BUTTON_EJECT_DRIVE:
+      return CServiceBroker::GetMediaManager().Eject(item->GetPath());
+    default:
+      break;
   }
 
   // the rest of the operations require a valid share
   CMediaSource *share = GetShare(type, item.get());
-  if (!share) return false;
+  if (!share)
+    return false;
+
   switch (button)
   {
   case CONTEXT_BUTTON_EDIT_SOURCE:
@@ -398,7 +384,7 @@ bool CGUIDialogContextMenu::OnContextButton(const std::string &type, const CFile
       }
       // see if there's a local thumb for this item
       std::string folderThumb = item->GetFolderThumb();
-      if (XFILE::CFile::Exists(folderThumb))
+      if (CFileUtils::Exists(folderThumb))
       {
         CFileItemPtr local(new CFileItem("thumb://Local", false));
         local->SetArt("thumb", folderThumb);
@@ -407,7 +393,7 @@ bool CGUIDialogContextMenu::OnContextButton(const std::string &type, const CFile
       }
       // and add a "no thumb" entry as well
       CFileItemPtr nothumb(new CFileItem("thumb://None", false));
-      nothumb->SetIconImage(item->GetIconImage());
+      nothumb->SetArt("icon", item->GetArt("icon"));
       nothumb->SetLabel(g_localizeStrings.Get(20018));
       items.Add(nothumb);
 
@@ -453,12 +439,16 @@ bool CGUIDialogContextMenu::OnContextButton(const std::string &type, const CFile
       if (!CGUIDialogLockSettings::ShowAndGetLock(share->m_iLockMode,strNewPassword))
         return false;
       // password entry and re-entry succeeded, write out the lock data
-      share->m_iHasLock = 2;
+      share->m_iHasLock = LOCK_STATE_LOCKED;
       CMediaSourceSettings::GetInstance().UpdateSource(type, share->strName, "lockcode", strNewPassword);
       strNewPassword = std::to_string(share->m_iLockMode);
       CMediaSourceSettings::GetInstance().UpdateSource(type, share->strName, "lockmode", strNewPassword);
       CMediaSourceSettings::GetInstance().UpdateSource(type, share->strName, "badpwdcount", "0");
       CMediaSourceSettings::GetInstance().Save();
+
+      // lock of a mediasource has been added
+      // => refresh favourites due to possible visibility changes
+      CServiceBroker::GetFavouritesService().RefreshFavourites();
 
       CGUIMessage msg(GUI_MSG_NOTIFY_ALL,0,0,GUI_MSG_UPDATE_SOURCES);
       CServiceBroker::GetGUI()->GetWindowManager().SendThreadMessage(msg);
@@ -481,14 +471,20 @@ bool CGUIDialogContextMenu::OnContextButton(const std::string &type, const CFile
       if (!g_passwordManager.IsMasterLockUnlocked(true))
         return false;
 
+      // prompt user if they want to really remove the lock
       if (!CGUIDialogYesNo::ShowAndGetInput(CVariant{12335}, CVariant{750}))
         return false;
 
-      share->m_iHasLock = 0;
+      share->m_iHasLock = LOCK_STATE_NO_LOCK;
       CMediaSourceSettings::GetInstance().UpdateSource(type, share->strName, "lockmode", "0");
       CMediaSourceSettings::GetInstance().UpdateSource(type, share->strName, "lockcode", "0");
       CMediaSourceSettings::GetInstance().UpdateSource(type, share->strName, "badpwdcount", "0");
       CMediaSourceSettings::GetInstance().Save();
+
+      // lock of a mediasource has been removed
+      // => refresh favourites due to possible visibility changes
+      CServiceBroker::GetFavouritesService().RefreshFavourites();
+
       CGUIMessage msg(GUI_MSG_NOTIFY_ALL,0,0,GUI_MSG_UPDATE_SOURCES);
       CServiceBroker::GetGUI()->GetWindowManager().SendThreadMessage(msg);
       return true;
@@ -502,6 +498,10 @@ bool CGUIDialogContextMenu::OnContextButton(const std::string &type, const CFile
       {
         // don't prompt user for mastercode when reactivating a lock
         g_passwordManager.LockSource(type, share->strName, true);
+
+        // lock of a mediasource has been reactivated
+        // => refresh favourites due to possible visibility changes
+        CServiceBroker::GetFavouritesService().RefreshFavourites();
         return true;
       }
       return false;
@@ -522,6 +522,11 @@ bool CGUIDialogContextMenu::OnContextButton(const std::string &type, const CFile
       CMediaSourceSettings::GetInstance().UpdateSource(type, share->strName, "lockmode", strNewLockMode);
       CMediaSourceSettings::GetInstance().UpdateSource(type, share->strName, "badpwdcount", "0");
       CMediaSourceSettings::GetInstance().Save();
+
+      // lock of a mediasource has been changed
+      // => refresh favourites due to possible visibility changes
+      CServiceBroker::GetFavouritesService().RefreshFavourites();
+
       CGUIMessage msg(GUI_MSG_NOTIFY_ALL,0,0,GUI_MSG_UPDATE_SOURCES);
       CServiceBroker::GetGUI()->GetWindowManager().SendThreadMessage(msg);
       return true;
@@ -535,7 +540,8 @@ bool CGUIDialogContextMenu::OnContextButton(const std::string &type, const CFile
 CMediaSource *CGUIDialogContextMenu::GetShare(const std::string &type, const CFileItem *item)
 {
   VECSOURCES *shares = CMediaSourceSettings::GetInstance().GetSources(type);
-  if (!shares || !item) return NULL;
+  if (!shares || !item)
+    return nullptr;
   for (unsigned int i = 0; i < shares->size(); i++)
   {
     CMediaSource &testShare = shares->at(i);
@@ -556,22 +562,22 @@ CMediaSource *CGUIDialogContextMenu::GetShare(const std::string &type, const CFi
       return &testShare;
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 void CGUIDialogContextMenu::OnWindowLoaded()
 {
   m_coordX = m_posX;
   m_coordY = m_posY;
-  
+
   const CGUIControlGroupList* pGroupList = dynamic_cast<const CGUIControlGroupList *>(GetControl(GROUP_LIST));
-  const CGUIControl *pControl = GetControl(BACKGROUND_IMAGE);
-  if (pControl && pGroupList)
+  m_backgroundImage = GetControl(BACKGROUND_IMAGE);
+  if (m_backgroundImage && pGroupList)
   {
     if (pGroupList->GetOrientation() == VERTICAL)
-      m_backgroundImageSize = pControl->GetHeight();
+      m_backgroundImageSize = m_backgroundImage->GetHeight();
     else
-      m_backgroundImageSize = pControl->GetWidth();
+      m_backgroundImageSize = m_backgroundImage->GetWidth();
   }
 
   CGUIDialog::OnWindowLoaded();
@@ -585,10 +591,14 @@ void CGUIDialogContextMenu::OnDeinitWindow(int nextWindowID)
   {
     const CGUIControl *control = GetControl(BUTTON_START + i);
     if (control)
+    {
       RemoveControl(control);
+      delete control;
+    }
   }
 
   m_buttons.clear();
+  m_initiallyFocusedButtonIdx = 0;
   CGUIDialog::OnDeinitWindow(nextWindowID);
 }
 
@@ -639,9 +649,9 @@ void CGUIDialogContextMenu::SwitchMedia(const std::string& strType, const std::s
   }
 }
 
-int CGUIDialogContextMenu::Show(const CContextButtons& choices)
+int CGUIDialogContextMenu::Show(const CContextButtons& choices, int focusedButtonIdx /* = 0 */)
 {
-  auto dialog = static_cast<CGUIDialogContextMenu*>(CServiceBroker::GetGUI()->GetWindowManager().GetWindow(WINDOW_DIALOG_CONTEXT_MENU));
+  auto dialog = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIDialogContextMenu>(WINDOW_DIALOG_CONTEXT_MENU);
   if (!dialog)
     return -1;
 
@@ -650,6 +660,7 @@ int CGUIDialogContextMenu::Show(const CContextButtons& choices)
   dialog->SetInitialVisibility();
   dialog->SetupButtons();
   dialog->PositionAtCurrentFocus();
+  dialog->m_initiallyFocusedButtonIdx = focusedButtonIdx;
   dialog->Open();
   return dialog->m_clickedButton;
 }
@@ -659,7 +670,7 @@ int CGUIDialogContextMenu::ShowAndGetChoice(const CContextButtons &choices)
   if (choices.empty())
     return -1;
 
-  CGUIDialogContextMenu *pMenu = (CGUIDialogContextMenu *)CServiceBroker::GetGUI()->GetWindowManager().GetWindow(WINDOW_DIALOG_CONTEXT_MENU);
+  CGUIDialogContextMenu *pMenu = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIDialogContextMenu>(WINDOW_DIALOG_CONTEXT_MENU);
   if (pMenu)
   {
     pMenu->m_buttons = choices;
@@ -678,14 +689,13 @@ int CGUIDialogContextMenu::ShowAndGetChoice(const CContextButtons &choices)
 
 void CGUIDialogContextMenu::PositionAtCurrentFocus()
 {
-  CGUIWindow *window = CServiceBroker::GetGUI()->GetWindowManager().GetWindow(CServiceBroker::GetGUI()->GetWindowManager().GetFocusedWindow());
+  CGUIWindow *window = CServiceBroker::GetGUI()->GetWindowManager().GetWindow(CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindowOrDialog());
   if (window)
   {
     const CGUIControl *focusedControl = window->GetFocusedControl();
     if (focusedControl)
     {
-      CPoint pos = focusedControl->GetRenderPosition() + CPoint(focusedControl->GetWidth() * 0.5f, focusedControl->GetHeight() * 0.5f)
-                   + window->GetRenderPosition();
+      CPoint pos = focusedControl->GetRenderPosition() + CPoint(focusedControl->GetWidth() * 0.5f, focusedControl->GetHeight() * 0.5f);
       SetPosition(m_coordX + pos.x - GetWidth() * 0.5f, m_coordY + pos.y - GetHeight() * 0.5f);
       return;
     }

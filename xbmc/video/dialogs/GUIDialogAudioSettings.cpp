@@ -11,9 +11,9 @@
 #include "GUIPassword.h"
 #include "ServiceBroker.h"
 #include "addons/Skin.h"
-#include "application/Application.h"
 #include "application/ApplicationComponents.h"
 #include "application/ApplicationPlayer.h"
+#include "application/ApplicationVolumeHandling.h"
 #include "cores/IPlayer.h"
 #include "dialogs/GUIDialogYesNo.h"
 #include "guilib/GUIMessage.h"
@@ -53,12 +53,8 @@ void CGUIDialogAudioSettings::FrameMove()
 {
   // update the volume setting if necessary
   const auto& components = CServiceBroker::GetAppComponents();
-#if 0
   const auto appVolume = components.GetComponent<CApplicationVolumeHandling>();
   float newVolume = appVolume->GetVolumeRatio();
-#else
-  float newVolume = g_application.GetVolume(false) * 0.01f;
-#endif
   if (newVolume != m_volume)
     GetSettingsManager()->SetNumber(SETTING_AUDIO_VOLUME, static_cast<double>(newVolume));
 
@@ -116,12 +112,8 @@ void CGUIDialogAudioSettings::OnSettingChanged(const std::shared_ptr<const CSett
   if (settingId == SETTING_AUDIO_VOLUME)
   {
     m_volume = static_cast<float>(std::static_pointer_cast<const CSettingNumber>(setting)->GetValue());
-#if 0
     const auto appVolume = components.GetComponent<CApplicationVolumeHandling>();
     appVolume->SetVolume(m_volume, false); // false - value is not in percent
-#else
-    g_application.SetVolume(long(m_volume * 100.0f), false); // false - value is not in percent
-#endif
   }
   else if (settingId == SETTING_AUDIO_VOLUME_AMPLIFICATION)
   {
@@ -260,23 +252,13 @@ void CGUIDialogAudioSettings::InitializeSettings()
 
   // audio settings
   // audio volume setting
-#if 0
   const auto appVolume = components.GetComponent<CApplicationVolumeHandling>();
   m_volume = appVolume->GetVolumeRatio();
-#else
-  m_volume = g_application.GetVolume(false) * 0.01f;
-#endif
   std::shared_ptr<CSettingNumber> settingAudioVolume =
       AddSlider(groupAudio, SETTING_AUDIO_VOLUME, 13376, SettingLevel::Basic, m_volume, 14054,
-#if 0
                 CApplicationVolumeHandling::VOLUME_MINIMUM,
                 CApplicationVolumeHandling::VOLUME_MAXIMUM / 100.0f,
                 CApplicationVolumeHandling::VOLUME_MAXIMUM);
-#else
-                VOLUME_MINIMUM * 0.01f,
-                (VOLUME_MAXIMUM - VOLUME_MINIMUM) * 0.0001f,
-                VOLUME_MAXIMUM * 0.01f);   
-#endif
   settingAudioVolume->SetDependencies(depsAudioOutputPassthroughDisabled);
   std::static_pointer_cast<CSettingControlSlider>(settingAudioVolume->GetControl())->SetFormatter(SettingFormatterPercentAsDecibel);
 

@@ -13,8 +13,8 @@
 #include "settings/AdvancedSettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
-#include "windowing/WindowingFactory.h"
-#include "guilib/GraphicContext.h"
+#include "windowing/GraphicContext.h"
+#include "windowing/WinSystem.h"
 
 #include <mutex>
 
@@ -24,6 +24,7 @@
 #include <math.h>
 
 #if defined(HAS_GL)
+#include "rendering/gl/RenderSystemGL.h"
 #include "utils/GLUtils.h"
 #elif defined(HAS_GLES)
 #include "rendering/gles/RenderSystemGLES.h"
@@ -129,12 +130,10 @@ void CSlideShowPic::SetTexture_Internal(int iSlideNumber,
   m_pImage = std::move(pTexture);
   m_fWidth = static_cast<float>(m_pImage->GetWidth());
   m_fHeight = static_cast<float>(m_pImage->GetHeight());
-#if 0
   if (CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(CSettings::SETTING_SLIDESHOW_HIGHQUALITYDOWNSCALING))
   { // activate mipmapping when high quality downscaling is 'on'
     m_pImage->SetMipmapping();
   }
-#endif
   // reset our counter
   m_iCounter = 0;
   // initialize our transition effect
@@ -156,7 +155,7 @@ void CSlideShowPic::SetTexture_Internal(int iSlideNumber,
   float fadeTime = 0.2f;
   if (m_displayEffect != EFFECT_NO_TIMEOUT)
     fadeTime = std::min(0.2f*CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_SLIDESHOW_STAYTIME), 3.0f);
-  m_transitionStart.length = (int)(g_graphicsContext.GetFPS() * fadeTime); // transition time in frames
+  m_transitionStart.length = (int)(CServiceBroker::GetWinSystem()->GetGfxContext().GetFPS() * fadeTime); // transition time in frames
   m_transitionEnd.type = transEffect;
   m_transitionEnd.length = m_transitionStart.length;
   m_transitionTemp.type = TRANSITION_NONE;
@@ -181,10 +180,10 @@ void CSlideShowPic::SetTexture_Internal(int iSlideNumber,
   m_fPosX = m_fPosY = 0.0f;
   m_fPosZ = 1.0f;
   m_fVelocityX = m_fVelocityY = m_fVelocityZ = 0.0f;
-  int iFrames = std::max((int)(g_graphicsContext.GetFPS() * CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_SLIDESHOW_STAYTIME)), 1);
+  int iFrames = std::max((int)(CServiceBroker::GetWinSystem()->GetGfxContext().GetFPS() * CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_SLIDESHOW_STAYTIME)), 1);
   if (m_displayEffect == EFFECT_PANORAMA)
   {
-    RESOLUTION_INFO res = g_graphicsContext.GetResInfo();
+    RESOLUTION_INFO res = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo();
     float fScreenWidth  = (float)res.Overscan.right  - res.Overscan.left;
     float fScreenHeight = (float)res.Overscan.bottom - res.Overscan.top;
 
@@ -439,7 +438,7 @@ void CSlideShowPic::Process(unsigned int currentTime, CDirtyRegionList &dirtyreg
   if (m_iCounter > m_transitionEnd.start + m_transitionEnd.length)
     m_bIsFinished = true;
 
-  RESOLUTION_INFO info = g_graphicsContext.GetResInfo();
+  RESOLUTION_INFO info = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo();
 
   // calculate where we should render (and how large it should be)
   // calculate aspect ratio correction factor
@@ -720,7 +719,7 @@ void CSlideShowPic::Rotate(float fRotateAngle, bool immediate /* = false */)
   m_transitionTemp.length = IMMEDIATE_TRANSITION_TIME;
   m_fTransitionAngle = fRotateAngle / (float)m_transitionTemp.length;
   // reset the timer
-  m_transitionEnd.start = m_iCounter + m_transitionStart.length + (int)(g_graphicsContext.GetFPS() * CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_SLIDESHOW_STAYTIME));
+  m_transitionEnd.start = m_iCounter + m_transitionStart.length + (int)(CServiceBroker::GetWinSystem()->GetGfxContext().GetFPS() * CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_SLIDESHOW_STAYTIME));
 }
 
 void CSlideShowPic::Zoom(float fZoom, bool immediate /* = false */)
@@ -737,7 +736,7 @@ void CSlideShowPic::Zoom(float fZoom, bool immediate /* = false */)
   m_transitionTemp.length = IMMEDIATE_TRANSITION_TIME;
   m_fTransitionZoom = (fZoom - m_fZoomAmount) / (float)m_transitionTemp.length;
   // reset the timer
-  m_transitionEnd.start = m_iCounter + m_transitionStart.length + (int)(g_graphicsContext.GetFPS() * CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_SLIDESHOW_STAYTIME));
+  m_transitionEnd.start = m_iCounter + m_transitionStart.length + (int)(CServiceBroker::GetWinSystem()->GetGfxContext().GetFPS() * CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_SLIDESHOW_STAYTIME));
   // turn off the render effects until we're back down to normal zoom
   m_bNoEffect = true;
 }
@@ -747,7 +746,7 @@ void CSlideShowPic::Move(float fDeltaX, float fDeltaY)
   m_fZoomLeft += fDeltaX;
   m_fZoomTop += fDeltaY;
   // reset the timer
- // m_transitionEnd.start = m_iCounter + m_transitionStart.length + (int)(g_graphicsContext.GetFPS() * CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_SLIDESHOW_STAYTIME));
+ // m_transitionEnd.start = m_iCounter + m_transitionStart.length + (int)(CServiceBroker::GetWinSystem()->GetGfxContext().GetFPS() * CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_SLIDESHOW_STAYTIME));
 }
 
 void CSlideShowPic::Render()
@@ -862,7 +861,7 @@ void CSlideShowPic::Render(float* x, float* y, CTexture* pTexture, UTILS::COLOR:
     glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_PRIMARY_COLOR);
     glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
 
-    if(g_Windowing.UseLimitedColor())
+    if(CServiceBroker::GetWinSystem()->UseLimitedColor())
     {
       // compress range
       pTexture->BindToUnit(unit++); // dummy bind

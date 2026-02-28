@@ -1309,6 +1309,6 @@ bool CInputCodingTableBasePY::GetWordListPage(const std::string& strCode, bool i
   CGUIMessage msg(GUI_MSG_CODINGTABLE_LOOKUP_COMPLETED, 0, 0, 0);
   msg.SetStringParam(strCode);
   CServiceBroker::GetGUI()->GetWindowManager().SendThreadMessage(
-      msg, CServiceBroker::GetGUI()->GetWindowManager().GetFocusedWindow());
+      msg, CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindowOrDialog());
   return true;
 }

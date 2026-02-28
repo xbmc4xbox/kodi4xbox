@@ -9,9 +9,9 @@
 #include "ApplicationBuiltins.h"
 
 #include "ServiceBroker.h"
-#include "application/Application.h"
 #include "application/ApplicationComponents.h"
 #include "application/ApplicationPowerHandling.h"
+#include "application/ApplicationVolumeHandling.h"
 #include "input/Key.h"
 #include "interfaces/AnnouncementManager.h"
 #include "messaging/ApplicationMessenger.h"
@@ -34,7 +34,6 @@
  */
 static int Extract(const std::vector<std::string>& params)
 {
-#if 0
     // Detects if file is zip or rar then extracts
     std::string strDestDirect;
     if (params.size() < 2)
@@ -45,10 +44,9 @@ static int Extract(const std::vector<std::string>& params)
     URIUtils::AddSlashAtEnd(strDestDirect);
 
     if (URIUtils::IsZIP(params[0]))
-      g_ZipManager.ExtractArchive(params[0],strDestDirect);
+      return 0;
     else
       CLog::Log(LOGERROR, "Extract, No archive given");
-#endif
 
   return 0;
 }
@@ -58,13 +56,9 @@ static int Extract(const std::vector<std::string>& params)
  */
 static int Mute(const std::vector<std::string>& params)
 {
-#if 0
   auto& components = CServiceBroker::GetAppComponents();
   const auto appVolume = components.GetComponent<CApplicationVolumeHandling>();
   appVolume->ToggleMute();
-#else
-  g_application.ToggleMute();
-#endif
 
   return 0;
 }
@@ -99,19 +93,12 @@ static int NotifyAll(const std::vector<std::string>& params)
  */
 static int SetVolume(const std::vector<std::string>& params)
 {
-#if 0
   auto& components = CServiceBroker::GetAppComponents();
   const auto appVolume = components.GetComponent<CApplicationVolumeHandling>();
   float oldVolume = appVolume->GetVolumePercent();
   float volume = static_cast<float>(strtod(params[0].c_str(), nullptr));
 
   appVolume->SetVolume(volume);
-#else
-  int oldVolume = g_application.GetVolume();
-  int volume = atoi(params[0].c_str());
-
-  g_application.SetVolume(volume);
-#endif
   if (oldVolume != volume)
   {
     if (params.size() > 1 && StringUtils::EqualsNoCase(params[1], "showVolumeBar"))

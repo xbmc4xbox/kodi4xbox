@@ -37,7 +37,7 @@ typedef struct
 } TypeMapping;
 
 // clang-format off
-static const std::array<TypeMapping, 40> types =
+static constexpr const std::array<TypeMapping, 40> types =
   {{
    {"unknown",                           "", AddonType::UNKNOWN,                 0, AddonInstanceSupport::SUPPORT_NONE,      "" },
    {"xbmc.metadata.scraper.albums",      "", AddonType::SCRAPER_ALBUMS,      24016, AddonInstanceSupport::SUPPORT_NONE,      "DefaultAddonAlbumInfo.png" },

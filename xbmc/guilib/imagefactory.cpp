@@ -14,11 +14,6 @@
 #include "guilib/JpegIO.h"
 #include "guilib/cximage.h"
 #include "utils/Mime.h"
-#include "utils/log.h"
-
-#include <mutex>
-
-CCriticalSection ImageFactory::m_createSec;
 
 using namespace KODI::ADDONS;
 
@@ -47,6 +42,5 @@ IImage* ImageFactory::CreateLoaderFromMimeType(const std::string& strMimeType)
     return new CXImage(strMimeType);
   }
 
-  CLog::Log(LOGWARNING, "{} - image '{}' is not supported. Use JPG or PNG!", __FUNCTION__, strMimeType);
   return nullptr;
 }

@@ -1,27 +1,15 @@
 /*
- *      Copyright (C) 2005-2013 Team XBMC
- *      http://xbmc.org
+ *  Copyright (C) 2005-2018 Team Kodi
+ *  This file is part of Kodi - https://kodi.tv
  *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with XBMC; see the file COPYING.  If not, see
- *  <http://www.gnu.org/licenses/>.
- *
+ *  SPDX-License-Identifier: GPL-2.0-or-later
+ *  See LICENSES/README.md for more information.
  */
 
-#include "application/Application.h"
 #include "GUIDialogBoxBase.h"
+
+#include "guilib/GUIMessage.h"
 #include "guilib/LocalizeStrings.h"
-#include "threads/SingleLock.h"
 #include "utils/StringUtils.h"
 #include "utils/Variant.h"
 
@@ -39,9 +27,7 @@ CGUIDialogBoxBase::CGUIDialogBoxBase(int id, const std::string &xmlFile)
   m_hasTextbox = false;
 }
 
-CGUIDialogBoxBase::~CGUIDialogBoxBase(void)
-{
-}
+CGUIDialogBoxBase::~CGUIDialogBoxBase(void) = default;
 
 bool CGUIDialogBoxBase::OnMessage(CGUIMessage& message)
 {
@@ -63,7 +49,7 @@ bool CGUIDialogBoxBase::IsConfirmed() const
   return m_bConfirmed;
 }
 
-void CGUIDialogBoxBase::SetHeading(CVariant heading)
+void CGUIDialogBoxBase::SetHeading(const CVariant& heading)
 {
   std::string label = GetLocalized(heading);
   std::unique_lock<CCriticalSection> lock(m_section);
@@ -74,7 +60,7 @@ void CGUIDialogBoxBase::SetHeading(CVariant heading)
   }
 }
 
-void CGUIDialogBoxBase::SetLine(unsigned int iLine, CVariant line)
+void CGUIDialogBoxBase::SetLine(unsigned int iLine, const CVariant& line)
 {
   std::string label = GetLocalized(line);
   std::unique_lock<CCriticalSection> lock(m_section);
@@ -86,7 +72,7 @@ void CGUIDialogBoxBase::SetLine(unsigned int iLine, CVariant line)
   SetText(text);
 }
 
-void CGUIDialogBoxBase::SetText(CVariant text)
+void CGUIDialogBoxBase::SetText(const CVariant& text)
 {
   std::string label = GetLocalized(text);
   std::unique_lock<CCriticalSection> lock(m_section);
@@ -123,8 +109,8 @@ void CGUIDialogBoxBase::Process(unsigned int currentTime, CDirtyRegionList &dirt
       std::unique_lock<CCriticalSection> lock(m_section);
       heading = m_strHeading;
       text = m_text;
-      for (int i = 0; i < DIALOG_MAX_CHOICES; ++i)
-        choices.push_back(m_strChoices[i]);
+      for (const std::string& choice : m_strChoices)
+        choices.push_back(choice);
     }
     SET_CONTROL_LABEL(CONTROL_HEADING, heading);
     if (m_hasTextbox)
@@ -173,8 +159,8 @@ void CGUIDialogBoxBase::OnDeinitWindow(int nextWindowID)
     std::unique_lock<CCriticalSection> lock(m_section);
     m_strHeading.clear();
     m_text.clear();
-    for (int i = 0 ; i < DIALOG_MAX_CHOICES ; ++i)
-      m_strChoices[i].clear();
+    for (std::string& choice : m_strChoices)
+      choice.clear();
   }
 
   CGUIDialog::OnDeinitWindow(nextWindowID);

@@ -9,8 +9,8 @@
 #include "GUIDialogVolumeBar.h"
 
 #include "IGUIVolumeBarCallback.h"
-#include "application/Application.h"
 #include "application/ApplicationComponents.h"
+#include "application/ApplicationVolumeHandling.h"
 #include "guilib/GUIMessage.h"
 #include "input/Key.h"
 
@@ -30,15 +30,10 @@ bool CGUIDialogVolumeBar::OnAction(const CAction &action)
 {
   if (action.GetID() == ACTION_VOLUME_UP || action.GetID() == ACTION_VOLUME_DOWN || action.GetID() == ACTION_VOLUME_SET || action.GetID() == ACTION_MUTE)
   {
-#if 0
     const auto& components = CServiceBroker::GetAppComponents();
     const auto appVolume = components.GetComponent<CApplicationVolumeHandling>();
     if (appVolume->IsMuted() ||
         appVolume->GetVolumeRatio() <= CApplicationVolumeHandling::VOLUME_MINIMUM)
-#else
-    if (g_application.IsMuted() ||
-        g_application.GetVolume(false) <= VOLUME_MINIMUM)
-#endif
     { // cancel the timer, dialog needs to stay visible
       CancelAutoClose();
     }

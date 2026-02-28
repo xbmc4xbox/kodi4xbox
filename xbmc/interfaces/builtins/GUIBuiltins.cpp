@@ -141,7 +141,7 @@ static int ActivateAndFocus(const std::vector<std::string>& params)
       unsigned int iPtr = 1;
       while (params.size() > iPtr + 1)
       {
-        CGUIMessage msg(GUI_MSG_SETFOCUS, CServiceBroker::GetGUI()->GetWindowManager().GetFocusedWindow(),
+        CGUIMessage msg(GUI_MSG_SETFOCUS, CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindowOrDialog(),
                         atol(params[iPtr].c_str()),
                         (params.size() >= iPtr + 2) ? atol(params[iPtr + 1].c_str())+1 : 0);
         CServiceBroker::GetGUI()->GetWindowManager().SendMessage(msg);
@@ -232,7 +232,7 @@ static int CancelAlarm(const std::vector<std::string>& params)
  */
 static int ClearProperty(const std::vector<std::string>& params)
 {
-  CGUIWindow *window = CServiceBroker::GetGUI()->GetWindowManager().GetWindow(params.size() > 1 ? CWindowTranslator::TranslateWindow(params[1]) : CServiceBroker::GetGUI()->GetWindowManager().GetFocusedWindow());
+  CGUIWindow *window = CServiceBroker::GetGUI()->GetWindowManager().GetWindow(params.size() > 1 ? CWindowTranslator::TranslateWindow(params[1]) : CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindowOrDialog());
   if (window)
     window->SetProperty(params[0],"");
 
@@ -359,7 +359,7 @@ static int SetLanguage(const std::vector<std::string>& params)
  */
 static int SetProperty(const std::vector<std::string>& params)
 {
-  CGUIWindow *window = CServiceBroker::GetGUI()->GetWindowManager().GetWindow(params.size() > 2 ? CWindowTranslator::TranslateWindow(params[2]) : CServiceBroker::GetGUI()->GetWindowManager().GetFocusedWindow());
+  CGUIWindow *window = CServiceBroker::GetGUI()->GetWindowManager().GetWindow(params.size() > 2 ? CWindowTranslator::TranslateWindow(params[2]) : CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindowOrDialog());
   if (window)
     window->SetProperty(params[0],params[1]);
 

@@ -25,11 +25,11 @@
 #include "ServiceBroker.h"
 #include "Texture.h"
 #include "TextureManager.h"
-#include "GraphicContext.h"
+#include "windowing/GraphicContext.h"
 #include "utils/log.h"
 #include "utils/GLUtils.h"
 #include "windowing/WindowingFactory.h"
-#include "guilib/MatrixGLES.h"
+#include "rendering/MatrixGL.h"
 
 // stuff for freetype
 #include <ft2build.h>
@@ -123,7 +123,7 @@ bool CGUIFontTTFGL::FirstBegin()
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   VerifyGLState();
 
-  if(g_Windowing.UseLimitedColor())
+  if(CServiceBroker::GetWinSystem()->UseLimitedColor())
   {
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, m_nTexture); // dummy bind
@@ -176,14 +176,14 @@ void CGUIFontTTFGL::LastEnd()
   glDisable(GL_TEXTURE_2D);
 #else
   // GLES 2.0 version.
-  g_Windowing.EnableGUIShader(SM_FONTS);
+  CServiceBroker::GetRenderSystem()->EnableGUIShader(SM_FONTS);
 
   CreateStaticVertexBuffers();
 
-  GLint posLoc  = g_Windowing.GUIShaderGetPos();
-  GLint colLoc  = g_Windowing.GUIShaderGetCol();
-  GLint tex0Loc = g_Windowing.GUIShaderGetCoord0();
-  GLint modelLoc = g_Windowing.GUIShaderGetModel();
+  GLint posLoc  = CServiceBroker::GetRenderSystem()->GUIShaderGetPos();
+  GLint colLoc  = CServiceBroker::GetRenderSystem()->GUIShaderGetCol();
+  GLint tex0Loc = CServiceBroker::GetRenderSystem()->GUIShaderGetCoord0();
+  GLint modelLoc = CServiceBroker::GetRenderSystem()->GUIShaderGetModel();
 
   // Enable the attributes used by this shader
   glEnableVertexAttribArray(posLoc);
@@ -223,12 +223,12 @@ void CGUIFontTTFGL::LastEnd()
     // Bind our pre-calculated array to GL_ELEMENT_ARRAY_BUFFER
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_elementArrayHandle);
     // Store currect scissor
-    CRect scissor = g_graphicsContext.StereoCorrection(g_graphicsContext.GetScissors());
+    CRect scissor = CServiceBroker::GetWinSystem()->GetGfxContext().StereoCorrection(CServiceBroker::GetWinSystem()->GetGfxContext().GetScissors());
 
     for (size_t i = 0; i < m_vertexTrans.size(); i++)
     {
       // Apply the clip rectangle
-      CRect clip = g_Windowing.ClipRectToScissorRect(m_vertexTrans[i].clip);
+      CRect clip = CServiceBroker::GetRenderSystem()->ClipRectToScissorRect(m_vertexTrans[i].clip);
       if (!clip.IsEmpty())
       {
         // intersect with current scissor
@@ -236,7 +236,7 @@ void CGUIFontTTFGL::LastEnd()
         // skip empty clip
         if (clip.IsEmpty())
           continue;
-        g_Windowing.SetScissors(clip);
+        CServiceBroker::GetRenderSystem()->SetScissors(clip);
       }
 
       // Apply the translation to the currently active (top-of-stack) model view matrix
@@ -266,7 +266,7 @@ void CGUIFontTTFGL::LastEnd()
       glMatrixModview.Pop();
     }
     // Restore the original scissor rectangle
-    g_Windowing.SetScissors(scissor);
+    CServiceBroker::GetRenderSystem()->SetScissors(scissor);
     // Restore the original model view matrix
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glMatrixModview.Get());
     // Unbind GL_ARRAY_BUFFER and GL_ELEMENT_ARRAY_BUFFER
@@ -279,7 +279,7 @@ void CGUIFontTTFGL::LastEnd()
   glDisableVertexAttribArray(colLoc);
   glDisableVertexAttribArray(tex0Loc);
 
-  g_Windowing.DisableGUIShader();
+  CServiceBroker::GetRenderSystem()->DisableGUIShader();
 #endif
 }
 

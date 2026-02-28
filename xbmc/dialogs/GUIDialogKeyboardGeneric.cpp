@@ -30,6 +30,7 @@
 #include "utils/StringUtils.h"
 #include "utils/Variant.h"
 #include "utils/log.h"
+#include "windowing/WinSystem.h"
 
 #include <mutex>
 
@@ -676,7 +677,7 @@ void CGUIDialogKeyboardGeneric::ShowWordList(int direct)
 {
   std::unique_lock<CCriticalSection> lock(m_CS);
   std::wstring hzlist = L"";
-  g_graphicsContext.SetScalingResolution(m_coordsRes, true);
+  CServiceBroker::GetWinSystem()->GetGfxContext().SetScalingResolution(m_coordsRes, true);
   float width = m_listfont->GetCharWidth(L'<') + m_listfont->GetCharWidth(L'>');
   float spacewidth = m_listfont->GetCharWidth(L' ');
   float numwidth = m_listfont->GetCharWidth(L'1') + m_listfont->GetCharWidth(L'.');
