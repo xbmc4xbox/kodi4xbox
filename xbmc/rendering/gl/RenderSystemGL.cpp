@@ -24,7 +24,7 @@
 #ifdef HAS_GL
 
 #include "RenderSystemGL.h"
-#include "windowing/GraphicContext.h"
+#include "guilib/GUITextureGL.h"
 #include "settings/AdvancedSettings.h"
 #include "rendering/MatrixGL.h"
 #include "settings/DisplaySettings.h"
@@ -170,6 +170,8 @@ bool CRenderSystemGL::InitRenderSystem()
   CheckOpenGLQuirks();
 
   m_bRenderCreated = true;
+
+  CGUITextureGL::Register();
 
   return true;
 }

@@ -1,31 +1,21 @@
 /*
- *      Copyright (C) 2005-2013 Team XBMC
- *      http://xbmc.org
+ *  Copyright (C) 2005-2018 Team Kodi
+ *  This file is part of Kodi - https://kodi.tv
  *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with XBMC; see the file COPYING.  If not, see
- *  <http://www.gnu.org/licenses/>.
- *
+ *  SPDX-License-Identifier: GPL-2.0-or-later
+ *  See LICENSES/README.md for more information.
  */
 
 #pragma once
 
-#include "system.h"
-#include "XBTF.h"
-#include "guilib/imagefactory.h"
-#ifdef TARGET_POSIX
-#include "linux/XMemUtils.h"
-#endif
+#include "guilib/TextureFormats.h"
+
+#include <cstddef>
+#include <memory>
+#include <string>
+
+class IImage;
+
 
 #pragma pack(1)
 struct COLOR {unsigned char b,g,r,x;};	// Windows GDI expects 4bytes per color
@@ -39,13 +29,12 @@ class CTexture
 {
 
 public:
-  CTexture(unsigned int width = 0, unsigned int height = 0, unsigned int format = XB_FMT_A8R8G8B8);
-
+  CTexture(unsigned int width = 0, unsigned int height = 0, XB_FMT format = XB_FMT_A8R8G8B8);
   virtual ~CTexture();
 
   static std::unique_ptr<CTexture> CreateTexture(unsigned int width = 0,
                                                  unsigned int height = 0,
-                                                 unsigned int format = XB_FMT_A8R8G8B8);
+                                                 XB_FMT format = XB_FMT_A8R8G8B8);
 
   /*! \brief Load a texture from a file
    Loads a texture from a file, restricting in size if needed based on maxHeight and maxWidth.
@@ -54,10 +43,13 @@ public:
    \param idealWidth the ideal width of the texture (defaults to 0, no ideal width).
    \param idealHeight the ideal height of the texture (defaults to 0, no ideal height).
    \param strMimeType mimetype of the given texture if available (defaults to empty)
-   \return a CTexture pointer to the created texture - NULL if the texture failed to load.
+   \return a CTexture std::unique_ptr to the created texture - nullptr if the texture failed to load.
    */
-  static std::unique_ptr<CTexture> LoadFromFile(const std::string& texturePath, unsigned int idealWidth = 0, unsigned int idealHeight = 0,
-                                    bool requirePixels = false, const std::string& strMimeType = "");
+  static std::unique_ptr<CTexture> LoadFromFile(const std::string& texturePath,
+                                                unsigned int idealWidth = 0,
+                                                unsigned int idealHeight = 0,
+                                                bool requirePixels = false,
+                                                const std::string& strMimeType = "");
 
   /*! \brief Load a texture from a file in memory
    Loads a texture from a file in memory, restricting in size if needed based on maxHeight and maxWidth.
@@ -67,15 +59,29 @@ public:
    \param mimeType the mime type of the file in buffer.
    \param idealWidth the ideal width of the texture (defaults to 0, no ideal width).
    \param idealHeight the ideal height of the texture (defaults to 0, no ideal height).
-   \return a CTexture pointer to the created texture - NULL if the texture failed to load.
+   \return a CTexture std::unique_ptr to the created texture - nullptr if the texture failed to load.
    */
-  static std::unique_ptr<CTexture> LoadFromFileInMemory(unsigned char* buffer, size_t bufferSize, const std::string& mimeType,
-                                            unsigned int idealWidth = 0, unsigned int idealHeight = 0);
+  static std::unique_ptr<CTexture> LoadFromFileInMemory(unsigned char* buffer,
+                                                        size_t bufferSize,
+                                                        const std::string& mimeType,
+                                                        unsigned int idealWidth = 0,
+                                                        unsigned int idealHeight = 0);
 
-  bool LoadFromMemory(unsigned int width, unsigned int height, unsigned int pitch, unsigned int format, bool hasAlpha, unsigned char* pixels);
-  bool LoadPaletted(unsigned int width, unsigned int height, unsigned int pitch, unsigned int format, const unsigned char *pixels, const COLOR *palette);
+  bool LoadFromMemory(unsigned int width,
+                      unsigned int height,
+                      unsigned int pitch,
+                      XB_FMT format,
+                      bool hasAlpha,
+                      const unsigned char* pixels);
+  bool LoadPaletted(unsigned int width,
+                    unsigned int height,
+                    unsigned int pitch,
+                    XB_FMT format,
+                    const unsigned char* pixels,
+                    const COLOR* palette);
 
   bool HasAlpha() const;
+  void SetAlpha(bool hasAlpha) { m_hasAlpha = hasAlpha; }
 
   void SetMipmapping();
   bool IsMipmapped() const;
@@ -100,8 +106,13 @@ public:
   int GetOrientation() const { return m_orientation; }
   void SetOrientation(int orientation) { m_orientation = orientation; }
 
-  void Update(unsigned int width, unsigned int height, unsigned int pitch, unsigned int format, const unsigned char *pixels, bool loadToGPU);
-  void Allocate(unsigned int width, unsigned int height, unsigned int format);
+  void Update(unsigned int width,
+              unsigned int height,
+              unsigned int pitch,
+              XB_FMT format,
+              const unsigned char* pixels,
+              bool loadToGPU);
+  void Allocate(unsigned int width, unsigned int height, XB_FMT format);
   void ClampToEdge();
 
   static unsigned int PadPow2(unsigned int x);
@@ -109,7 +120,7 @@ public:
 
 private:
   // no copy constructor
-  CTexture(const CTexture &copy);
+  CTexture(const CTexture& copy) = delete;
 
 protected:
   bool LoadFromFileInMem(unsigned char* buffer, size_t size, const std::string& mimeType,
@@ -130,8 +141,8 @@ protected:
 
   unsigned char* m_pixels;
   bool m_loadedToGPU;
-  unsigned int m_format;
+  XB_FMT m_format;
   int m_orientation;
-  bool m_hasAlpha;
-  bool m_mipmapping;
+  bool m_hasAlpha =  true ;
+  bool m_mipmapping =  false ;
 };

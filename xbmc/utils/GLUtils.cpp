@@ -281,7 +281,6 @@ int KODI::UTILS::GL::glFormatElementByteCount(GLenum format)
 }
 #endif
 
-#if 0
 uint8_t KODI::UTILS::GL::GetChannelFromARGB(const KODI::UTILS::GL::ColorChannel colorChannel,
                                             const uint32_t argb)
 {
@@ -299,4 +298,3 @@ uint8_t KODI::UTILS::GL::GetChannelFromARGB(const KODI::UTILS::GL::ColorChannel 
       throw std::runtime_error("KODI::UTILS::GL::GetChannelFromARGB: ColorChannel not handled");
   };
 }
-#endif

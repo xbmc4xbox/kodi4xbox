@@ -1,30 +1,15 @@
 /*
- *      Copyright (C) 2005-2013 Team XBMC
- *      http://xbmc.org
+ *  Copyright (C) 2005-2018 Team Kodi
+ *  This file is part of Kodi - https://kodi.tv
  *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with XBMC; see the file COPYING.  If not, see
- *  <http://www.gnu.org/licenses/>.
- *
+ *  SPDX-License-Identifier: GPL-2.0-or-later
+ *  See LICENSES/README.md for more information.
  */
 
-#include "system.h"
-#if defined(HAS_GL)
 #include "GUITextureGL.h"
-#endif
-#include "Texture.h"
+
 #include "ServiceBroker.h"
-#include "utils/log.h"
+#include "Texture.h"
 #include "utils/GLUtils.h"
 #include "utils/Geometry.h"
 #include "windowing/WinSystem.h"
@@ -33,16 +18,20 @@
 #define glMultiTexCoord2fARB glMultiTexCoord2f
 #endif
 
-#if defined(HAS_GL)
+void CGUITextureGL::Register()
+{
+  CGUITexture::Register(CGUITextureGL::CreateTexture, CGUITextureGL::DrawQuad);
+}
 
-CGUITextureGL* CGUITextureGL::CreateTexture(
+CGUITexture* CGUITextureGL::CreateTexture(
     float posX, float posY, float width, float height, const CTextureInfo& texture)
 {
   return new CGUITextureGL(posX, posY, width, height, texture);
 }
 
-CGUITextureGL::CGUITextureGL(float posX, float posY, float width, float height, const CTextureInfo &texture)
-: CGUITextureBase(posX, posY, width, height, texture)
+CGUITextureGL::CGUITextureGL(
+    float posX, float posY, float width, float height, const CTextureInfo& texture)
+  : CGUITexture(posX, posY, width, height, texture)
 {
   memset(m_col, 0, sizeof(m_col));
 }
@@ -60,10 +49,10 @@ void CGUITextureGL::Begin(UTILS::COLOR::Color color)
   else
     range = 255 -  0;
 
-  m_col[0] = GET_R(color) * range / 255;
-  m_col[1] = GET_G(color) * range / 255;
-  m_col[2] = GET_B(color) * range / 255;
-  m_col[3] = GET_A(color);
+  m_col[0] = KODI::UTILS::GL::GetChannelFromARGB(KODI::UTILS::GL::ColorChannel::R, color) * range / 255;
+  m_col[1] = KODI::UTILS::GL::GetChannelFromARGB(KODI::UTILS::GL::ColorChannel::G, color) * range / 255;
+  m_col[2] = KODI::UTILS::GL::GetChannelFromARGB(KODI::UTILS::GL::ColorChannel::B, color) * range / 255;
+  m_col[3] = KODI::UTILS::GL::GetChannelFromARGB(KODI::UTILS::GL::ColorChannel::A, color);
 
   CTexture* texture = m_texture.m_textures[m_currentFrame].get();
   texture->LoadToGPU();
@@ -192,7 +181,10 @@ void CGUITextureGL::Draw(float *x, float *y, float *z, const CRect &texture, con
   glVertex3f(x[3], y[3], z[3]);
 }
 
-void CGUITextureGL::DrawQuad(const CRect &rect, UTILS::COLOR::Color color, CTexture *texture, const CRect *texCoords)
+void CGUITextureGL::DrawQuad(const CRect& rect,
+                             UTILS::COLOR::Color color,
+                             CTexture* texture,
+                             const CRect* texCoords)
 {
   if (texture)
   {
@@ -223,7 +215,10 @@ void CGUITextureGL::DrawQuad(const CRect &rect, UTILS::COLOR::Color color, CText
 
   glBegin(GL_QUADS);
 
-  glColor4ub((GLubyte)GET_R(color), (GLubyte)GET_G(color), (GLubyte)GET_B(color), (GLubyte)GET_A(color));
+  glColor4ub((GLubyte)KODI::UTILS::GL::GetChannelFromARGB(KODI::UTILS::GL::ColorChannel::R, color),
+             (GLubyte)KODI::UTILS::GL::GetChannelFromARGB(KODI::UTILS::GL::ColorChannel::G, color),
+             (GLubyte)KODI::UTILS::GL::GetChannelFromARGB(KODI::UTILS::GL::ColorChannel::B, color),
+             (GLubyte)KODI::UTILS::GL::GetChannelFromARGB(KODI::UTILS::GL::ColorChannel::A, color));
 
   CRect coords = texCoords ? *texCoords : CRect(0.0f, 0.0f, 1.0f, 1.0f);
   glTexCoord2f(coords.x1, coords.y1);
@@ -240,4 +235,3 @@ void CGUITextureGL::DrawQuad(const CRect &rect, UTILS::COLOR::Color color, CText
     glDisable(GL_TEXTURE_2D);
 }
 
-#endif

@@ -491,6 +491,7 @@ add_executable(xbmc
   xbmc/platform/xbox/CPUInfoXbox.cpp
   xbmc/platform/xbox/GPUInfoXbox.cpp
   xbmc/platform/xbox/main.cpp
+  xbmc/platform/xbox/MemUtils.cpp
   xbmc/platform/xbox/MessagePrinter.cpp
   xbmc/platform/xbox/XBOXUtil.cpp
   xbmc/platform/xbox/filesystem/XboxDirectory.cpp
