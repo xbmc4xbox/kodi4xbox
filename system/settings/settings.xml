@@ -60,6 +60,16 @@
           </constraints>
           <control type="list" format="string" />
         </setting>
+        <setting id="winsystem.ishdrdisplay" type="boolean" label="13436" help="36299">
+          <dependencies>
+            <dependency type="visible">
+              <condition on="property" name="ishdrdisplay" />
+            </dependency>
+          </dependencies>
+          <level>2</level>
+          <default>true</default>
+          <control type="toggle" />
+        </setting>
         <setting id="videoplayer.usedisplayasclock" type="boolean" label="13510" help="36166">
           <level>1</level>
           <default>false</default>
@@ -113,6 +123,26 @@
             <formatlabel>14047</formatlabel>
           </control>
         </setting>
+        <setting id="videoplayer.usesuperresolution" type="boolean" label="13417" help="39194">
+          <requirement>HAS_DX</requirement>
+          <dependencies>
+            <dependency type="visible">
+              <condition on="property" name="supportsvideosuperresolution" />
+            </dependency>
+            <dependency type="enable">
+              <or>
+                <condition setting="videoplayer.rendermethod" operator="is">0</condition> <!-- RENDER_METHOD_AUTO -->
+                <condition setting="videoplayer.rendermethod" operator="is">4</condition> <!-- RENDER_METHOD_DXVA -->
+              </or>
+            </dependency>
+          </dependencies>
+          <level>2</level>
+          <default>false</default>
+          <updates>
+            <update type="change" />
+          </updates>
+          <control type="toggle" />
+        </setting>
         <setting id="videoplayer.usemediacodecsurface" type="boolean" label="13440" help="36544">
           <requirement>HAS_MEDIACODEC</requirement>
           <level>2</level>
@@ -143,15 +173,43 @@
           <default>true</default>
           <control type="toggle" />
         </setting>
-        <setting id="winsystem.ishdrdisplay" type="boolean" label="13436" help="36299">
-          <dependencies>
-            <dependency type="visible">
-              <condition on="property" name="ishdrdisplay" />
-            </dependency>
-          </dependencies>
+        <setting id="videoplayer.highprecision" type="boolean" label="13418" help="39195">
+          <requirement>HAS_DX</requirement>
           <level>2</level>
           <default>true</default>
           <control type="toggle" />
+        </setting>
+        <setting id="videoplayer.convertdovi" type="boolean" label="39196" help="39197">
+          <requirement>HAS_MEDIACODEC</requirement>
+          <dependencies>
+            <dependency type="visible">
+              <condition on="property" name="supportsdolbyvision" />
+            </dependency>
+          </dependencies>
+          <level>2</level>
+          <default>false</default>
+          <control type="toggle" />
+        </setting>
+        <setting id="videoplayer.allowedhdrformats" type="list[integer]" label="39198" help="39199">
+          <requirement><!-- Android and webOS use CBitstreamConverter -->
+            <or>
+              <condition>HAS_MEDIACODEC</condition>
+              <condition>HAVE_WEBOS</condition>
+            </or>
+          </requirement>
+          <level>2</level>
+          <default>0,1</default> <!-- Allow all HDR formats -->
+          <constraints>
+            <options>
+              <option label="39200">0</option> <!-- Dolby Vision -->
+              <option label="39201">1</option> <!-- HDR10+ -->
+            </options>
+            <delimiter>,</delimiter>
+          </constraints>
+          <control type="list" format="string">
+            <multiselect>true</multiselect>
+            <hidevalue>false</hidevalue>
+          </control>
         </setting>
       </group>
       <group id="4" label="14232">
@@ -314,7 +372,7 @@
     <category id="discs" label="14087" help="36193">
       <group id="1" label="446">
         <setting id="dvds.autorun" type="boolean" label="14088" help="36194">
-          <requirement>HAS_DVD_DRIVE</requirement>
+          <requirement>HAS_OPTICAL_DRIVE</requirement>
           <level>0</level>
           <default>false</default>
           <control type="toggle" />
@@ -364,7 +422,7 @@
       </group>
       <group id="3" label="620">
         <setting id="audiocds.autoaction" type="integer" label="14097" help="36283">
-          <requirement>HAS_DVD_DRIVE</requirement>
+          <requirement>HAS_OPTICAL_DRIVE</requirement>
           <level>1</level>
           <default>0</default> <!-- AUTOCD_NONE -->
           <constraints>
@@ -373,7 +431,7 @@
           <control type="list" format="string" />
         </setting>
         <setting id="audiocds.usecddb" type="boolean" label="227" help="36284">
-          <requirement>HAS_DVD_DRIVE</requirement>
+          <requirement>HAS_OPTICAL_DRIVE</requirement>
           <level>1</level>
           <default>true</default>
           <control type="toggle" />
@@ -561,7 +619,7 @@
           <default>100</default>
           <control type="slider" format="percentage" range="0,100" />
         </setting>
-        <setting id="subtitles.bordersize" type="integer" label="39159">
+        <setting id="subtitles.bordersize" type="integer" label="39159" help="688">
           <level>3</level>
           <default>25</default>
           <dependencies>
@@ -569,7 +627,7 @@
           </dependencies>
           <control type="slider" format="percentage" range="0,100" />
         </setting>
-        <setting id="subtitles.bordercolorpick" type="string" label="39160">
+        <setting id="subtitles.bordercolorpick" type="string" label="39160" help="689">
           <level>3</level>
           <default>FF000000</default> <!-- Black -->
           <dependencies>
@@ -577,7 +635,7 @@
           </dependencies>
           <control type="colorbutton" />
         </setting>
-        <setting id="subtitles.blur" type="integer" label="39173">
+        <setting id="subtitles.blur" type="integer" label="39173" help="690">
           <level>3</level>
           <default>0</default>
           <control type="slider" format="percentage" range="0,100" />
@@ -621,7 +679,7 @@
           </dependencies>
           <control type="slider" format="percentage" range="0,100" />
         </setting>
-        <setting id="subtitles.shadowcolor" type="string" parent="subtitles.backgroundtype" label="39171">
+        <setting id="subtitles.shadowcolor" type="string" parent="subtitles.backgroundtype" label="39171" help="691">
           <level>3</level>
           <default>FF000000</default> <!-- Black -->
           <dependencies>
@@ -634,7 +692,7 @@
           </dependencies>
           <control type="colorbutton" />
         </setting>
-        <setting id="subtitles.shadowopacity" type="integer" parent="subtitles.backgroundtype" label="39172">
+        <setting id="subtitles.shadowopacity" type="integer" parent="subtitles.backgroundtype" label="39172" help="692">
           <level>3</level>
           <default>100</default>
           <dependencies>
@@ -647,7 +705,7 @@
           </dependencies>
           <control type="slider" format="percentage" range="0,100" />
         </setting>
-        <setting id="subtitles.shadowsize" type="integer" parent="subtitles.backgroundtype" label="39170">
+        <setting id="subtitles.shadowsize" type="integer" parent="subtitles.backgroundtype" label="39170" help="693">
           <level>3</level>
           <default>15</default>
           <dependencies>
@@ -840,6 +898,16 @@
           <default>false</default>
           <control type="toggle" />
         </setting>
+        <setting id="videolibrary.ignorevideoversions" type="boolean" label="40202" help="40203">
+          <level>1</level>
+          <default>true</default>
+          <control type="toggle" />
+        </setting>
+        <setting id="videolibrary.ignorevideoextras" type="boolean" label="40204" help="40205">
+          <level>1</level>
+          <default>true</default>
+          <control type="toggle" />
+        </setting>
         <setting id="videolibrary.cleanup" type="action" label="14247" help="36148">
           <level>2</level>
           <control type="button" format="action" />
@@ -966,14 +1034,30 @@
       <group id="1" label="593">
         <setting id="myvideos.selectaction" type="integer" label="22079" help="36177">
           <level>0</level>
-          <default>1</default> <!-- SELECT_ACTION_PLAY_OR_RESUME -->
+          <default>1</default> <!-- ACTION_PLAY_OR_RESUME -->
           <constraints>
             <options>
-              <option label="22080">0</option> <!-- SELECT_ACTION_CHOOSE -->
-              <option label="208">1</option> <!-- SELECT_ACTION_PLAY_OR_RESUME -->
-              <option label="13404">2</option> <!-- SELECT_ACTION_RESUME -->
-              <option label="22081">3</option> <!-- SELECT_ACTION_INFO -->
-              <option label="13347">7</option> <!-- SELECT_ACTION_QUEUE -->
+              <option label="22080">0</option> <!-- ACTION_CHOOSE -->
+              <option label="208">1</option> <!-- ACTION_PLAY_OR_RESUME -->
+              <option label="13404">2</option> <!-- ACTION_RESUME -->
+              <option label="22081">3</option> <!-- ACTION_INFO -->
+              <option label="13347">7</option> <!-- ACTION_QUEUE -->
+            </options>
+          </constraints>
+          <control type="list" format="string" />
+        </setting>
+        <setting id="myvideos.selectdefaultversion" type="boolean" label="40200" help="40201">
+          <level>0</level>
+          <default>false</default>
+          <control type="toggle" />
+        </setting>
+        <setting id="myvideos.playaction" type="integer" label="22076" help="36204">
+          <level>0</level>
+          <default>1</default> <!-- ACTION_PLAY_OR_RESUME -->
+          <constraints>
+            <options>
+              <option label="22077">1</option> <!-- ACTION_PLAY_OR_RESUME -->
+              <option label="22078">2</option> <!-- ACTION_RESUME -->
             </options>
           </constraints>
           <control type="list" format="string" />
@@ -1034,6 +1118,11 @@
           <control type="toggle" />
         </setting>
         <setting id="videolibrary.groupsingleitemsets" type="boolean" label="20470" help="36157">
+          <level>1</level>
+          <default>false</default>
+          <control type="toggle" />
+        </setting>
+        <setting id="videolibrary.showvideoversionsasfolder" type="boolean" label="40206" help="40207">
           <level>1</level>
           <default>false</default>
           <control type="toggle" />
@@ -1111,12 +1200,6 @@
         </setting>
       </group>
       <group id="4" label="39123">
-        <!-- Hidden setting indicating video art settings have been migrated from old advancedsettings.xml format-->
-        <setting id="videolibrary.artsettingsupdated" type="boolean" label="0" help="">
-          <level>4</level>
-          <default>false</default>
-          <control type="toggle" />
-        </setting>
         <setting id="videolibrary.artworklevel" type="integer" label="39137" help="39138">
           <level>1</level>
           <default>0</default>
@@ -1305,12 +1388,6 @@
         </setting>
       </group>
       <group id="3" label="39123">
-        <!-- Hidden setting indicating music art settings have been migrated from old advancedsettings.xml format-->
-        <setting id="musiclibrary.artsettings" type="boolean" label="0" help="">
-          <level>4</level>
-          <default>false</default>
-          <control type="toggle" />
-        </setting>
         <setting id="musiclibrary.artworklevel" type="integer" label="39137" help="39138">
           <level>1</level>
           <default>0</default>
@@ -1573,8 +1650,8 @@
     </category>
     <category id="pvrmenu" label="14301" help="36211">
       <group id="1" label="128">
-        <setting id="pvrmanager.syncchannelgroups" type="boolean" label="19221" help="36204">
-          <level>1</level>
+        <setting id="pvrmanager.backendchannelgroupsorder" type="boolean" label="19350" help="36435">
+          <level>2</level>
           <default>true</default>
           <control type="toggle" />
         </setting>
@@ -1805,7 +1882,14 @@
           <control type="list" format="string" />
         </setting>
       </group>
-      <group id="2" label="14304">
+      <group id="2" label="19351">
+        <setting id="pvrplayback.autoplaynextprogramme" type="boolean" label="19352" help="36439">
+          <level>2</level>
+          <default>true</default>
+          <control type="toggle" />
+        </setting>
+      </group>
+      <group id="3" label="14304">
         <setting id="pvrplayback.enableradiords" type="boolean" label="29980" help="29981">
           <level>1</level>
           <default>true</default>
@@ -2264,6 +2348,18 @@
           </dependencies>
           <control type="toggle" />
         </setting>
+        <setting id="services.upnpplayervolumesync" type="boolean" parent="services.upnpserver" label="40212" help="40213">
+          <level>2</level>
+          <default>true</default>
+          <dependencies>
+            <dependency type="enable">
+              <and>
+                <condition setting="services.upnpcontroller" operator="is">true</condition>
+              </and>
+            </dependency>
+          </dependencies>
+          <control type="toggle" />
+        </setting>
         <setting id="services.upnprenderer" type="boolean" label="21881" help="36325">
           <level>1</level>
           <default>false</default>
@@ -2381,6 +2477,16 @@
           <control type="toggle" />
         </setting>
       </group>
+      <group id="4" label="37053">
+        <setting id="smb.chunksize" type="integer" label="37056" help="37057">
+        <level>2</level>
+        <default>128</default>
+          <constraints>
+            <options>filechunksizes</options>
+          </constraints>
+          <control type="list" format="string" />
+        </setting>
+      </group>
     </category>
     <category id="nfs" label="1201" help="36356">
       <requirement>HAS_FILESYSTEM_NFS</requirement>
@@ -2394,6 +2500,69 @@
             <maximum>4</maximum>
           </constraints>
           <control type="spinner" format="integer" />
+        </setting>
+      </group>
+      <group id="2" label="37053">
+        <setting id="nfs.chunksize" type="integer" label="37054" help="37055">
+        <level>2</level>
+        <default>128</default>
+          <constraints>
+            <options>filechunksizes</options>
+          </constraints>
+          <control type="list" format="string" />
+        </setting>
+      </group>
+    </category>
+    <category id="filecache" label="37101" help="37102">
+      <group id="1" label="16000">
+        <setting id="filecache.buffermode" type="integer" label="37103" help="37104">
+          <level>2</level>
+          <default>4</default>
+          <constraints>
+            <options>filecachebuffermodes</options>
+          </constraints>
+          <control type="list" format="string" />
+        </setting>
+        <setting id="filecache.memorysize" type="integer" label="37105" help="37106">
+          <level>2</level>
+          <default>20</default>
+          <dependencies>
+            <dependency type="enable">
+              <condition setting="filecache.buffermode" operator="!is">3</condition>
+            </dependency>
+          </dependencies>
+          <constraints>
+            <options>filecachememorysizes</options>
+          </constraints>
+          <control type="list" format="string" />
+        </setting>
+        <setting id="filecache.readfactor" type="integer" label="37107" help="37108">
+          <level>2</level>
+          <default>400</default>
+          <dependencies>
+            <dependency type="enable">
+              <condition setting="filecache.buffermode" operator="!is">3</condition>
+            </dependency>
+          </dependencies>
+          <constraints>
+            <options>filecachereadfactors</options>
+          </constraints>
+          <control type="list" format="string" />
+        </setting>
+      </group>
+      <group id="2" label="37053">
+        <setting id="filecache.chunksize" type="integer" label="37053" help="37109">
+          <level>2</level>
+          <default>131072</default>
+          <dependencies>
+            <dependency type="enable">
+              <condition setting="filecache.buffermode" operator="!is">3</condition>
+            </dependency>
+          </dependencies>
+          <constraints>
+            <options>filecachechunksizes</options>
+          </constraints>
+          <control type="list" format="string" />
         </setting>
       </group>
     </category>
@@ -2451,7 +2620,7 @@
           <control type="toggle" />
         </setting>
         <setting id="gamesgeneral.rewindtime" type="integer" label="35205" help="35206">
-          <level>2</level>
+          <level>0</level>
           <default>60</default>
           <constraints>
             <minimum>10</minimum>
@@ -2524,6 +2693,10 @@
           <constraints>
             <options>monitors</options>
           </constraints>
+          <dependencies>
+            <dependency type="enable" on="property" name="SupportsScreenMove" />
+            <dependency type="update" setting="videoscreen.screenmode" />
+          </dependencies>
           <control type="spinner" format="string" delayed="true" />
         </setting>
         <setting id="videoscreen.screen" type="integer" label="240" help="36351">
@@ -2591,17 +2764,6 @@
             <options>refreshchangedelays</options>
           </constraints>
           <control type="spinner" format="string" />
-        </setting>
-        <setting id="videoscreen.guisdrpeakluminance" type="integer" label="36097" help="36547">
-        <requirement>HAS_DX</requirement>
-          <dependencies>
-            <dependency type="visible">
-              <condition on="property" name="ishdrdisplay" />
-            </dependency>
-          </dependencies>
-          <level>2</level>
-          <default>60</default>
-          <control type="slider" format="percentage" range="0,100" />
         </setting>
         <setting id="videoscreen.10bitsurfaces" type="integer" label="36098" help="36578">
         <requirement>HAS_DX</requirement>
@@ -2821,7 +2983,42 @@
           <control type="spinner" format="integer" />
         </setting>
       </group>
-      <group id="2" label="14126">
+      <group id="2" label="39191">
+      <setting id="videoscreen.usesystemsdrpeakluminance" type="boolean" label="36096" help="39190">
+        <level>2</level>
+        <default>true</default>
+        <dependencies>
+          <dependency type="visible">
+            <and>
+              <condition on="property" name="ishdrdisplay" />
+              <condition on="property" name="hassystemsdrpeakluminance" />
+            </and>
+          </dependency>
+        </dependencies>
+        <control type="toggle" />
+      </setting>
+      <setting id="videoscreen.guipeakluminance" type="integer" label="36097" help="36547">
+        <requirement>
+          <or>
+            <condition>HAS_DX</condition>
+            <condition>HAS_MEDIACODEC</condition>
+          </or>
+        </requirement>
+        <dependencies>
+          <dependency type="visible" on="property" name="ishdrdisplay"/>
+          <dependency type="enable">
+            <or>
+              <condition on="property" name="hassystemsdrpeakluminance" operator="!is" />
+              <condition setting="videoscreen.usesystemsdrpeakluminance" operator="is">false</condition>
+            </or>
+          </dependency>
+        </dependencies>
+        <level>2</level>
+        <default>40</default>
+        <control type="slider" format="percentage" range="0,100" />
+      </setting>
+      </group>
+      <group id="3" label="14126">
         <setting id="videoscreen.whitelist" type="list[string]" parent="videoscreen.screen" label="14126" help="36443">
           <level>3</level>
           <default></default>
@@ -2851,7 +3048,7 @@
           <control type="toggle" />
         </setting>
       </group>
-      <group id="3" label="14232">
+      <group id="4" label="14232">
         <setting id="videoscreen.stereoscopicmode" type="integer" label="36500" help="36539">
           <level>2</level>
           <default>0</default>
@@ -2872,7 +3069,7 @@
           <control type="list" format="integer"/>
         </setting>
       </group>
-      <group id="4" label="496">
+      <group id="5" label="496">
         <setting id="videoscreen.noofbuffers" type="integer" label="36043" help="36552">
           <level>2</level>
           <default>3</default> <!-- triple buffers -->
@@ -3963,28 +4160,32 @@
             <formatlabel>14044</formatlabel>
           </control>
         </setting>
-        <setting id="screensaver.usemusicvisinstead" type="boolean" label="13392" help="36133">
-          <level>0</level>
-          <default>true</default>
-          <dependencies>
-            <dependency type="enable" setting="screensaver.mode" operator="!is"></dependency>
-          </dependencies>
-          <control type="toggle" />
-        </setting>
-        <setting id="screensaver.usedimonpause" type="boolean" label="22014" help="36134">
-          <level>1</level>
-          <default>true</default>
-          <dependencies>
-            <dependency type="enable">
-              <and>
-                <condition setting="screensaver.mode" operator="!is">screensaver.xbmc.builtin.dim</condition>
-                <condition setting="screensaver.mode" operator="!is"></condition>
-              </and>
-            </dependency>
-          </dependencies>
-          <control type="toggle" />
-        </setting>
       </group>
+      <group id="2" label="14221">
+          <setting id="screensaver.disableforaudio" type="boolean" label="39192" help="39193">
+            <level>0</level>
+            <default>true</default>
+            <dependencies>
+              <dependency type="enable" setting="screensaver.mode" operator="!is"></dependency>
+            </dependencies>
+            <control type="toggle" />
+          </setting>
+        </group>
+        <group id="3" label="157">
+          <setting id="screensaver.usedimonpause" type="boolean" label="22014" help="36134">
+            <level>1</level>
+            <default>true</default>
+            <dependencies>
+              <dependency type="enable">
+                <and>
+                  <condition setting="screensaver.mode" operator="!is">screensaver.xbmc.builtin.dim</condition>
+                  <condition setting="screensaver.mode" operator="!is"></condition>
+                </and>
+              </dependency>
+            </dependencies>
+            <control type="toggle" />
+          </setting>
+        </group>
     </category>
     <category id="masterlock" label="12360" help="36395">
       <access>CheckMasterLock</access>
