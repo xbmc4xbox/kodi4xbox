@@ -385,10 +385,8 @@ bool CGUIControlFactory::GetTexture(const TiXmlNode* pRootNode,
   if (border)
   {
     GetRectFromString(border, image.border);
-#if 0
     const char* borderinfill = pNode->Attribute("infill");
     image.m_infill = (!borderinfill || !StringUtils::EqualsNoCase(borderinfill, "false"));
-#endif
   }
   image.orientation = 0;
   const char* flipX = pNode->Attribute("flipx");
