@@ -72,19 +72,19 @@ class CGUIFontTTFBase;
 class CScrollInfo
 {
 public:
-  CScrollInfo(unsigned int wait = 50, float pos = 0, int speed = defaultSpeed, const std::string &scrollSuffix = " | ");
+  CScrollInfo(unsigned int wait = 50,
+              float pos = 0,
+              int speed = defaultSpeed,
+              const std::string& scrollSuffix = " | ");
 
-  void SetSpeed(int speed)
-  {
-    pixelSpeed = speed * 0.001f;
-  }
+  void SetSpeed(int speed) { m_pixelSpeed = speed * 0.001f; }
   void Reset()
   {
-    waitTime = initialWait;
+    m_waitTime = m_initialWait;
     // pixelPos is where we start the current letter, so is measured
     // to the left of the text rendering's left edge.  Thus, a negative
     // value will mean the text starts to the right
-    pixelPos = -initialPos;
+    m_pixelPos = -m_initialPos;
     // privates:
     m_averageFrameTime = 1000.f / fabs((float)defaultSpeed);
     m_lastFrameTime = 0;
@@ -95,12 +95,12 @@ public:
   }
   float GetPixelsPerFrame();
 
-  float pixelPos;
-  float pixelSpeed;
-  unsigned int waitTime;
-  unsigned int initialWait;
-  float initialPos;
-  vecText suffix;
+  float m_pixelPos;
+  float m_pixelSpeed;
+  unsigned int m_waitTime;
+  unsigned int m_initialWait;
+  float m_initialPos;
+  vecText m_suffix;
   mutable float m_textWidth;
   mutable float m_totalWidth;
   mutable bool m_widthValid;
@@ -108,6 +108,7 @@ public:
   unsigned int m_loopCount;
 
   static const int defaultSpeed = 60;
+
 private:
   float m_averageFrameTime;
   uint32_t m_lastFrameTime;
