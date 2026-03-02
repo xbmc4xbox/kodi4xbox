@@ -292,6 +292,7 @@ add_executable(xbmc
   xbmc/filesystem/VirtualDirectory.cpp
   xbmc/filesystem/ZipDirectory.cpp
   xbmc/filesystem/ZipFile.cpp
+  xbmc/filesystem/ZipManager.cpp
   xbmc/imagefiles/SpecialImageLoaderFactory.cpp
   xbmc/guilib/cximage.cpp
   xbmc/guilib/DirtyRegionSolvers.cpp

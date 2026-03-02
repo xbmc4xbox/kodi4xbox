@@ -28,6 +28,7 @@
 #include "favourites/FavouritesService.h"
 #include "filesystem/Directory.h"
 #include "filesystem/FileDirectoryFactory.h"
+#include "filesystem/ZipManager.h"
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIKeyboardFactory.h"
 #include "guilib/GUIWindowManager.h"
@@ -868,12 +869,10 @@ void CGUIWindowFileManager::GoParentFolder(int iList)
   CURL url(m_Directory[iList]->GetPath());
   if (url.IsProtocol("rar") || url.IsProtocol("zip"))
   {
-#if 0
     // check for step-below, if, unmount rar
     if (url.GetFileName().empty())
       if (url.IsProtocol("zip"))
         g_ZipManager.release(m_Directory[iList]->GetPath()); // release resources
-#endif
   }
 
   std::string strPath(m_strParentPath[iList]), strOldPath(m_Directory[iList]->GetPath());
