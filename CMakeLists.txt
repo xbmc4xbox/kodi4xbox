@@ -256,6 +256,7 @@ add_executable(xbmc
   xbmc/filesystem/DirectoryCache.cpp
   xbmc/filesystem/DirectoryFactory.cpp
   xbmc/filesystem/DirectoryHistory.cpp
+  xbmc/filesystem/DllLibCurl.cpp
   xbmc/filesystem/FavouritesDirectory.cpp
   xbmc/filesystem/File.cpp
   xbmc/filesystem/FileCache.cpp
@@ -732,7 +733,7 @@ add_executable(xbmc
   xbmc/windows/GUIWindowSystemInfo.cpp
 )
 
-target_include_directories(xbmc PRIVATE xbmc xbmc/cores/VideoPlayer xbmc/platform/xbox)
+target_include_directories(xbmc PRIVATE xbmc xbmc/cores/VideoPlayer xbmc/platform/xbox lib/libcurl)
 
 # Bring in networking support
 target_link_libraries(xbmc PUBLIC ${NXDK_DIR}/lib/libnxdk_net.lib)
