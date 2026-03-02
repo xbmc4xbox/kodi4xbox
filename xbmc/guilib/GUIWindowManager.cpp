@@ -46,6 +46,8 @@
 #include "utils/Variant.h"
 #include "utils/log.h"
 #include "video/dialogs/GUIDialogVideoInfo.h"
+#include "video/dialogs/GUIDialogVideoManagerExtras.h"
+#include "video/dialogs/GUIDialogVideoManagerVersions.h"
 #include "video/dialogs/GUIDialogVideoOSD.h"
 #include "video/windows/GUIWindowVideoNav.h"
 #include "video/windows/GUIWindowVideoPlaylist.h"
@@ -195,6 +197,8 @@ void CGUIWindowManager::CreateWindows()
   Add(new CGUIDialogMusicInfo);
   Add(new CGUIDialogOK);
   Add(new CGUIDialogVideoInfo);
+  Add(new CGUIDialogVideoManagerVersions);
+  Add(new CGUIDialogVideoManagerExtras);
   Add(new CGUIDialogSelect(WINDOW_DIALOG_SELECT_VIDEO_VERSION));
   Add(new CGUIDialogSelect(WINDOW_DIALOG_SELECT_VIDEO_EXTRA));
 

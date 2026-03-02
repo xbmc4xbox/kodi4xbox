@@ -393,6 +393,10 @@ void CSettingConditions::Initialize()
   m_simpleConditions.emplace("has_dx");
   m_simpleConditions.emplace("hasdxva2");
 #endif
+#if defined(TARGET_WEBOS)
+  m_simpleConditions.emplace("have_webos");
+#endif
+
 #ifdef HAVE_LCMS2
   m_simpleConditions.emplace("have_lcms2");
 #endif
@@ -419,8 +423,12 @@ void CSettingConditions::Initialize()
   m_simpleConditions.emplace("has_cdda_ripper");
 #endif
 
-#ifdef HAS_DVD_DRIVE
-  m_simpleConditions.emplace("has_dvd_drive");
+#ifdef HAS_OPTICAL_DRIVE
+  m_simpleConditions.emplace("has_optical_drive");
+#endif
+
+#ifdef HAS_XBMCHELPER
+  m_simpleConditions.emplace("has_xbmchelper");
 #endif
 
   // add complex conditions

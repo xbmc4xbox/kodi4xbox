@@ -60,11 +60,7 @@ CTextureArray::CTextureArray(int width, int height, int loops,  bool texCoordsAr
   m_orientation = 0;
   m_texWidth = 0;
   m_texHeight = 0;
-#ifdef HAS_XBOX_D3D
-  m_texCoordsArePixels = texCoordsArePixels;
-#else
   m_texCoordsArePixels = false;
-#endif
 }
 
 CTextureArray::CTextureArray()
@@ -100,11 +96,7 @@ void CTextureArray::Add(std::shared_ptr<CTexture> texture, int delay)
 
   m_texWidth = texture->GetTextureWidth();
   m_texHeight = texture->GetTextureHeight();
-#ifdef HAS_XBOX_D3D
-  m_texCoordsArePixels = texture->GetTexCoordsArePixels();
-#else
   m_texCoordsArePixels = false;
-#endif
 
   m_textures.emplace_back(std::move(texture));
   m_delays.push_back(delay);
@@ -452,19 +444,22 @@ const CTextureArray& CGUITextureManager::Load(const std::string& strTextureName,
   {
 #if 0
     CTextureMap* pMap = nullptr;
-    std::vector<std::pair<std::unique_ptr<CTexture>, int>> textures;
-    int nLoops = 0, width = 0, height = 0;
-    bool success = m_TexBundle[bundle].LoadAnim(strTextureName, textures, width, height, nLoops);
-    if (!success)
+    std::optional<CTextureBundleXBT::Animation> animation =
+        m_TexBundle[bundle].LoadAnim(strTextureName);
+    if (!animation)
     {
       CLog::Log(LOGERROR, "Texture manager unable to load bundled file: {}", strTextureName);
       return emptyTexture;
     }
 
+    int nLoops = animation.value().loops;
+    int width = animation.value().width;
+    int height = animation.value().height;
+
     unsigned int maxWidth = 0;
     unsigned int maxHeight = 0;
     pMap = new CTextureMap(strTextureName, width, height, nLoops);
-    for (auto& texture : textures)
+    for (auto& texture : animation.value().textures)
     {
       maxWidth = std::max(maxWidth, texture.first->GetWidth());
       maxHeight = std::max(maxHeight, texture.first->GetHeight());
@@ -550,11 +545,17 @@ const CTextureArray& CGUITextureManager::Load(const std::string& strTextureName,
   if (bundle >= 0)
   {
 #if 0
-    if (!m_TexBundle[bundle].LoadTexture(strTextureName, pTexture, width, height))
+    std::optional<CTextureBundleXBT::Texture> texture =
+        m_TexBundle[bundle].LoadTexture(strTextureName);
+    if (!texture)
     {
       CLog::Log(LOGERROR, "Texture manager unable to load bundled file: {}", strTextureName);
       return emptyTexture;
     }
+
+    pTexture = std::move(texture.value().texture);
+    width = texture.value().width;
+    height = texture.value().height;
 #endif
   }
   else
@@ -671,7 +672,7 @@ void CGUITextureManager::Cleanup()
     i = m_vecTextures.erase(i);
   }
 #if 0
-  // Kodi Krypton XBT bundle 
+  // Kodi XBT bundle
   m_TexBundle[0].Close();
   m_TexBundle[1].Close();
   m_TexBundle[0] = CTextureBundle(true);

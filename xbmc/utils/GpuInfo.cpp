@@ -15,7 +15,6 @@
 bool CGPUInfo::GetTemperature(CTemperature& temperature) const
 {
   // user custom cmd takes precedence over platform implementation
-#if 0
   if (SupportsCustomTemperatureCommand())
   {
     auto cmd = CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_gpuTempCmd;
@@ -29,7 +28,6 @@ bool CGPUInfo::GetTemperature(CTemperature& temperature) const
   {
     return true;
   }
-#endif
 
   temperature = CTemperature();
   temperature.SetValid(false);

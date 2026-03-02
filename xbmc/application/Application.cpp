@@ -1135,9 +1135,6 @@ bool CApplication::OnMessage(CGUIMessage& message)
           m_incompatibleAddons.clear();
         }
 
-        // show info dialog about moved configuration files if needed
-        ShowAppMigrationMessage();
-
         // offer enabling addons at kodi startup that are disabled due to
         // e.g. os package manager installation on linux
         ConfigureAndEnableAddons();
@@ -1216,12 +1213,6 @@ bool CApplication::ExecuteXBMCAction(std::string actionStr,
     }
   }
   return true;
-}
-
-// inform the user that the configuration data has moved from old XBMC location
-// to new Kodi location - if applicable
-void CApplication::ShowAppMigrationMessage()
-{
 }
 
 void CApplication::ConfigureAndEnableAddons()

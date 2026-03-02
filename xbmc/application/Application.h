@@ -130,7 +130,6 @@ public:
   void CloseNetworkShares();
 
   void ConfigureAndEnableAddons();
-  void ShowAppMigrationMessage();
   void Process() override;
   void ProcessSlow();
   /*!

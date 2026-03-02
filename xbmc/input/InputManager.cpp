@@ -21,6 +21,7 @@
 #include "input/actions/ActionIDs.h"
 #include "input/keyboard/Key.h"
 #include "input/keyboard/KeyIDs.h"
+#include "input/keyboard/XBMC_vkeys.h"
 #include "input/keymaps/ButtonTranslator.h"
 #include "messaging/ApplicationMessenger.h"
 #include "settings/Settings.h"

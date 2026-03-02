@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2018 Team Kodi
+ *  Copyright (C) 2007-2024 Team Kodi
  *  This file is part of Kodi - https://kodi.tv
  *
  *  SPDX-License-Identifier: GPL-2.0-or-later
@@ -12,8 +12,14 @@
 #include "input/keyboard/XBMC_vkeys.h"
 #include "utils/StringUtils.h"
 
+using namespace KODI;
+using namespace KEYBOARD;
+
+namespace
+{
 // The array of XBMCKEYTABLEs used in XBMC.
-// scancode, sym, unicode, ascii, vkey, keyname
+// sym, unicode, ascii, vkey, keyname
+// clang-format off
 static const XBMCKEYTABLE XBMCKeyTable[] = {
     {XBMCK_BACKSPACE, 0, 0, XBMCVK_BACK, "backspace"},
     {XBMCK_TAB, 0, 0, XBMCVK_TAB, "tab"},
@@ -242,11 +248,14 @@ static const XBMCKEYTABLE XBMCKeyTable[] = {
     {XBMCK_FAVORITES, 0, 0, XBMCVK_FAVORITES, "favorites"},
     {XBMCK_HOMEPAGE, 0, 0, XBMCVK_HOMEPAGE, "homepage"},
     {XBMCK_CONFIG, 0, 0, XBMCVK_CONFIG, "config"},
-    {XBMCK_EPG, 0, 0, XBMCVK_EPG, "epg"}};
+    {XBMCK_EPG, 0, 0, XBMCVK_EPG, "epg"}
+};
+// clang-format on
 
 static int XBMCKeyTableSize = sizeof(XBMCKeyTable) / sizeof(XBMCKEYTABLE);
+} // namespace
 
-bool KeyTableLookupName(std::string keyname, XBMCKEYTABLE* keytable)
+bool KeyTable::LookupName(std::string keyname, XBMCKEYTABLE* keytable)
 {
   // If the name being searched for is empty there will be no match
   if (keyname.empty())
@@ -272,7 +281,7 @@ bool KeyTableLookupName(std::string keyname, XBMCKEYTABLE* keytable)
   return false;
 }
 
-bool KeyTableLookupSym(uint16_t sym, XBMCKEYTABLE* keytable)
+bool KeyTable::LookupSym(uint16_t sym, XBMCKEYTABLE* keytable)
 {
   // If the sym being searched for is zero there will be no match
   if (sym == 0)
@@ -292,7 +301,7 @@ bool KeyTableLookupSym(uint16_t sym, XBMCKEYTABLE* keytable)
   return false;
 }
 
-bool KeyTableLookupUnicode(uint16_t unicode, XBMCKEYTABLE* keytable)
+bool KeyTable::LookupUnicode(uint16_t unicode, XBMCKEYTABLE* keytable)
 {
   // If the unicode being searched for is zero there will be no match
   if (unicode == 0)
@@ -312,7 +321,7 @@ bool KeyTableLookupUnicode(uint16_t unicode, XBMCKEYTABLE* keytable)
   return false;
 }
 
-bool KeyTableLookupSymAndUnicode(uint16_t sym, uint16_t unicode, XBMCKEYTABLE* keytable)
+bool KeyTable::LookupSymAndUnicode(uint16_t sym, uint16_t unicode, XBMCKEYTABLE* keytable)
 {
   // If the sym being searched for is zero there will be no match (the
   // unicode can be zero if the sym is non-zero)
@@ -333,7 +342,7 @@ bool KeyTableLookupSymAndUnicode(uint16_t sym, uint16_t unicode, XBMCKEYTABLE* k
   return false;
 }
 
-bool KeyTableLookupVKeyName(uint32_t vkey, XBMCKEYTABLE* keytable)
+bool KeyTable::LookupVKeyName(uint32_t vkey, XBMCKEYTABLE* keytable)
 {
   // If the vkey being searched for is zero there will be no match
   if (vkey == 0)

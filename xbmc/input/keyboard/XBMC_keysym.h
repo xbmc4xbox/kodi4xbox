@@ -11,18 +11,21 @@
 
 #pragma once
 
+/// \ingroup keyboard
+/// \{
+
 // The XBMC_keysym identifies a physical key on the keyboard i.e. it is
 // analogous to a scan code but is hardware independent.
-// These values are bazsed on the SDL_keysym standards, see:
+// These values are based on the SDL_keysym standards, see:
 //
 //   http://www.libsdl.org/tmp/SDL-1.3-docs/SDL__keysym_8h.html
 //
 // On SDL_KEYDOWN messages the keysym.sym will be one of these values.
 //
-// On OSs that don't support SDL (i.e. Windows) the OS dependant key
+// On OSs that don't support SDL (i.e. Windows) the OS dependent key
 // handling code converts keypresses to an XBMC_keysym value.
 
-typedef enum
+enum XBMCKey
 {
   // The keyboard syms have been cleverly chosen to map to ASCII
   XBMCK_UNKNOWN = 0x00,
@@ -234,10 +237,10 @@ typedef enum
   XBMCK_EJECT = 344,
 
   XBMCK_LAST
-} XBMCKey;
+};
 
 // Enumeration of valid key mods (possibly OR'd together)
-typedef enum
+enum XBMCMod
 {
   XBMCKMOD_NONE = 0x0000,
   XBMCKMOD_LSHIFT = 0x0001,
@@ -254,10 +257,12 @@ typedef enum
   XBMCKMOD_CAPS = 0x2000,
   XBMCKMOD_MODE = 0x4000,
   XBMCKMOD_RESERVED = 0x8000
-} XBMCMod;
+};
 
 #define XBMCKMOD_CTRL (XBMCKMOD_LCTRL | XBMCKMOD_RCTRL)
 #define XBMCKMOD_SHIFT (XBMCKMOD_LSHIFT | XBMCKMOD_RSHIFT)
 #define XBMCKMOD_ALT (XBMCKMOD_LALT | XBMCKMOD_RALT)
 #define XBMCKMOD_META (XBMCKMOD_LMETA | XBMCKMOD_RMETA)
 #define XBMCKMOD_SUPER (XBMCKMOD_LSUPER | XBMCKMOD_RSUPER)
+
+/// \}

@@ -17,12 +17,13 @@
 #include "cores/VideoPlayer/VideoRenderers/BaseRenderer.h"
 #include "filesystem/File.h"
 #include "guilib/GUIFontManager.h"
+#include "input/keyboard/KeyboardLayoutManager.h"
 
 #include <mutex>
 #if defined(TARGET_POSIX)
 #include "platform/posix/PosixTimezone.h"
 #endif // defined(TARGET_POSIX)
-#if defined(TARGET_DARWIN_OSX)
+#if defined(TARGET_DARWIN_OSX) and defined(HAS_XBMCHELPER)
 #include "platform/darwin/osx/XBMCHelper.h"
 #endif // defined(TARGET_DARWIN_OSX)
 #if defined(TARGET_DARWIN_TVOS)
@@ -414,6 +415,8 @@ void CSettings::InitializeOptionFillers()
   GetSettingsManager()->RegisterSettingOptionsFiller("timezonecountries", CPosixTimezone::SettingOptionsTimezoneCountriesFiller);
   GetSettingsManager()->RegisterSettingOptionsFiller("timezones", CPosixTimezone::SettingOptionsTimezonesFiller);
 #endif
+  GetSettingsManager()->RegisterSettingOptionsFiller(
+      "keyboardlayouts", KEYBOARD::CKeyboardLayoutManager::SettingOptionsKeyboardLayoutsFiller);
 }
 
 void CSettings::UninitializeOptionFillers()

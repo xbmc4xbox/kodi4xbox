@@ -444,7 +444,9 @@ void CRenderSystemGL::RestoreHardwareTransform()
 
 void CRenderSystemGL::CalculateMaxTexturesize()
 {
-#if 0
+#ifdef _XBOX
+  m_maxTextureSize = 2048;
+#else
   GLint width = 256;
 
   // reset any previous GL errors
@@ -471,8 +473,6 @@ void CRenderSystemGL::CalculateMaxTexturesize()
       break;
     }
   }
-#else
-  m_maxTextureSize = 2048;
 #endif
 
 #ifdef TARGET_DARWIN_OSX

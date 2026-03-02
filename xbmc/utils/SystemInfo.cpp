@@ -357,11 +357,7 @@ std::vector<std::string> CSysInfoJob::GetDNSServers()
 
 std::string CSysInfoJob::GetVideoEncoder()
 {
-#ifdef _XBOX
-  return "GPU: Custom NV2A";
-#else
   return "GPU: " + CServiceBroker::GetRenderSystem()->GetRenderRenderer();
-#endif
 }
 
 std::string CSysInfoJob::GetBatteryLevel()

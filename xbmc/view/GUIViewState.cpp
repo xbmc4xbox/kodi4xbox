@@ -48,12 +48,6 @@ using namespace ADDON;
 std::string CGUIViewState::m_strPlaylistDirectory;
 VECSOURCES CGUIViewState::m_sources;
 
-static const int SETTING_AUTOPLAYNEXT_MUSICVIDEOS = 0;
-static const int SETTING_AUTOPLAYNEXT_TVSHOWS = 1;
-static const int SETTING_AUTOPLAYNEXT_EPISODES = 2;
-static const int SETTING_AUTOPLAYNEXT_MOVIES = 3;
-static const int SETTING_AUTOPLAYNEXT_UNCATEGORIZED = 4;
-
 CGUIViewState* CGUIViewState::GetViewState(int windowId, const CFileItemList& items)
 {
   // don't expect derived classes to clear the sources
