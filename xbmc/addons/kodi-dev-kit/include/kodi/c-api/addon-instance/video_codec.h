@@ -58,6 +58,16 @@ extern "C"
     /// order is reversed.
     VIDEOCODEC_FORMAT_I420,
 
+    VIDEOCODEC_FORMAT_YUV420P9,
+    VIDEOCODEC_FORMAT_YUV420P10,
+    VIDEOCODEC_FORMAT_YUV420P12,
+    VIDEOCODEC_FORMAT_YUV422P9,
+    VIDEOCODEC_FORMAT_YUV422P10,
+    VIDEOCODEC_FORMAT_YUV422P12,
+    VIDEOCODEC_FORMAT_YUV444P9,
+    VIDEOCODEC_FORMAT_YUV444P10,
+    VIDEOCODEC_FORMAT_YUV444P12,
+
     /// @brief The maximum value to use in a list.
     VIDEOCODEC_FORMAT_MAXFORMATS
   };
@@ -195,7 +205,7 @@ extern "C"
     /// To handle the input stream buffer, this is given by Kodi using
     /// @ref kodi::addon::CInstanceVideoCodec::GetFrameBuffer and must be
     /// released again using @ref kodi::addon::CInstanceVideoCodec::ReleaseFrameBuffer.
-    KODI_HANDLE videoBufferHandle; 
+    KODI_HANDLE videoBufferHandle;
   };
   ///@}
   //----------------------------------------------------------------------------

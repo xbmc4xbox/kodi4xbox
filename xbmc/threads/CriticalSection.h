@@ -17,7 +17,7 @@ class CCriticalSection : public XbmcThreads::CountingLockable<XbmcThreads::CRecu
 {
 };
 
-#elif defined(TARGET_WINDOWS) || defined(NXDK)
+#elif defined(TARGET_WINDOWS)
 #include <mutex>
 
 class CCriticalSection : public XbmcThreads::CountingLockable<std::recursive_mutex>

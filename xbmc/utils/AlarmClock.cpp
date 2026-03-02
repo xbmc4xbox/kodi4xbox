@@ -10,6 +10,8 @@
 
 #include "ServiceBroker.h"
 #include "dialogs/GUIDialogKaiToast.h"
+#include "events/EventLog.h"
+#include "events/NotificationEvent.h"
 #include "guilib/LocalizeStrings.h"
 #include "log.h"
 #include "messaging/ApplicationMessenger.h"
@@ -56,6 +58,20 @@ void CAlarmClock::Start(const std::string& strName, float n_secs, const std::str
     labelStarted = 13210;
   }
 
+  EventPtr alarmClockActivity(new CNotificationEvent(
+      labelAlarmClock,
+      StringUtils::Format(g_localizeStrings.Get(labelStarted), static_cast<int>(event.m_fSecs) / 60,
+                          static_cast<int>(event.m_fSecs) % 60)));
+
+  auto eventLog = CServiceBroker::GetEventLog();
+  if (eventLog)
+  {
+    if (bSilent)
+      eventLog->Add(alarmClockActivity);
+    else
+      eventLog->AddWithNotification(alarmClockActivity);
+  }
+
   event.watch.StartZero();
   std::unique_lock<CCriticalSection> lock(m_events);
   m_event.insert(make_pair(lowerName,event));
@@ -96,7 +112,15 @@ void CAlarmClock::Stop(const std::string& strName, bool bSilent /* false */)
 
   if (iter->second.m_strCommand.empty() || static_cast<float>(iter->second.m_fSecs) > elapsed)
   {
-    // TODO: add support for log events
+    EventPtr alarmClockActivity(new CNotificationEvent(labelAlarmClock, strMessage));
+    auto eventLog = CServiceBroker::GetEventLog();
+    if (eventLog)
+    {
+      if (bSilent)
+        eventLog->Add(alarmClockActivity);
+      else
+        eventLog->AddWithNotification(alarmClockActivity);
+    }
   }
   else
   {

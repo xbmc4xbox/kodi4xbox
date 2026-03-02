@@ -1,26 +1,19 @@
 /*
- *      Copyright (C) 2005-2013 Team XBMC
- *      http://xbmc.org
+ *  Copyright (C) 2005-2018 Team Kodi
+ *  This file is part of Kodi - https://kodi.tv
  *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with XBMC; see the file COPYING.  If not, see
- *  <http://www.gnu.org/licenses/>.
- *
+ *  SPDX-License-Identifier: GPL-2.0-or-later
+ *  See LICENSES/README.md for more information.
  */
 
 #include "WinSystem.h"
 
 #include "ServiceBroker.h"
+#include "guilib/DispResource.h"
+#if HAS_GLES
+#include "guilib/GUIFontTTFGL.h"
+#endif
+#include "powermanagement/DPMSSupport.h"
 #include "settings/DisplaySettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
@@ -28,64 +21,75 @@
 #include "utils/StringUtils.h"
 #include "windowing/GraphicContext.h"
 
+#include <memory>
 #include <mutex>
 
-CWinSystemBase::CWinSystemBase()
+const char* CWinSystemBase::SETTING_WINSYSTEM_IS_HDR_DISPLAY = "winsystem.ishdrdisplay";
+
+CWinSystemBase::CWinSystemBase() : m_gfxContext(std::make_unique<CGraphicContext>())
 {
-  m_eWindowSystem = WINDOW_SYSTEM_XBOX; // this is the 0 value enum
-  m_nWidth = 0;
-  m_nHeight = 0;
-  m_bWindowCreated = false;
-  m_fRefreshRate = 0.0f;
-  m_gfxContext.reset(new CGraphicContext());
 }
 
-CWinSystemBase::~CWinSystemBase()
-{
-
-}
+CWinSystemBase::~CWinSystemBase() = default;
 
 bool CWinSystemBase::InitWindowSystem()
 {
   UpdateResolutions();
   CDisplaySettings::GetInstance().ApplyCalibrations();
+
+  CResolutionUtils::PrintWhitelist();
+
   return true;
 }
 
 bool CWinSystemBase::DestroyWindowSystem()
 {
+  m_screenSaverManager.reset();
   return false;
 }
 
-void CWinSystemBase::UpdateDesktopResolution(RESOLUTION_INFO& newRes, int screen, int width, int height, float refreshRate, uint32_t dwFlags)
+void CWinSystemBase::UpdateDesktopResolution(RESOLUTION_INFO& newRes,
+                                             const std::string& output,
+                                             int width,
+                                             int height,
+                                             int screenWidth,
+                                             int screenHeight,
+                                             float refreshRate,
+                                             uint32_t dwFlags)
 {
   newRes.Overscan.left = 0;
   newRes.Overscan.top = 0;
   newRes.Overscan.right = width;
   newRes.Overscan.bottom = height;
-  newRes.iScreen = screen;
   newRes.bFullScreen = true;
-  newRes.iSubtitles = (int)(0.965 * height);
+  newRes.iSubtitles = height;
   newRes.dwFlags = dwFlags;
   newRes.fRefreshRate = refreshRate;
   newRes.fPixelRatio = 1.0f;
   newRes.iWidth = width;
   newRes.iHeight = height;
-  newRes.iScreenWidth = width;
-  newRes.iScreenHeight = height;
-  newRes.strMode = StringUtils::Format("{}x{}", width, height);
+  newRes.iScreenWidth = screenWidth;
+  newRes.iScreenHeight = screenHeight;
+  newRes.strMode = StringUtils::Format("{}: {}x{}", output, width, height);
   if (refreshRate > 1)
-    newRes.strMode += StringUtils::Format("@ {:.2f}", refreshRate);
+    newRes.strMode += StringUtils::Format(" @ {:.2f}Hz", refreshRate);
   if (dwFlags & D3DPRESENTFLAG_INTERLACED)
     newRes.strMode += "i";
   if (dwFlags & D3DPRESENTFLAG_MODE3DTB)
     newRes.strMode += "tab";
   if (dwFlags & D3DPRESENTFLAG_MODE3DSBS)
     newRes.strMode += "sbs";
-  if (screen > 0)
-    newRes.strMode = StringUtils::Format("{} #{}", newRes.strMode.c_str(), screen + 1);
-  if (refreshRate > 1)
-    newRes.strMode += " - Full Screen";
+  newRes.strOutput = output;
+}
+
+void CWinSystemBase::UpdateDesktopResolution(RESOLUTION_INFO& newRes,
+                                             const std::string& output,
+                                             int width,
+                                             int height,
+                                             float refreshRate,
+                                             uint32_t dwFlags)
+{
+  UpdateDesktopResolution(newRes, output, width, height, width, height, refreshRate, dwFlags);
 }
 
 void CWinSystemBase::UpdateResolutions()
@@ -100,7 +104,7 @@ void CWinSystemBase::UpdateResolutions()
   window.iScreenWidth  = window.iWidth;
   window.iScreenHeight = window.iHeight;
   if (window.iSubtitles == 0)
-    window.iSubtitles = (int)(0.965 * window.iHeight);
+    window.iSubtitles = window.iHeight;
   window.fPixelRatio = 1.0f;
   window.strMode = "Windowed";
 }
@@ -112,48 +116,45 @@ void CWinSystemBase::SetWindowResolution(int width, int height)
   window.iHeight = height;
   window.iScreenWidth = width;
   window.iScreenHeight = height;
-  window.iSubtitles = (int)(0.965 * window.iHeight);
+  window.iSubtitles = window.iHeight;
   CServiceBroker::GetWinSystem()->GetGfxContext().ResetOverscan(window);
-}
-
-int CWinSystemBase::DesktopResolution(int screen)
-{
-  for (int idx = 0; idx < GetNumScreens(); idx++)
-    if (CDisplaySettings::GetInstance().GetResolutionInfo(RES_DESKTOP + idx).iScreen == screen)
-      return RES_DESKTOP + idx;
-  // Uh? something's wrong, fallback to default res of main screen
-  return RES_DESKTOP;
 }
 
 static void AddResolution(std::vector<RESOLUTION_WHR> &resolutions, unsigned int addindex, float bestRefreshrate)
 {
   RESOLUTION_INFO resInfo = CDisplaySettings::GetInstance().GetResolutionInfo(addindex);
-  int width  = resInfo.iScreenWidth;
-  int height = resInfo.iScreenHeight;
+  const int width = resInfo.iWidth;
+  const int height = resInfo.iHeight;
+  const int screenWidth = resInfo.iScreenWidth;
+  const int screenHeight = resInfo.iScreenHeight;
   int flags  = resInfo.dwFlags & D3DPRESENTFLAG_MODEMASK;
+  const std::string id = resInfo.strId;
   float refreshrate = resInfo.fRefreshRate;
 
   // don't touch RES_DESKTOP
-  for (unsigned int idx = 1; idx < resolutions.size(); idx++)
-    if (   resolutions[idx].width == width
-        && resolutions[idx].height == height
-        &&(resolutions[idx].flags & D3DPRESENTFLAG_MODEMASK) == flags)
+  for (auto& resolution : resolutions)
+  {
+    if (resolution.width == width && resolution.height == height &&
+        resolution.m_screenWidth == screenWidth && resolution.m_screenHeight == screenHeight &&
+        (resolution.flags & D3DPRESENTFLAG_MODEMASK) == flags)
     {
       // check if the refresh rate of this resolution is better suited than
       // the refresh rate of the resolution with the same width/height/interlaced
       // property and if so replace it
-      if (bestRefreshrate > 0.0 && refreshrate == bestRefreshrate)
-        resolutions[idx].ResInfo_Index = addindex;
+      if (bestRefreshrate > 0.0f && refreshrate == bestRefreshrate)
+        resolution.ResInfo_Index = addindex;
 
       // no need to add the resolution again
       return;
     }
+  }
 
-  RESOLUTION_WHR res = {width, height, flags, (int)addindex};
-  resolutions.push_back(res);
+  RESOLUTION_WHR res = {width, height, screenWidth, screenHeight, flags, static_cast<int>(addindex),
+                        id};
+  resolutions.emplace_back(res);
 }
 
-static bool resSortPredicate(RESOLUTION_WHR i, RESOLUTION_WHR j)
+static bool resSortPredicate(const RESOLUTION_WHR& i, const RESOLUTION_WHR& j)
 {
   // note: this comparison must obey "strict weak ordering"
   // a "!=" on the flags comparison resulted in memory corruption
@@ -162,20 +163,18 @@ static bool resSortPredicate(RESOLUTION_WHR i, RESOLUTION_WHR j)
           || (i.width == j.width && i.height == j.height && i.flags < j.flags) );
 }
 
-std::vector<RESOLUTION_WHR> CWinSystemBase::ScreenResolutions(int screen, float refreshrate)
+std::vector<RESOLUTION_WHR> CWinSystemBase::ScreenResolutions(float refreshrate)
 {
   std::vector<RESOLUTION_WHR> resolutions;
 
-  for (unsigned int idx = RES_DESKTOP; idx < CDisplaySettings::GetInstance().ResolutionInfoSize(); idx++)
+  for (unsigned int idx = RES_CUSTOM; idx < CDisplaySettings::GetInstance().ResolutionInfoSize(); idx++)
   {
     RESOLUTION_INFO info = CDisplaySettings::GetInstance().GetResolutionInfo(idx);
-    if (info.iScreen == screen)
-      AddResolution(resolutions, idx, refreshrate);
+    AddResolution(resolutions, idx, refreshrate);
   }
 
   // Can't assume a sort order
-  // don't touch RES_DESKTOP which is index 0
-  sort(resolutions.begin()+1, resolutions.end(), resSortPredicate);
+  sort(resolutions.begin(), resolutions.end(), resSortPredicate);
 
   return resolutions;
 }
@@ -197,16 +196,17 @@ static bool rrSortPredicate(REFRESHRATE i, REFRESHRATE j)
   return (i.RefreshRate < j.RefreshRate);
 }
 
-std::vector<REFRESHRATE> CWinSystemBase::RefreshRates(int screen, int width, int height, uint32_t dwFlags)
+std::vector<REFRESHRATE> CWinSystemBase::RefreshRates(int width, int height, uint32_t dwFlags)
 {
   std::vector<REFRESHRATE> refreshrates;
 
   for (unsigned int idx = RES_DESKTOP; idx < CDisplaySettings::GetInstance().ResolutionInfoSize(); idx++)
-    if (   CDisplaySettings::GetInstance().GetResolutionInfo(idx).iScreen == screen
-        && CDisplaySettings::GetInstance().GetResolutionInfo(idx).iScreenWidth  == width
-        && CDisplaySettings::GetInstance().GetResolutionInfo(idx).iScreenHeight == height
-        && (CDisplaySettings::GetInstance().GetResolutionInfo(idx).dwFlags & D3DPRESENTFLAG_MODEMASK) == (dwFlags & D3DPRESENTFLAG_MODEMASK))
+  {
+    if (CDisplaySettings::GetInstance().GetResolutionInfo(idx).iScreenWidth  == width &&
+        CDisplaySettings::GetInstance().GetResolutionInfo(idx).iScreenHeight == height &&
+        (CDisplaySettings::GetInstance().GetResolutionInfo(idx).dwFlags & D3DPRESENTFLAG_MODEMASK) == (dwFlags & D3DPRESENTFLAG_MODEMASK))
       AddRefreshRate(refreshrates, idx);
+  }
 
   // Can't assume a sort order
   sort(refreshrates.begin(), refreshrates.end(), rrSortPredicate);
@@ -214,11 +214,11 @@ std::vector<REFRESHRATE> CWinSystemBase::RefreshRates(int screen, int width, int
   return refreshrates;
 }
 
-REFRESHRATE CWinSystemBase::DefaultRefreshRate(int screen, std::vector<REFRESHRATE> rates)
+REFRESHRATE CWinSystemBase::DefaultRefreshRate(const std::vector<REFRESHRATE>& rates)
 {
   REFRESHRATE bestmatch = rates[0];
   float bestfitness = -1.0f;
-  float targetfps = CDisplaySettings::GetInstance().GetResolutionInfo(DesktopResolution(screen)).fRefreshRate;
+  float targetfps = CDisplaySettings::GetInstance().GetResolutionInfo(RES_DESKTOP).fRefreshRate;
 
   for (unsigned i = 0; i < rates.size(); i++)
   {
@@ -237,7 +237,7 @@ REFRESHRATE CWinSystemBase::DefaultRefreshRate(int screen, std::vector<REFRESHRA
 
 bool CWinSystemBase::UseLimitedColor()
 {
-  return true;
+  return false;
 }
 
 std::string CWinSystemBase::GetClipboardText(void)
@@ -247,10 +247,94 @@ std::string CWinSystemBase::GetClipboardText(void)
 
 int CWinSystemBase::NoOfBuffers(void)
 {
-  return 0;
+  int buffers = CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_VIDEOSCREEN_NOOFBUFFERS);
+  return buffers;
 }
 
-CGraphicContext& CWinSystemBase::GetGfxContext()
+KODI::WINDOWING::COSScreenSaverManager* CWinSystemBase::GetOSScreenSaver()
+{
+  if (!m_screenSaverManager)
+  {
+    auto impl = GetOSScreenSaverImpl();
+    if (impl)
+    {
+      m_screenSaverManager =
+          std::make_unique<KODI::WINDOWING::COSScreenSaverManager>(std::move(impl));
+    }
+  }
+
+  return m_screenSaverManager.get();
+}
+
+void CWinSystemBase::RegisterRenderLoop(IRenderLoop *client)
+{
+  std::unique_lock<CCriticalSection> lock(m_renderLoopSection);
+  m_renderLoopClients.push_back(client);
+}
+
+void CWinSystemBase::UnregisterRenderLoop(IRenderLoop *client)
+{
+  std::unique_lock<CCriticalSection> lock(m_renderLoopSection);
+  auto i = find(m_renderLoopClients.begin(), m_renderLoopClients.end(), client);
+  if (i != m_renderLoopClients.end())
+    m_renderLoopClients.erase(i);
+}
+
+void CWinSystemBase::DriveRenderLoop()
+{
+  MessagePump();
+
+  {
+    std::unique_lock<CCriticalSection> lock(m_renderLoopSection);
+    for (auto i = m_renderLoopClients.begin(); i != m_renderLoopClients.end(); ++i)
+      (*i)->FrameMove();
+  }
+}
+
+CGraphicContext& CWinSystemBase::GetGfxContext() const
 {
   return *m_gfxContext;
+}
+
+std::shared_ptr<CDPMSSupport> CWinSystemBase::GetDPMSManager()
+{
+  return m_dpms;
+}
+
+bool CWinSystemBase::IsHDRDisplaySettingEnabled()
+{
+  if (!IsHDRDisplay())
+    return false;
+
+  const auto settings = CServiceBroker::GetSettingsComponent()->GetSettings();
+
+  return (settings && settings->GetBool(SETTING_WINSYSTEM_IS_HDR_DISPLAY));
+}
+
+bool CWinSystemBase::IsVideoSuperResolutionSettingEnabled()
+{
+  if (!SupportsVideoSuperResolution())
+    return false;
+
+  const auto settings = CServiceBroker::GetSettingsComponent()->GetSettings();
+
+  return (settings && settings->GetBool(CSettings::SETTING_VIDEOPLAYER_USESUPERRESOLUTION));
+}
+
+bool CWinSystemBase::IsHighPrecisionProcessingSettingEnabled()
+{
+  const auto settings = CServiceBroker::GetSettingsComponent()->GetSettings();
+
+  return (settings && settings->GetBool(CSettings::SETTING_VIDEOPLAYER_HIGHPRECISIONPROCESSING));
+}
+
+std::pair<bool, int> CWinSystemBase::GetDitherSettings()
+{
+  const auto settings = CServiceBroker::GetSettingsComponent()->GetSettings();
+
+  if (!settings)
+    return {};
+
+  return std::pair<bool, int>{settings->GetBool(CSettings::SETTING_VIDEOSCREEN_DITHER),
+                              settings->GetInt(CSettings::SETTING_VIDEOSCREEN_DITHERDEPTH)};
 }

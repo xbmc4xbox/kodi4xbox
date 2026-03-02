@@ -9,8 +9,12 @@
 #include "GUIResizeControl.h"
 
 #include "GUIMessage.h"
-#include "input/Key.h"
+#include "input/actions/Action.h"
+#include "input/actions/ActionIDs.h"
+#include "input/mouse/MouseEvent.h"
+#include "input/mouse/MouseStat.h"
 
+using namespace KODI;
 using namespace UTILS;
 
 CGUIResizeControl::CGUIResizeControl(int parentID,
@@ -129,9 +133,8 @@ void CGUIResizeControl::OnRight()
   Resize(m_movingSpeed.GetUpdatedDistance(MOVING_SPEED::EventType::RIGHT), 0);
 }
 
-EVENT_RESULT CGUIResizeControl::OnMouseEvent(const CPoint &point, const CMouseEvent &event)
+EVENT_RESULT CGUIResizeControl::OnMouseEvent(const CPoint& point, const MOUSE::CMouseEvent& event)
 {
-#if 0
   if (event.m_id == ACTION_MOUSE_DRAG || event.m_id == ACTION_MOUSE_DRAG_END)
   {
     if (static_cast<HoldAction>(event.m_state) == HoldAction::DRAG)
@@ -147,7 +150,6 @@ EVENT_RESULT CGUIResizeControl::OnMouseEvent(const CPoint &point, const CMouseEv
     Resize(event.m_offsetX, event.m_offsetY);
     return EVENT_RESULT_HANDLED;
   }
-#endif
   return EVENT_RESULT_UNHANDLED;
 }
 

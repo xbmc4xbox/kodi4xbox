@@ -1,21 +1,9 @@
 /*
- *      Copyright (C) 2005-2013 Team XBMC
- *      http://xbmc.org
+ *  Copyright (C) 2005-2018 Team Kodi
+ *  This file is part of Kodi - https://kodi.tv
  *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with XBMC; see the file COPYING.  If not, see
- *  <http://www.gnu.org/licenses/>.
- *
+ *  SPDX-License-Identifier: GPL-2.0-or-later
+ *  See LICENSES/README.md for more information.
  */
 
 #include "RenderSystem.h"
@@ -27,24 +15,19 @@
 #include "settings/AdvancedSettings.h"
 #include "settings/SettingsComponent.h"
 
+#include <memory>
+
 CRenderSystemBase::CRenderSystemBase()
-  : m_stereoView(RENDER_STEREO_VIEW_OFF)
-  , m_stereoMode(RENDER_STEREO_MODE_OFF)
 {
   m_bRenderCreated = false;
   m_bVSync = true;
   m_maxTextureSize = 2048;
   m_RenderVersionMajor = 0;
   m_RenderVersionMinor = 0;
-  m_renderCaps = 0;
-  m_renderQuirks = 0;
   m_minDXTPitch = 0;
 }
 
-CRenderSystemBase::~CRenderSystemBase()
-{
-
-}
+CRenderSystemBase::~CRenderSystemBase() = default;
 
 void CRenderSystemBase::GetRenderVersion(unsigned int& major, unsigned int& minor) const
 {
@@ -55,23 +38,9 @@ void CRenderSystemBase::GetRenderVersion(unsigned int& major, unsigned int& mino
 bool CRenderSystemBase::SupportsNPOT(bool dxt) const
 {
   if (dxt)
-    return (m_renderCaps & RENDER_CAPS_DXT_NPOT) == RENDER_CAPS_DXT_NPOT;
-  return (m_renderCaps & RENDER_CAPS_NPOT) == RENDER_CAPS_NPOT;
-}
+    return false;
 
-bool CRenderSystemBase::SupportsDXT() const
-{
-  return (m_renderCaps & RENDER_CAPS_DXT) == RENDER_CAPS_DXT;
-}
-
-bool CRenderSystemBase::SupportsBGRA() const
-{
-  return (m_renderCaps & RENDER_CAPS_BGRA) == RENDER_CAPS_BGRA;
-}
-
-bool CRenderSystemBase::SupportsBGRAApple() const
-{
-  return (m_renderCaps & RENDER_CAPS_BGRA_APPLE) == RENDER_CAPS_BGRA_APPLE;
+  return true;
 }
 
 bool CRenderSystemBase::SupportsStereo(RENDER_STEREO_MODE mode) const
@@ -95,8 +64,11 @@ void CRenderSystemBase::ShowSplash(const std::string& message)
 
   if (!m_splashImage)
   {
-    m_splashImage = std::unique_ptr<CGUIImage>(new CGUIImage(0, 0, 0, 0, CServiceBroker::GetWinSystem()->GetGfxContext().GetWidth(),
-                                                       CServiceBroker::GetWinSystem()->GetGfxContext().GetHeight(), CTextureInfo(CUtil::GetSplashPath())));
+    m_splashImage = std::make_unique<CGUIImage>(
+        0, 0, .0f, .0f,
+        static_cast<float>(CServiceBroker::GetWinSystem()->GetGfxContext().GetWidth()),
+        static_cast<float>(CServiceBroker::GetWinSystem()->GetGfxContext().GetHeight()),
+        CTextureInfo(CUtil::GetSplashPath()));
     m_splashImage->SetAspectRatio(CAspectRatio::AR_SCALE);
   }
 
@@ -119,7 +91,7 @@ void CRenderSystemBase::ShowSplash(const std::string& message)
     {
       auto messageFont = g_fontManager.LoadTTF("__splash__", "arial.ttf", 0xFFFFFFFF, 0, 20, FONT_STYLE_NORMAL, false, 1.0f, 1.0f, &res);
       if (messageFont)
-        m_splashMessageLayout = std::unique_ptr<CGUITextLayout>(new CGUITextLayout(messageFont, true, 0));
+        m_splashMessageLayout = std::make_unique<CGUITextLayout>(messageFont, true, .0f);
     }
 
     if (m_splashMessageLayout)

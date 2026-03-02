@@ -12,6 +12,8 @@
 #include "TextureDatabase.h"
 #include "addons/AddonDatabase.h"
 #include "music/MusicDatabase.h"
+#include "pvr/PVRDatabase.h"
+#include "pvr/epg/EpgDatabase.h"
 #include "settings/AdvancedSettings.h"
 #include "settings/SettingsComponent.h"
 #include "utils/log.h"
@@ -19,6 +21,8 @@
 #include "view/ViewDatabase.h"
 
 #include <mutex>
+
+using namespace PVR;
 
 CDatabaseManager::CDatabaseManager() :
   m_bIsUpgrading(false)
@@ -50,6 +54,8 @@ void CDatabaseManager::Initialize()
   { CTextureDatabase db; UpdateDatabase(db); }
   { CMusicDatabase db; UpdateDatabase(db, &advancedSettings->m_databaseMusic); }
   { CVideoDatabase db; UpdateDatabase(db, &advancedSettings->m_databaseVideo); }
+  { CPVRDatabase db; UpdateDatabase(db, &advancedSettings->m_databaseTV); }
+  { CPVREpgDatabase db; UpdateDatabase(db, &advancedSettings->m_databaseEpg); }
 
   CLog::Log(LOGDEBUG, "{}, updating databases... DONE", __FUNCTION__);
 
@@ -223,4 +229,18 @@ void CDatabaseManager::UpdateStatus(const std::string &name, DB_STATUS status)
 {
   std::unique_lock<CCriticalSection> lock(m_section);
   m_dbStatus[name] = status;
+}
+
+void CDatabaseManager::LocalizationChanged()
+{
+  std::unique_lock<CCriticalSection> lock(m_section);
+
+  // update video version type table after language changed
+  CVideoDatabase videodb;
+  if (videodb.Open())
+  {
+    videodb.UpdateVideoVersionTypeTable();
+    CLog::Log(LOGDEBUG, "{}, Video version type table updated for new language settings",
+              __FUNCTION__);
+  }
 }

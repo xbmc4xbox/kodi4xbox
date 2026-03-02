@@ -14,6 +14,7 @@
 #include "ServiceBroker.h"
 #include "URL.h"
 #include "addons/Skin.h"
+#include "addons/VFSEntry.h"
 #include "application/Application.h"
 #include "application/ApplicationComponents.h"
 #include "application/ApplicationPlayer.h"
@@ -120,22 +121,21 @@ void CGUIDialogSubtitleSettings::OnSettingChanged(const std::shared_ptr<const CS
 std::string CGUIDialogSubtitleSettings::BrowseForSubtitle()
 {
   std::string extras;
-#if 0
   for (const auto& vfsAddon : CServiceBroker::GetVFSAddonCache().GetAddonInstances())
   {
     if (vfsAddon->ID() == "vfs.rar" || vfsAddon->ID() == "vfs.libarchive")
       extras += '|' + vfsAddon->GetExtensions();
   }
-#endif
 
   std::string strPath;
-  if (URIUtils::IsInRAR(g_application.CurrentFileItem().GetPath()) || URIUtils::IsInZIP(g_application.CurrentFileItem().GetPath()))
+  const std::string dynPath{g_application.CurrentFileItem().GetDynPath()};
+  if (URIUtils::IsInRAR(dynPath) || URIUtils::IsInZIP(dynPath))
   {
-    strPath = CURL(g_application.CurrentFileItem().GetPath()).GetHostName();
+    strPath = CURL(dynPath).GetHostName();
   }
-  else if (!URIUtils::IsPlugin(g_application.CurrentFileItem().GetPath()))
+  else if (!URIUtils::IsPlugin(dynPath))
   {
-    strPath = g_application.CurrentFileItem().GetPath();
+    strPath = dynPath;
   }
 
   std::string strMask =
@@ -417,6 +417,8 @@ std::string CGUIDialogSubtitleSettings::FormatFlags(StreamFlags flags)
     localizedFlags.emplace_back(g_localizeStrings.Get(39107));
   if (flags &  StreamFlags::FLAG_VISUAL_IMPAIRED)
     localizedFlags.emplace_back(g_localizeStrings.Get(39108));
+  if (flags & StreamFlags::FLAG_ORIGINAL)
+    localizedFlags.emplace_back(g_localizeStrings.Get(39111));
 
   std::string formated = StringUtils::Join(localizedFlags, ", ");
 

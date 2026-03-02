@@ -29,7 +29,7 @@
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
-#include "input/Key.h"
+#include "input/actions/ActionIDs.h"
 #include "messaging/helpers/DialogHelper.h"
 #include "platform/Platform.h"
 #include "settings/MediaSourceSettings.h"
@@ -526,7 +526,11 @@ int CGUIWindowAddonBrowser::SelectAddonID(const std::vector<AddonType>& types,
   for (const auto& addon : addons)
   {
     const CFileItemPtr item(CAddonsDirectory::FileItemFromAddon(addon, addon->ID()));
-    item->SetLabel2(addon->Summary());
+
+    // Game controllers don't have specific summaries
+    if (addon->Type() != AddonType::GAME_CONTROLLER)
+      item->SetLabel2(addon->Summary());
+
     if (!items.Contains(item->GetPath()))
     {
       items.Add(item);

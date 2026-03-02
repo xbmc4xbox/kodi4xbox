@@ -12,9 +12,11 @@
 #include "application/ApplicationComponents.h"
 #include "application/ApplicationPowerHandling.h"
 #include "application/ApplicationVolumeHandling.h"
-#include "input/Key.h"
+#include "filesystem/ZipManager.h"
+#include "input/actions/ActionIDs.h"
 #include "interfaces/AnnouncementManager.h"
 #include "messaging/ApplicationMessenger.h"
+#include "network/Network.h"
 #include "settings/AdvancedSettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
@@ -44,7 +46,7 @@ static int Extract(const std::vector<std::string>& params)
     URIUtils::AddSlashAtEnd(strDestDirect);
 
     if (URIUtils::IsZIP(params[0]))
-      return 0;
+      g_ZipManager.ExtractArchive(params[0],strDestDirect);
     else
       CLog::Log(LOGERROR, "Extract, No archive given");
 
@@ -141,9 +143,7 @@ static int ToggleDPMS(const std::vector<std::string>& params)
  */
 static int WakeOnLAN(const std::vector<std::string>& params)
 {
-#if 0
   CServiceBroker::GetNetwork().WakeOnLan(params[0].c_str());
-#endif
 
   return 0;
 }

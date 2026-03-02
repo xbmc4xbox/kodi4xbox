@@ -1,45 +1,31 @@
+/*
+ *  Copyright (C) 2003-2018 Team Kodi
+ *  This file is part of Kodi - https://kodi.tv
+ *
+ *  SPDX-License-Identifier: GPL-2.0-or-later
+ *  See LICENSES/README.md for more information.
+ */
+
+#pragma once
+
 /*!
 \file GUIFont.h
 \brief
 */
 
-#ifndef CGUILIB_GUIFONT_H
-#define CGUILIB_GUIFONT_H
-#pragma once
-
-/*
- *      Copyright (C) 2003-2013 Team XBMC
- *      http://xbmc.org
- *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with XBMC; see the file COPYING.  If not, see
- *  <http://www.gnu.org/licenses/>.
- *
- */
-
 #include "utils/ColorUtils.h"
 
 #include <assert.h>
 #include <math.h>
-#include <string>
 #include <stdint.h>
+#include <string>
 #include <vector>
 
 typedef uint32_t character_t;
 typedef std::vector<character_t> vecText;
-typedef std::vector<UTILS::COLOR::Color> vecColors;
 
-class CGUIFontTTFBase;
+class CGUIFontTTF;
+class CGraphicContext;
 
 ///
 /// \defgroup kodi_gui_font_alignment Font alignment flags
@@ -49,41 +35,45 @@ class CGUIFontTTFBase;
 ///
 /// Flags are used as bits to have several together, e.g. `XBFONT_LEFT | XBFONT_CENTER_Y`
 ///
-#define XBFONT_LEFT       0x00000000 ///< Align X left
-#define XBFONT_RIGHT      0x00000001 ///< Align X right
-#define XBFONT_CENTER_X   0x00000002 ///< Align X center
-#define XBFONT_CENTER_Y   0x00000004 ///< Align Y center
-#define XBFONT_TRUNCATED  0x00000008 ///< Truncated text
-#define XBFONT_JUSTIFIED  0x00000010 ///< Justify text
+// clang-format off
+constexpr int XBFONT_LEFT = 0; ///< Align X left
+constexpr int XBFONT_RIGHT = (1 << 0); ///< Align X right
+constexpr int XBFONT_CENTER_X = (1 << 1); ///< Align X center
+constexpr int XBFONT_CENTER_Y = (1 << 2); ///< Align Y center
+constexpr int XBFONT_TRUNCATED = (1 << 3); ///< Truncated text from right (text end with ellipses)
+constexpr int XBFONT_JUSTIFIED = (1 << 4); ///< Justify text
+constexpr int XBFONT_TRUNCATED_LEFT = (1 << 5); ///< Truncated text from left (text start with ellipses)
+// clang-format on
 /// @}
 
 // flags for font style. lower 16 bits are the unicode code
 // points, 16-24 are color bits and 24-32 are style bits
-#define FONT_STYLE_NORMAL       0
-#define FONT_STYLE_BOLD         1
-#define FONT_STYLE_ITALICS      2
-#define FONT_STYLE_LIGHT        4
-#define FONT_STYLE_UPPERCASE    8
-#define FONT_STYLE_LOWERCASE    16
-#define FONT_STYLE_CAPITALIZE   32
-#define FONT_STYLE_MASK         0xFF
+constexpr int FONT_STYLE_NORMAL = 0;
+constexpr int FONT_STYLE_BOLD = (1 << 0);
+constexpr int FONT_STYLE_ITALICS = (1 << 1);
+constexpr int FONT_STYLE_LIGHT = (1 << 2);
+constexpr int FONT_STYLE_UPPERCASE = (1 << 3);
+constexpr int FONT_STYLE_LOWERCASE = (1 << 4);
+constexpr int FONT_STYLE_CAPITALIZE = (1 << 5);
+constexpr int FONT_STYLE_MASK = 0xFF;
+constexpr int FONT_STYLES_COUNT = 7;
 
 class CScrollInfo
 {
 public:
-  CScrollInfo(unsigned int wait = 50, float pos = 0, int speed = defaultSpeed, const std::string &scrollSuffix = " | ");
+  CScrollInfo(unsigned int wait = 50,
+              float pos = 0,
+              int speed = defaultSpeed,
+              const std::string& scrollSuffix = " | ");
 
-  void SetSpeed(int speed)
-  {
-    pixelSpeed = speed * 0.001f;
-  }
+  void SetSpeed(int speed) { m_pixelSpeed = speed * 0.001f; }
   void Reset()
   {
-    waitTime = initialWait;
+    m_waitTime = m_initialWait;
     // pixelPos is where we start the current letter, so is measured
     // to the left of the text rendering's left edge.  Thus, a negative
     // value will mean the text starts to the right
-    pixelPos = -initialPos;
+    m_pixelPos = -m_initialPos;
     // privates:
     m_averageFrameTime = 1000.f / fabs((float)defaultSpeed);
     m_lastFrameTime = 0;
@@ -94,12 +84,12 @@ public:
   }
   float GetPixelsPerFrame();
 
-  float pixelPos;
-  float pixelSpeed;
-  unsigned int waitTime;
-  unsigned int initialWait;
-  float initialPos;
-  vecText suffix;
+  float m_pixelPos;
+  float m_pixelSpeed;
+  unsigned int m_waitTime;
+  unsigned int m_initialWait;
+  float m_initialPos;
+  vecText m_suffix;
   mutable float m_textWidth;
   mutable float m_totalWidth;
   mutable bool m_widthValid;
@@ -107,6 +97,7 @@ public:
   unsigned int m_loopCount;
 
   static const int defaultSpeed = 60;
+
 private:
   float m_averageFrameTime;
   uint32_t m_lastFrameTime;
@@ -119,30 +110,51 @@ private:
 class CGUIFont
 {
 public:
-  CGUIFont(const std::string& strFontName, uint32_t style, UTILS::COLOR::Color textColor,
-     UTILS::COLOR::Color shadowColor, float lineSpacing, float origHeight, CGUIFontTTFBase *font);
+  CGUIFont(const std::string& strFontName,
+           uint32_t style,
+           UTILS::COLOR::Color textColor,
+           UTILS::COLOR::Color shadowColor,
+           float lineSpacing,
+           float origHeight,
+           CGUIFontTTF* font);
   virtual ~CGUIFont();
 
   std::string& GetFontName();
 
-  void DrawText( float x, float y, UTILS::COLOR::Color color, UTILS::COLOR::Color shadowColor,
-                 const vecText &text, uint32_t alignment, float maxPixelWidth)
+  void DrawText(float x,
+                float y,
+                UTILS::COLOR::Color color,
+                UTILS::COLOR::Color shadowColor,
+                const vecText& text,
+                uint32_t alignment,
+                float maxPixelWidth)
   {
-    vecColors colors;
+    std::vector<UTILS::COLOR::Color> colors;
     colors.push_back(color);
     DrawText(x, y, colors, shadowColor, text, alignment, maxPixelWidth);
   };
 
-  void DrawText( float x, float y, const vecColors &colors, UTILS::COLOR::Color shadowColor,
-                 const vecText &text, uint32_t alignment, float maxPixelWidth);
+  void DrawText(float x,
+                float y,
+                const std::vector<UTILS::COLOR::Color>& colors,
+                UTILS::COLOR::Color shadowColor,
+                const vecText& text,
+                uint32_t alignment,
+                float maxPixelWidth);
 
-  void DrawScrollingText( float x, float y, const vecColors &colors, UTILS::COLOR::Color shadowColor,
-                 const vecText &text, uint32_t alignment, float maxPixelWidth, const CScrollInfo &scrollInfo);
+  void DrawScrollingText(float x,
+                         float y,
+                         const std::vector<UTILS::COLOR::Color>& colors,
+                         UTILS::COLOR::Color shadowColor,
+                         const vecText& text,
+                         uint32_t alignment,
+                         float maxPixelWidth,
+                         const CScrollInfo& scrollInfo);
 
-  bool UpdateScrollInfo(const vecText &text, CScrollInfo &scrollInfo);
+  bool UpdateScrollInfo(const vecText& text, CScrollInfo& scrollInfo);
 
-  float GetTextWidth( const vecText &text );
-  float GetCharWidth( character_t ch );
+  float GetTextWidth(const vecText& text);
+  float GetCharWidth(character_t ch);
   float GetTextHeight(int numLines) const;
   float GetTextBaseLine() const;
   float GetLineHeight() const;
@@ -153,16 +165,11 @@ public:
   void Begin();
   void End();
 
-  uint32_t GetStyle() const { return m_style; };
+  uint32_t GetStyle() const { return m_style; }
 
-  static wchar_t RemapGlyph(wchar_t letter);
+  CGUIFontTTF* GetFont() const { return m_font; }
 
-  CGUIFontTTFBase* GetFont() const
-  {
-    return m_font;
-  }
-
-  void SetFont(CGUIFontTTFBase* font);
+  void SetFont(CGUIFontTTF* font);
 
 protected:
   std::string m_strFontName;
@@ -171,10 +178,9 @@ protected:
   UTILS::COLOR::Color m_textColor;
   float m_lineSpacing;
   float m_origHeight;
-  CGUIFontTTFBase *m_font; // the font object has the size information
+  CGUIFontTTF* m_font; // the font object has the size information
 
 private:
-  bool ClippedRegionIsEmpty(float x, float y, float width, uint32_t alignment) const;
+  bool ClippedRegionIsEmpty(
+      CGraphicContext& context, float x, float y, float width, uint32_t alignment) const;
 };
-
-#endif

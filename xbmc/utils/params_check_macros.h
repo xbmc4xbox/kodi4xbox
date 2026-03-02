@@ -40,7 +40,7 @@
 // macros for VC
 // VC check parameters only when "Code Analysis" is called
 #ifndef PRINTF_FORMAT_STRING
-#if defined(_MSC_VER) && !defined(NXDK)
+#ifdef _MSC_VER
 #include <sal.h>
 
 // for use in any function that take printf format string and parameters

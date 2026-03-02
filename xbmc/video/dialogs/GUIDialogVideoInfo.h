@@ -8,14 +8,15 @@
 
 #pragma once
 
-#include "MediaSource.h"
 #include "guilib/GUIDialog.h"
 #include "media/MediaType.h"
 
 #include <memory>
+#include <vector>
 
 class CFileItem;
 class CFileItemList;
+class CMediaSource;
 class CVideoDatabase;
 
 class CGUIDialogVideoInfo :
@@ -31,13 +32,15 @@ public:
   bool RefreshAll() const;
   bool HasUpdatedThumb() const { return m_hasUpdatedThumb; }
   bool HasUpdatedUserrating() const { return m_hasUpdatedUserrating; }
+  bool HasUpdatedItems() const { return m_hasUpdatedItems; }
 
   std::string GetThumbnail() const;
   std::shared_ptr<CFileItem> GetCurrentListItem(int offset = 0) override { return m_movieItem; }
   const CFileItemList& CurrentDirectory() const { return *m_castList; }
   bool HasListItems() const override { return true; }
 
-  static void AddItemPathToFileBrowserSources(VECSOURCES &sources, const CFileItem &item);
+  static void AddItemPathToFileBrowserSources(std::vector<CMediaSource>& sources,
+                                              const CFileItem& item);
 
   static int ManageVideoItem(const std::shared_ptr<CFileItem>& item);
   static bool UpdateVideoItemTitle(const std::shared_ptr<CFileItem>& pItem);
@@ -51,10 +54,13 @@ public:
   static bool GetSetForMovie(const CFileItem* movieItem, std::shared_ptr<CFileItem>& selectedSet);
   static bool SetMovieSet(const CFileItem *movieItem, const CFileItem *selectedSet);
 
+  static void ManageVideoVersions(const std::shared_ptr<CFileItem>& item);
+
   static bool GetItemsForTag(const std::string &strHeading, const std::string &type, CFileItemList &items, int idTag = -1, bool showAll = true);
   static bool AddItemsToTag(const std::shared_ptr<CFileItem>& tagItem);
   static bool RemoveItemsFromTag(const std::shared_ptr<CFileItem>& tagItem);
 
+  static bool ChooseAndManageVideoItemArtwork(const std::shared_ptr<CFileItem>& item);
   static bool ManageVideoItemArtwork(const std::shared_ptr<CFileItem>& item, const MediaType& type);
 
   static std::string GetLocalizedVideoType(const std::string &strType);
@@ -85,6 +91,8 @@ protected:
    * \param pItem Search result item
    */
   void OnSearchItemFound(const CFileItem* pItem);
+  bool OnManageVideoVersions();
+  bool OnManageVideoExtras();
   void Play(bool resume = false);
   void OnGetArt();
   void OnGetFanart();
@@ -96,11 +104,6 @@ protected:
                                 bool bRemove,
                                 CVideoDatabase& database);
 
-  /*! \brief Pop up a fanart chooser. Does not utilise remote URLs.
-   \param videoItem the item to choose fanart for.
-   */
-  static bool OnGetFanart(const std::shared_ptr<CFileItem>& videoItem);
-
   std::shared_ptr<CFileItem> m_movieItem;
   CFileItemList *m_castList;
   bool m_bViewReview = false;
@@ -109,7 +112,11 @@ protected:
   bool m_hasUpdatedThumb = false;
   bool m_hasUpdatedUserrating = false;
   int m_startUserrating = -1;
+  bool m_hasUpdatedItems{false};
 
 private:
-  static std::string ChooseArtType(const CFileItem& item);
+  static bool ManageVideoItemArtwork(const std::shared_ptr<CFileItem>& item,
+                                     const MediaType& mediaType,
+                                     const std::string& artType);
+  bool ChooseVideoVersion();
 };

@@ -17,6 +17,7 @@
 #include "application/ApplicationComponents.h"
 #include "application/ApplicationPlayer.h"
 #include "application/ApplicationVolumeHandling.h"
+#include "cores/AudioEngine/Utils/AEUtil.h"
 #include "cores/DataCacheCore.h"
 #include "cores/EdlEdit.h"
 #include "guilib/GUIComponent.h"
@@ -32,6 +33,7 @@
 
 #include <charconv>
 #include <cmath>
+#include <memory>
 
 using namespace KODI::GUILIB::GUIINFO;
 
@@ -146,7 +148,7 @@ bool CPlayerGUIInfo::InitCurrentItem(CFileItem *item)
   if (item && m_appPlayer->IsPlaying())
   {
     CLog::Log(LOGDEBUG, "CPlayerGUIInfo::InitCurrentItem({})", CURL::GetRedacted(item->GetPath()));
-    m_currentItem.reset(new CFileItem(*item));
+    m_currentItem = std::make_unique<CFileItem>(*item);
   }
   else
   {
@@ -181,11 +183,7 @@ bool CPlayerGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
       return true;
     case PLAYER_VOLUME:
       value =
-#if 0
           StringUtils::Format("{:2.1f} dB", CAEUtil::PercentToGain(m_appVolume->GetVolumeRatio()));
-#else
-          "";
-#endif
       return true;
     case PLAYER_SUBTITLE_DELAY:
       value = StringUtils::Format("{:2.3f} s", m_appPlayer->GetVideoSettings().m_SubtitleDelay);
@@ -365,11 +363,7 @@ bool CPlayerGUIInfo::GetInt(int& value, const CGUIListItem *gitem, int contextWi
     // PLAYER_*
     ///////////////////////////////////////////////////////////////////////////////////////////////
     case PLAYER_VOLUME:
-#if 0
       value = static_cast<int>(m_appVolume->GetVolumePercent());
-#else
-      value = 0;
-#endif
       return true;
     case PLAYER_PROGRESS:
       value = std::lrintf(g_application.GetPercentage());
@@ -432,6 +426,12 @@ bool CPlayerGUIInfo::GetBool(bool& value, const CGUIListItem *gitem, int context
       return true;
     case PLAYER_HAS_GAME:
       value = m_appPlayer->IsPlayingGame();
+      return true;
+    case PLAYER_IS_REMOTE:
+      value = m_appPlayer->IsRemotePlaying();
+      return true;
+    case PLAYER_IS_EXTERNAL:
+      value = m_appPlayer->IsExternalPlaying();
       return true;
     case PLAYER_PLAYING:
       value = m_appPlayer->GetPlaySpeed() == 1.0f;
@@ -591,8 +591,10 @@ bool CPlayerGUIInfo::GetBool(bool& value, const CGUIListItem *gitem, int context
       {
         if (item->HasProperty("playlistposition"))
         {
-          value = static_cast<int>(item->GetProperty("playlisttype").asInteger()) == CServiceBroker::GetPlaylistPlayer().GetCurrentPlaylist() &&
-                  static_cast<int>(item->GetProperty("playlistposition").asInteger()) == CServiceBroker::GetPlaylistPlayer().GetCurrentSong();
+          value = static_cast<int>(item->GetProperty("playlisttype").asInteger()) ==
+                      CServiceBroker::GetPlaylistPlayer().GetCurrentPlaylist() &&
+                  static_cast<int>(item->GetProperty("playlistposition").asInteger()) ==
+                      CServiceBroker::GetPlaylistPlayer().GetCurrentItemIdx();
           return true;
         }
         else if (m_currentItem && !m_currentItem->GetPath().empty())
@@ -673,7 +675,7 @@ std::vector<std::pair<float, float>> CPlayerGUIInfo::GetEditList(const CDataCach
   {
     float editStart = edit.start * 100.0f / duration;
     float editEnd = edit.end * 100.0f / duration;
-    ranges.emplace_back(std::make_pair(editStart, editEnd));
+    ranges.emplace_back(editStart, editEnd);
   }
   return ranges;
 }
@@ -689,7 +691,7 @@ std::vector<std::pair<float, float>> CPlayerGUIInfo::GetCuts(const CDataCacheCor
   {
     float marker = cut * 100.0f / duration;
     if (marker != 0)
-      ranges.emplace_back(std::make_pair(lastMarker, marker));
+      ranges.emplace_back(lastMarker, marker);
 
     lastMarker = marker;
   }
@@ -707,7 +709,7 @@ std::vector<std::pair<float, float>> CPlayerGUIInfo::GetSceneMarkers(const CData
   {
     float marker = scene * 100.0f / duration;
     if (marker != 0)
-      ranges.emplace_back(std::make_pair(lastMarker, marker));
+      ranges.emplace_back(lastMarker, marker);
 
     lastMarker = marker;
   }
@@ -725,7 +727,7 @@ std::vector<std::pair<float, float>> CPlayerGUIInfo::GetChapters(const CDataCach
   {
     float marker = chapter.second * 1000 * 100.0f / duration;
     if (marker != 0)
-      ranges.emplace_back(std::make_pair(lastMarker, marker));
+      ranges.emplace_back(lastMarker, marker);
 
     lastMarker = marker;
   }

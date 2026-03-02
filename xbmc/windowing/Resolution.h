@@ -18,16 +18,6 @@ typedef int DisplayMode;
 enum RESOLUTION
 {
   RES_INVALID        = -1,
-  RES_HDTV_1080i     =  0,
-  RES_HDTV_720p      =  5,
-  RES_HDTV_480p_4x3  =  6,
-  RES_HDTV_480p_16x9 =  7,
-  RES_NTSC_4x3       =  8,
-  RES_NTSC_16x9      =  9,
-  RES_PAL_4x3        = 10,
-  RES_PAL_16x9       = 11,
-  RES_PAL60_4x3      = 12,
-  RES_PAL60_16x9     = 13,
   RES_WINDOW         = 15,
   RES_DESKTOP        = 16,          // Desktop resolution
   RES_CUSTOM         = 16 + 1,      // First additional resolution
@@ -72,24 +62,54 @@ struct EdgeInsets
   EdgeInsets(float l, float t, float r, float b);
 };
 
+//! @brief Provide info of a resolution
 struct RESOLUTION_INFO
 {
+  //!< Screen overscan boundary
   OVERSCAN Overscan;
+
+  //!< Edge insets to scale the GUI to prevent the display notch from hiding a part of the GUI
   EdgeInsets guiInsets;
+
+  //!< Specify if it is a fullscreen resolution, otherwise windowed
   bool bFullScreen;
-  int iScreen;
+
+  //!< Width GUI resolution (pixels), may differ from the screen value if GUI resolution limit, 3D is set or in HiDPI screens
   int iWidth;
+
+  //!< Height GUI resolution (pixels), may differ from the screen value if GUI resolution limit, 3D is set or in HiDPI screens
   int iHeight;
-  int iBlanking; /**< number of pixels of padding between stereoscopic frames */
+
+  //!< Number of pixels of padding between stereoscopic frames
+  int iBlanking;
+
+  //!< Screen width (logical width in pixels)
   int iScreenWidth;
+
+  //!< Screen height (logical height in pixels)
   int iScreenHeight;
+
+  //!< The vertical subtitle baseline position, may be changed by Video calibration
   int iSubtitles;
+
+  //!< Properties of the resolution e.g. interlaced mode
   uint32_t dwFlags;
+
+  //!< Pixel aspect ratio
   float fPixelRatio;
+
+  //!< Refresh rate
   float fRefreshRate;
+
+  //!< Resolution mode description
   std::string strMode;
+
+  //!< Resolution output description
   std::string strOutput;
+
+  //!< Resolution ID
   std::string strId;
+
 public:
   RESOLUTION_INFO(int width = 1280, int height = 720, float aspect = 0, const std::string &mode = "");
   float DisplayRatio() const;
@@ -105,11 +125,11 @@ public:
   static void PrintWhitelist();
 
   /*!
-   * \brief Get the max allowed resolution, if fullscreen
+   * \brief Get the max allowed screen resolution, if fullscreen
    * \param width [OUT] Max width resolution
    * \param height [OUT] Max height resolution
    */
-  static void GetMaxAllowedResolution(unsigned int& width, unsigned int& height);
+  static void GetMaxAllowedScreenResolution(unsigned int& width, unsigned int& height);
 
 protected:
   static void FindResolutionFromWhitelist(float fps, int width, int height, bool is3D, RESOLUTION &resolution);

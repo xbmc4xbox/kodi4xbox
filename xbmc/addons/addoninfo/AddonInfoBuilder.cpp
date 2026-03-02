@@ -22,9 +22,6 @@
 #include "utils/Variant.h"
 #include "utils/XBMCTinyXML.h"
 #include "utils/log.h"
-#ifdef NXDK
-#include "utils/RegExp.h" // std::regex is broken in NXDK
-#endif
 
 #include <algorithm>
 #include <memory>
@@ -229,6 +226,9 @@ AddonInfoPtr CAddonInfoBuilder::Generate(const std::string& addonPath, bool plat
   if (!platformCheck || PlatformSupportsAddon(addon))
     return addon;
 
+  CLog::Log(LOGERROR, "CAddonInfoBuilder::{}: No platform for add-on {} (supported platforms: {})",
+            __FUNCTION__, addon->ID(), StringUtils::Join(addon->m_platforms, ", "));
+
   return nullptr;
 }
 
@@ -340,10 +340,11 @@ bool CAddonInfoBuilder::ParseXML(const AddonInfoPtr& addon,
    *   <import addon="???" minversion="???" version="???" optional="???"/>
    * </requires>
    */
-  const TiXmlElement* requires = element->FirstChildElement("requires");
-  if (requires)
+  const TiXmlElement* _requires = element->FirstChildElement("requires");
+  if (_requires)
   {
-    for (const TiXmlElement* child = requires->FirstChildElement("import"); child != nullptr; child = child->NextSiblingElement("import"))
+    for (const TiXmlElement* child = _requires->FirstChildElement("import"); child != nullptr;
+         child = child->NextSiblingElement("import"))
     {
       if (child->Attribute("addon"))
       {
@@ -637,7 +638,6 @@ bool CAddonInfoBuilder::ParseXMLTypes(CAddonType& addonType,
     {
       addonType.m_libname = library;
 
-#ifndef NXDK
       try
       {
         // linux is different and has the version number after the suffix
@@ -656,19 +656,6 @@ bool CAddonInfoBuilder::ParseXMLTypes(CAddonType& addonType,
         CLog::Log(LOGERROR, "CAddonInfoBuilder::{}: Regex error caught: {}", __func__,
                   e.what());
       }
-#else
-      // linux is different and has the version number after the suffix
-      const std::string libRegex("^.*" +
-                                      CCompileInfo::CCompileInfo::GetSharedLibrarySuffix() +
-                                      "\\.?[0-9]*\\.?[0-9]*\\.?[0-9]*$");
-      CRegExp re(true, CRegExp::autoUtf8);
-      if (re.RegComp(libRegex) && re.RegFind(library))
-      {
-        info->SetBinary(true);
-        CLog::Log(LOGDEBUG, "CAddonInfoBuilder::{}: Binary addon found: {}", __func__,
-                  info->ID());
-      }
-#endif
     }
 
     if (!ParseXMLExtension(addonType, child))

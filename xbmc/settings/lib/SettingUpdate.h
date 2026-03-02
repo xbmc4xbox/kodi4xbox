@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include "utils/logtypes.h"
+
 #include <string>
 
 class TiXmlNode;
@@ -39,4 +41,6 @@ private:
 
   SettingUpdateType m_type = SettingUpdateType::Unknown;
   std::string m_value;
+
+  static Logger s_logger;
 };

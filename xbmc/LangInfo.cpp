@@ -8,6 +8,7 @@
 
 #include "LangInfo.h"
 
+#include "DatabaseManager.h"
 #include "ServiceBroker.h"
 #include "XBDateTime.h"
 #include "addons/AddonInstaller.h"
@@ -17,6 +18,7 @@
 #include "addons/addoninfo/AddonType.h"
 #include "guilib/LocalizeStrings.h"
 #include "messaging/ApplicationMessenger.h"
+#include "pvr/PVRManager.h"
 #include "settings/AdvancedSettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
@@ -34,7 +36,20 @@
 #include <algorithm>
 #include <stdexcept>
 
+namespace
+{
+std::string GetDateStringWithFormat(const CDateTime& date, const std::string& format)
+{
+  // Return the formatted date together with the format used.
+  // eg: '1/02/2003 (D/MM/YYYY)'
+  return date.GetAsLocalizedDate(format) + " (" + format + ")";
+}
+} // namespace
+
+using namespace PVR;
+
 static std::string shortDateFormats[] = {
+    // clang-format off
   // short date formats using "/"
   "DD/MM/YYYY",
   "MM/DD/YYYY",
@@ -50,7 +65,13 @@ static std::string shortDateFormats[] = {
   "DD.M.YYYY",
   "D.M.YYYY",
   "D. M. YYYY",
-  "YYYY.MM.DD"
+  "YYYY.MM.DD",
+  // short date formats with abbreviated month and 2 digit year
+  "D-mmm-YY",
+  "DD-mmm-YY",
+  "D mmm YY",
+  "DD mmm YY",
+    // clang-format on
 };
 
 static std::string longDateFormats[] = {
@@ -243,8 +264,6 @@ void CLangInfo::CRegion::SetGlobalLocale()
   // on FreeBSD, darwin and uClibc-based systems libstdc++ is compiled with
   // "generic" locale support
   std::locale current_locale = std::locale::classic(); // C-Locale
-#ifndef NXDK
-  // DISABLED: This crashes Xbox because of incomplete WIP C++ exceptions
   try
   {
     std::locale lcl = std::locale(strLocale.c_str());
@@ -260,9 +279,6 @@ void CLangInfo::CRegion::SetGlobalLocale()
     current_locale = std::locale::classic();
     strLocale = "C";
   }
-#else
-  strLocale = "C";
-#endif
 
   g_langInfo.m_systemLocale = current_locale; //! @todo move to CLangInfo class
   g_langInfo.m_collationtype = 0;
@@ -774,6 +790,8 @@ bool CLangInfo::SetLanguage(std::string language /* = "" */, bool reloadServices
   {
     // also tell our weather and skin to reload as these are localized
     CServiceBroker::GetWeatherManager().Refresh();
+    CServiceBroker::GetPVRManager().LocalizationChanged();
+    CServiceBroker::GetDatabaseManager().LocalizationChanged();
     CServiceBroker::GetAppMessenger()->PostMsg(TMSG_EXECUTE_BUILT_IN, -1, -1, nullptr,
                                                "ReloadSkin");
   }
@@ -781,7 +799,6 @@ bool CLangInfo::SetLanguage(std::string language /* = "" */, bool reloadServices
   return true;
 }
 
-// three char language code (not win32 specific)
 const std::string& CLangInfo::GetAudioLanguage() const
 {
   if (!m_audioLanguage.empty())
@@ -790,17 +807,33 @@ const std::string& CLangInfo::GetAudioLanguage() const
   return m_languageCodeGeneral;
 }
 
-void CLangInfo::SetAudioLanguage(const std::string& language)
+void CLangInfo::SetAudioLanguage(const std::string& language, bool isIso6392 /* = false */)
 {
-  if (language.empty()
-    || StringUtils::EqualsNoCase(language, "default")
-    || StringUtils::EqualsNoCase(language, "original")
-    || StringUtils::EqualsNoCase(language, "mediadefault")
-    || !g_LangCodeExpander.ConvertToISO6392B(language, m_audioLanguage))
+  if (language.empty() || StringUtils::EqualsNoCase(language, "default") ||
+      StringUtils::EqualsNoCase(language, "original") ||
+      StringUtils::EqualsNoCase(language, "mediadefault"))
+  {
     m_audioLanguage.clear();
+    return;
+  }
+
+  std::string langISO6392;
+  if (isIso6392)
+  {
+    g_LangCodeExpander.ConvertToISO6392B(language, langISO6392);
+  }
+  else
+  {
+    if (g_LangCodeExpander.ConvertToISO6391(language, langISO6392))
+    {
+      // if following conversion (to ISO 639-2) fails it should be because
+      // the language code has been defined by the user, so ignore it
+      g_LangCodeExpander.ConvertISO6391ToISO6392B(langISO6392, langISO6392);
+    }
+  }
+  m_audioLanguage = langISO6392; // empty value for error cases
 }
 
-// three char language code (not win32 specific)
 const std::string& CLangInfo::GetSubtitleLanguage() const
 {
   if (!m_subtitleLanguage.empty())
@@ -809,13 +842,30 @@ const std::string& CLangInfo::GetSubtitleLanguage() const
   return m_languageCodeGeneral;
 }
 
-void CLangInfo::SetSubtitleLanguage(const std::string& language)
+void CLangInfo::SetSubtitleLanguage(const std::string& language, bool isIso6392 /* = false */)
 {
-  if (language.empty()
-    || StringUtils::EqualsNoCase(language, "default")
-    || StringUtils::EqualsNoCase(language, "original")
-    || !g_LangCodeExpander.ConvertToISO6392B(language, m_subtitleLanguage))
+  if (language.empty() || StringUtils::EqualsNoCase(language, "default") ||
+      StringUtils::EqualsNoCase(language, "original"))
+  {
     m_subtitleLanguage.clear();
+    return;
+  }
+
+  std::string langISO6392;
+  if (isIso6392)
+  {
+    g_LangCodeExpander.ConvertToISO6392B(language, langISO6392);
+  }
+  else
+  {
+    if (g_LangCodeExpander.ConvertToISO6391(language, langISO6392))
+    {
+      // if following conversion (to ISO 639-2) fails it should be because
+      // the language code has been defined by the user, so ignore it
+      g_LangCodeExpander.ConvertISO6391ToISO6392B(langISO6392, langISO6392);
+    }
+  }
+  m_subtitleLanguage = langISO6392; // empty value for error cases
 }
 
 // two character codes as defined in ISO639
@@ -1282,10 +1332,11 @@ void CLangInfo::SettingOptionsShortDateFormatsFiller(const SettingConstPtr& sett
 
   CDateTime now = CDateTime::GetCurrentDateTime();
 
-  list.emplace_back(
-      StringUtils::Format(g_localizeStrings.Get(20035),
-                          now.GetAsLocalizedDate(g_langInfo.m_currentRegion->m_strDateFormatShort)),
-      SETTING_REGIONAL_DEFAULT);
+  list.emplace_back(StringUtils::Format(g_localizeStrings.Get(20035),
+                                        GetDateStringWithFormat(
+                                            now, g_langInfo.m_currentRegion->m_strDateFormatShort)),
+                    SETTING_REGIONAL_DEFAULT);
+
   if (shortDateFormatSetting == SETTING_REGIONAL_DEFAULT)
   {
     match = true;
@@ -1294,7 +1345,7 @@ void CLangInfo::SettingOptionsShortDateFormatsFiller(const SettingConstPtr& sett
 
   for (const std::string& shortDateFormat : shortDateFormats)
   {
-    list.emplace_back(now.GetAsLocalizedDate(shortDateFormat), shortDateFormat);
+    list.emplace_back(GetDateStringWithFormat(now, shortDateFormat), shortDateFormat);
 
     if (!match && shortDateFormatSetting == shortDateFormat)
     {
@@ -1317,10 +1368,11 @@ void CLangInfo::SettingOptionsLongDateFormatsFiller(const SettingConstPtr& setti
 
   CDateTime now = CDateTime::GetCurrentDateTime();
 
-  list.emplace_back(
-      StringUtils::Format(g_localizeStrings.Get(20035),
-                          now.GetAsLocalizedDate(g_langInfo.m_currentRegion->m_strDateFormatLong)),
-      SETTING_REGIONAL_DEFAULT);
+  list.emplace_back(StringUtils::Format(g_localizeStrings.Get(20035),
+                                        GetDateStringWithFormat(
+                                            now, g_langInfo.m_currentRegion->m_strDateFormatLong)),
+                    SETTING_REGIONAL_DEFAULT);
+
   if (longDateFormatSetting == SETTING_REGIONAL_DEFAULT)
   {
     match = true;
@@ -1329,7 +1381,7 @@ void CLangInfo::SettingOptionsLongDateFormatsFiller(const SettingConstPtr& setti
 
   for (const std::string& longDateFormat : longDateFormats)
   {
-    list.emplace_back(now.GetAsLocalizedDate(longDateFormat), longDateFormat);
+    list.emplace_back(GetDateStringWithFormat(now, longDateFormat), longDateFormat);
 
     if (!match && longDateFormatSetting == longDateFormat)
     {

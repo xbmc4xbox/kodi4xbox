@@ -8,7 +8,11 @@
 
 #include "PlayerCoreConfig.h"
 
+#include "cores/ExternalPlayer/ExternalPlayer.h"
 #include "cores/IPlayer.h"
+#include "cores/RetroPlayer/RetroPlayer.h"
+#include "cores/VideoPlayer/VideoPlayer.h"
+#include "cores/paplayer/PAPlayer.h"
 #ifdef HAS_UPNP
 #include "network/upnp/UPnPPlayer.h"
 #endif
@@ -40,7 +44,6 @@ std::shared_ptr<IPlayer> CPlayerCoreConfig::CreatePlayer(IPlayerCallback& callba
 {
   std::shared_ptr<IPlayer> player;
 
-#if 0
   if (m_type.compare("video") == 0)
   {
     player = std::make_shared<CVideoPlayer>(callback);
@@ -65,7 +68,6 @@ std::shared_ptr<IPlayer> CPlayerCoreConfig::CreatePlayer(IPlayerCallback& callba
   }
 #endif
   else
-#endif
     return nullptr;
 
   if (!player)

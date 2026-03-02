@@ -68,7 +68,7 @@ public:
   void LoadLayout(TiXmlElement *layout);
   void LoadListProvider(TiXmlElement *content, int defaultItem, bool defaultAlways);
 
-  CGUIListItemPtr GetListItem(int offset, unsigned int flag = 0) const override;
+  std::shared_ptr<CGUIListItem> GetListItem(int offset, unsigned int flag = 0) const override;
 
   bool GetCondition(int condition, int data) const override;
   std::string GetLabel(int info) const override;
@@ -97,10 +97,15 @@ public:
   void DumpTextureUse() override;
 #endif
 protected:
-  EVENT_RESULT OnMouseEvent(const CPoint &point, const CMouseEvent &event) override;
+  EVENT_RESULT OnMouseEvent(const CPoint& point, const KODI::MOUSE::CMouseEvent& event) override;
   bool OnClick(int actionID);
 
-  virtual void ProcessItem(float posX, float posY, CGUIListItemPtr& item, bool focused, unsigned int currentTime, CDirtyRegionList &dirtyregions);
+  virtual void ProcessItem(float posX,
+                           float posY,
+                           std::shared_ptr<CGUIListItem>& item,
+                           bool focused,
+                           unsigned int currentTime,
+                           CDirtyRegionList& dirtyregions);
 
   void Render() override;
   virtual void RenderItem(float posX, float posY, CGUIListItem *item, bool focused);
@@ -139,9 +144,9 @@ protected:
   ORIENTATION m_orientation;
   int m_itemsPerPage;
 
-  std::vector< CGUIListItemPtr > m_items;
-  typedef std::vector<CGUIListItemPtr> ::iterator iItems;
-  CGUIListItemPtr m_lastItem;
+  std::vector<std::shared_ptr<CGUIListItem>> m_items;
+  typedef std::vector<std::shared_ptr<CGUIListItem>>::iterator iItems;
+  std::shared_ptr<CGUIListItem> m_lastItem;
 
   int m_pageControl;
 
@@ -153,7 +158,7 @@ protected:
   bool m_layoutCondition = false;
   bool m_focusedLayoutCondition = false;
 
-  void ScrollToOffset(int offset);
+  virtual void ScrollToOffset(int offset);
   void SetContainerMoving(int direction);
   void UpdateScrollOffset(unsigned int currentTime);
 

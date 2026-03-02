@@ -20,6 +20,7 @@
 #include "utils/GlobalsHandling.h"
 #include "utils/Stopwatch.h"
 #include "windowing/Resolution.h"
+#include "windowing/XBMC_events.h"
 
 #include <atomic>
 #include <chrono>
@@ -29,10 +30,12 @@
 #include <vector>
 
 class CAction;
+class CAppInboundProtocol;
 class CBookmark;
 class CFileItem;
 class CFileItemList;
 class CGUIComponent;
+class CInertialScrollingHandler;
 class CKey;
 class CSeekHandler;
 class CServiceManager;
@@ -63,6 +66,11 @@ namespace PLAYLIST
   class CPlayList;
 }
 
+namespace ActiveAE
+{
+  class CActiveAE;
+}
+
 namespace VIDEO
 {
   class CVideoInfoScanner;
@@ -80,6 +88,8 @@ class CApplication : public IWindowManagerCallback,
                      public CApplicationPlayerCallback,
                      public CApplicationSettingsHandling
 {
+friend class CAppInboundProtocol;
+
 public:
 
   // If playback time of current item is greater than this value, ACTION_PREV_ITEM will seek to start
@@ -157,9 +167,9 @@ public:
 
   void UpdateCurrentPlayArt();
 
-  bool ExecuteXBMCAction(std::string action, const CGUIListItemPtr &item = NULL);
+  bool ExecuteXBMCAction(std::string action, const std::shared_ptr<CGUIListItem>& item = NULL);
 
-#ifdef HAS_DVD_DRIVE
+#ifdef HAS_OPTICAL_DRIVE
   std::unique_ptr<MEDIA_DETECT::CAutorun> m_Autorun;
 #endif
 
@@ -190,9 +200,16 @@ protected:
   bool OnSettingsSaving() const override;
   void PlaybackCleanup();
 
+  // inbound protocol
+  bool OnEvent(XBMC_Event& newEvent);
+
   std::shared_ptr<ANNOUNCEMENT::CAnnouncementManager> m_pAnnouncementManager;
   std::unique_ptr<CGUIComponent> m_pGUI;
   std::unique_ptr<CWinSystemBase> m_pWinSystem;
+  std::unique_ptr<ActiveAE::CActiveAE> m_pActiveAE;
+  std::shared_ptr<CAppInboundProtocol> m_pAppPort;
+  std::deque<XBMC_Event> m_portEvents;
+  CCriticalSection m_portSection;
 
   // timer information
   CStopWatch m_restartPlayerTimer;
@@ -214,6 +231,8 @@ protected:
 
   void HandlePortEvents();
 
+  std::unique_ptr<CInertialScrollingHandler> m_pInertialScrollingHandler;
+
   std::vector<std::shared_ptr<ADDON::CAddonInfo>>
       m_incompatibleAddons; /*!< Result of addon migration (incompatible addon infos) */
 
@@ -228,7 +247,12 @@ private:
   mutable CCriticalSection m_critSection; /*!< critical section for all changes to this class, except for changes to triggers */
 
   CCriticalSection m_frameMoveGuard;              /*!< critical section for synchronizing GUI actions from inside and outside (python) */
+  std::atomic_uint m_WaitingExternalCalls;        /*!< counts threads which are waiting to be processed in FrameMove */
+  unsigned int m_ProcessedExternalCalls = 0;      /*!< counts calls which are processed during one "door open" cycle in FrameMove */
+  unsigned int m_ProcessedExternalDecay = 0;      /*!< counts to close door after a few frames of no python activity */
   int m_ExitCode{EXITCODE_QUIT};
+  std::shared_ptr<CFileItem> m_itemCurrentFile; //!< Currently playing file
+  CEvent m_playerEvent;
 };
 
 XBMC_GLOBAL_REF(CApplication,g_application);

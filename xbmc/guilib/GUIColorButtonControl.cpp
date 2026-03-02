@@ -10,7 +10,7 @@
 
 #include "GUIInfoManager.h"
 #include "LocalizeStrings.h"
-#include "input/Key.h"
+#include "input/keyboard/Key.h"
 #include "utils/ColorUtils.h"
 #include "utils/StringUtils.h"
 
@@ -174,7 +174,7 @@ bool CGUIColorButtonControl::UpdateColors(const CGUIListItem* item)
 {
   bool changed = CGUIButtonControl::UpdateColors(nullptr);
   changed |= m_imgBoxColor.Update();
-  changed |= m_imgColorMask->SetDiffuseColor(m_imgBoxColor);
+  changed |= m_imgColorMask->SetDiffuseColor(m_imgBoxColor, item);
   changed |= m_imgColorDisabledMask->SetDiffuseColor(m_diffuseColor);
   changed |= m_labelInfo.UpdateColors();
   return changed;

@@ -19,13 +19,18 @@
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIMessage.h"
 #include "guilib/GUIWindowManager.h"
-#include "input/Key.h"
+#include "input/actions/Action.h"
+#include "input/actions/ActionIDs.h"
 #include "interfaces/AnnouncementManager.h"
 #include "interfaces/generic/ScriptInvocationManager.h"
 #include "messaging/ApplicationMessenger.h"
 #include "music/MusicLibraryQueue.h"
+#include "powermanagement/DPMSSupport.h"
 #include "powermanagement/PowerTypes.h"
 #include "profiles/ProfileManager.h"
+#include "pvr/PVRManager.h"
+#include "pvr/guilib/PVRGUIActionsChannels.h"
+#include "pvr/guilib/PVRGUIActionsPowerManagement.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 #include "utils/AlarmClock.h"
@@ -62,12 +67,6 @@ void CApplicationPowerHandling::ResetNavigationTimer()
 
 void CApplicationPowerHandling::SetRenderGUI(bool renderGUI)
 {
-  if (renderGUI && !m_renderGUI)
-  {
-    CGUIComponent* gui = CServiceBroker::GetGUI();
-    if (gui)
-      CServiceBroker::GetGUI()->GetWindowManager().MarkDirty();
-  }
   m_renderGUI = renderGUI;
 }
 
@@ -78,7 +77,38 @@ void CApplicationPowerHandling::StopScreenSaverTimer()
 
 bool CApplicationPowerHandling::ToggleDPMS(bool manual)
 {
-  // Not supported on Xbox
+  auto winSystem = CServiceBroker::GetWinSystem();
+  if (!winSystem)
+    return false;
+
+  std::shared_ptr<CDPMSSupport> dpms = winSystem->GetDPMSManager();
+  if (!dpms)
+    return false;
+
+  if (manual || (m_dpmsIsManual == manual))
+  {
+    if (m_dpmsIsActive)
+    {
+      m_dpmsIsActive = false;
+      m_dpmsIsManual = false;
+      SetRenderGUI(true);
+      CheckOSScreenSaverInhibitionSetting();
+      CServiceBroker::GetAnnouncementManager()->Announce(ANNOUNCEMENT::GUI, "OnDPMSDeactivated");
+      return dpms->DisablePowerSaving();
+    }
+    else
+    {
+      if (dpms->EnablePowerSaving(dpms->GetSupportedModes()[0]))
+      {
+        m_dpmsIsActive = true;
+        m_dpmsIsManual = manual;
+        SetRenderGUI(false);
+        CheckOSScreenSaverInhibitionSetting();
+        CServiceBroker::GetAnnouncementManager()->Announce(ANNOUNCEMENT::GUI, "OnDPMSActivated");
+        return true;
+      }
+    }
+  }
   return false;
 }
 
@@ -194,7 +224,26 @@ bool CApplicationPowerHandling::WakeUpScreenSaver(bool bPowerOffKeyPressed /* = 
 
 void CApplicationPowerHandling::CheckOSScreenSaverInhibitionSetting()
 {
-  // Xbox don't have OS screensaver, so not needed
+  // Kodi screen saver overrides OS one: always inhibit OS screen saver then
+  // except when DPMS is active (inhibiting the screen saver then might also
+  // disable DPMS again)
+  if (!m_dpmsIsActive &&
+      !CServiceBroker::GetSettingsComponent()
+           ->GetSettings()
+           ->GetString(CSettings::SETTING_SCREENSAVER_MODE)
+           .empty() &&
+      CServiceBroker::GetWinSystem()->GetOSScreenSaver())
+  {
+    if (!m_globalScreensaverInhibitor)
+    {
+      m_globalScreensaverInhibitor =
+          CServiceBroker::GetWinSystem()->GetOSScreenSaver()->CreateInhibitor();
+    }
+  }
+  else if (m_globalScreensaverInhibitor)
+  {
+    m_globalScreensaverInhibitor.Release();
+  }
 }
 
 void CApplicationPowerHandling::CheckScreenSaverAndDPMS()
@@ -210,8 +259,20 @@ void CApplicationPowerHandling::CheckScreenSaverAndDPMS()
                .empty())
     maybeScreensaver = false;
 
-  // DPMS is not available on Xbox
-  bool maybeDPMS = false;
+  auto winSystem = CServiceBroker::GetWinSystem();
+  if (!winSystem)
+    return;
+
+  std::shared_ptr<CDPMSSupport> dpms = winSystem->GetDPMSManager();
+
+  bool maybeDPMS = true;
+  if (m_dpmsIsActive)
+    maybeDPMS = false;
+  else if (!dpms || !dpms->IsSupported())
+    maybeDPMS = false;
+  else if (CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(
+               CSettings::SETTING_POWERMANAGEMENT_DISPLAYSOFF) <= 0)
+    maybeDPMS = false;
 
   // whether the current state of the application should be regarded as active even when there is no
   // explicit user activity such as input
@@ -233,15 +294,27 @@ void CApplicationPowerHandling::CheckScreenSaverAndDPMS()
   if (appPlayer && appPlayer->IsPlayingVideo() && !appPlayer->IsPaused())
     haveIdleActivity = true;
 
-  // Are we playing some music in fullscreen vis?
+  // Are we playing audio and screensaver is disabled globally for audio?
   else if (appPlayer && appPlayer->IsPlayingAudio() &&
-           CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindow() == WINDOW_VISUALISATION &&
-           !CServiceBroker::GetSettingsComponent()
-                ->GetSettings()
-                ->GetString(CSettings::SETTING_MUSICPLAYER_VISUALISATION)
-                .empty())
+           CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(
+               CSettings::SETTING_SCREENSAVER_DISABLEFORAUDIO))
   {
     haveIdleActivity = true;
+  }
+
+  // Handle OS screen saver state
+  if (haveIdleActivity && CServiceBroker::GetWinSystem()->GetOSScreenSaver())
+  {
+    // Always inhibit OS screen saver during these kinds of activities
+    if (!m_screensaverInhibitor)
+    {
+      m_screensaverInhibitor =
+          CServiceBroker::GetWinSystem()->GetOSScreenSaver()->CreateInhibitor();
+    }
+  }
+  else if (m_screensaverInhibitor)
+  {
+    m_screensaverInhibitor.Release();
   }
 
   // Has the screen saver window become active?
@@ -295,13 +368,6 @@ void CApplicationPowerHandling::ActivateScreenSaver(bool forceType /*= false */)
   const std::shared_ptr<CSettings> settings = CServiceBroker::GetSettingsComponent()->GetSettings();
   const auto& components = CServiceBroker::GetAppComponents();
   const auto appPlayer = components.GetComponent<CApplicationPlayer>();
-  if (appPlayer && appPlayer->IsPlayingAudio() &&
-      settings->GetBool(CSettings::SETTING_SCREENSAVER_USEMUSICVISINSTEAD) &&
-      !settings->GetString(CSettings::SETTING_MUSICPLAYER_VISUALISATION).empty())
-  { // just activate the visualisation if user toggled the usemusicvisinstead option
-    CServiceBroker::GetGUI()->GetWindowManager().ActivateWindow(WINDOW_VISUALISATION);
-    return;
-  }
 
   m_screensaverActive = true;
   CServiceBroker::GetAnnouncementManager()->Announce(ANNOUNCEMENT::GUI, "OnScreensaverActivated");
@@ -322,10 +388,10 @@ void CApplicationPowerHandling::ActivateScreenSaver(bool forceType /*= false */)
 
     // Enforce Dim for special cases.
     bool bUseDim = false;
-    if (CServiceBroker::GetGUI()->GetWindowManager().HasModalDialog(true))
+    if (appPlayer && appPlayer->IsPlayingVideo() &&
+        settings->GetBool(CSettings::SETTING_SCREENSAVER_USEDIMONPAUSE))
       bUseDim = true;
-    else if (appPlayer && appPlayer->IsPlayingVideo() &&
-             settings->GetBool(CSettings::SETTING_SCREENSAVER_USEDIMONPAUSE))
+    else if (CServiceBroker::GetPVRManager().Get<PVR::GUI::Channels>().IsRunningChannelScan())
       bUseDim = true;
 
     if (bUseDim)
@@ -448,7 +514,8 @@ void CApplicationPowerHandling::CheckShutdown()
       CVideoLibraryQueue::GetInstance().IsRunning() ||
       CServiceBroker::GetGUI()->GetWindowManager().IsWindowActive(
           WINDOW_DIALOG_PROGRESS) // progress dialog is onscreen
-      )
+      ||
+      !CServiceBroker::GetPVRManager().Get<PVR::GUI::PowerManagement>().CanSystemPowerdown(false))
   {
     m_shutdownTimer.StartZero();
     return;
@@ -463,6 +530,9 @@ void CApplicationPowerHandling::CheckShutdown()
     m_shutdownTimer.Stop();
 
     // Sleep the box
+    CLog::LogF(LOGDEBUG, "Timer is over (shutdown function: {})",
+               CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(
+                   CSettings::SETTING_POWERMANAGEMENT_SHUTDOWNSTATE));
     CServiceBroker::GetAppMessenger()->PostMsg(TMSG_SHUTDOWN);
   }
 }

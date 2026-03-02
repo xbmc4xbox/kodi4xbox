@@ -13,7 +13,7 @@
 #include <vector>
 
 class CGUIControl;
-class CGUIListItem; typedef std::shared_ptr<CGUIListItem> CGUIListItemPtr;
+class CGUIListItem;
 
 /**
  * Class containing vector of condition->(action/navigation route) and handling its execution.
@@ -83,7 +83,13 @@ public:
   /**
    * Execute actions (no navigation paths); if action is paired with condition - evaluate condition first
    */
-  bool ExecuteActions(int controlID, int parentID, const CGUIListItemPtr& item = nullptr) const;
+  bool ExecuteActions(int controlID,
+                      int parentID,
+                      const std::shared_ptr<CGUIListItem>& item = nullptr) const;
+  /**
+   * Check if there are any conditional actions
+  */
+  bool HasConditionalActions() const;
   /**
    * Check if there is any action that meet its condition
    */
@@ -92,6 +98,10 @@ public:
    * Check if there is any action
    */
   bool HasAnyActions() const;
+  /**
+   * Get the total number of actions
+  */
+  size_t GetActionCount() const;
   /**
    * Get navigation route that meet its conditions first
    */

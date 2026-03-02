@@ -19,7 +19,7 @@
 #include "guilib/GUIKeyboardFactory.h"
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
-#include "input/Key.h"
+#include "input/actions/ActionIDs.h"
 #include "profiles/ProfileManager.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
@@ -226,7 +226,7 @@ void CGUIDialogSmartPlaylistEditor::OnOK()
     if (CGUIKeyboardFactory::ShowAndGetInput(filename, CVariant{g_localizeStrings.Get(16013)}, false))
     {
       path = URIUtils::AddFileToFolder(systemPlaylistsPath, m_playlist.GetSaveLocation(),
-                                        CUtil::MakeLegalFileName(filename));
+                                       CUtil::MakeLegalFileName(std::move(filename)));
     }
     else
       return;

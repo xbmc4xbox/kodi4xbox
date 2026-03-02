@@ -88,7 +88,6 @@ RESOLUTION CResolutionUtils::ChooseBestResolution(float fps, int width, int heig
 
 void CResolutionUtils::FindResolutionFromWhitelist(float fps, int width, int height, bool is3D, RESOLUTION &resolution)
 {
-#if 0
   RESOLUTION_INFO curr = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo(resolution);
   CLog::Log(LOGINFO,
             "[WHITELIST] Searching the whitelist for: width: {}, height: {}, fps: {:0.3f}, 3D: {}",
@@ -319,7 +318,6 @@ void CResolutionUtils::FindResolutionFromWhitelist(float fps, int width, int hei
   }
 
   CLog::Log(LOGDEBUG, "[WHITELIST] No resolution matched");
-#endif
 }
 
 bool CResolutionUtils::FindResolutionFromOverride(float fps, int width, bool is3D, RESOLUTION &resolution, float& weight, bool fallback)
@@ -411,7 +409,6 @@ bool CResolutionUtils::HasWhitelist()
 
 void CResolutionUtils::PrintWhitelist()
 {
-#if 0
   std::string modeStr;
   auto indexList = CServiceBroker::GetSettingsComponent()->GetSettings()->GetList(
       CSettings::SETTING_VIDEOSCREEN_WHITELIST);
@@ -426,12 +423,10 @@ void CResolutionUtils::PrintWhitelist()
 
     CLog::Log(LOGDEBUG, "[WHITELIST] whitelisted modes:{}", modeStr);
   }
-#endif
 }
 
-void CResolutionUtils::GetMaxAllowedResolution(unsigned int& width, unsigned int& height)
+void CResolutionUtils::GetMaxAllowedScreenResolution(unsigned int& width, unsigned int& height)
 {
-#if 0
   if (!CServiceBroker::GetWinSystem()->GetGfxContext().IsFullScreenRoot())
     return;
 
@@ -476,5 +471,4 @@ void CResolutionUtils::GetMaxAllowedResolution(unsigned int& width, unsigned int
 
   width = maxWidth;
   height = maxHeight;
-#endif
 }

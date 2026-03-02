@@ -24,7 +24,7 @@ namespace CONTEXTMENU
 
   bool CEjectDisk::IsVisible(const CFileItem& item) const
   {
-#ifdef HAS_DVD_DRIVE
+#ifdef HAS_OPTICAL_DRIVE
     return item.IsRemovable() && (item.IsDVD() || item.IsCDDA());
 #else
     return false;
@@ -33,7 +33,7 @@ namespace CONTEXTMENU
 
   bool CEjectDisk::Execute(const std::shared_ptr<CFileItem>& item) const
   {
-#ifdef HAS_DVD_DRIVE
+#ifdef HAS_OPTICAL_DRIVE
     CServiceBroker::GetMediaManager().ToggleTray(
         CServiceBroker::GetMediaManager().TranslateDevicePath(item->GetPath())[0]);
 #endif
@@ -78,6 +78,9 @@ std::string CAddRemoveFavourite::GetLabel(const CFileItem& item) const
 
 bool CAddRemoveFavourite::IsVisible(const CFileItem& item) const
 {
+  if (item.GetProperty("hide_add_remove_favourite").asBoolean())
+    return false;
+
   return (!item.GetPath().empty() && !item.IsParentFolder() && !item.IsPath("add") &&
           !item.IsPath("newplaylist://") && !URIUtils::IsProtocol(item.GetPath(), "favourites") &&
           !URIUtils::IsProtocol(item.GetPath(), "newsmartplaylist") &&

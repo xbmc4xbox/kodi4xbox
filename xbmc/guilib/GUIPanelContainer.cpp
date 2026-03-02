@@ -12,7 +12,8 @@
 #include "GUIListItemLayout.h"
 #include "GUIMessage.h"
 #include "guilib/guiinfo/GUIInfoLabels.h"
-#include "input/Key.h"
+#include "input/actions/Action.h"
+#include "input/actions/ActionIDs.h"
 #include "utils/StringUtils.h"
 
 #include <cassert>
@@ -62,7 +63,7 @@ void CGUIPanelContainer::Process(unsigned int currentTime, CDirtyRegionList &dir
       break;
     if (current >= 0)
     {
-      CGUIListItemPtr item = m_items[current];
+      std::shared_ptr<CGUIListItem> item = m_items[current];
       item->SetCurrentItem(current + 1);
       bool focused = (current == GetOffset() * m_itemsPerRow + GetCursor()) && m_bHasFocus;
 
@@ -110,7 +111,7 @@ void CGUIPanelContainer::Render()
 
     float focusedPos = 0;
     int focusedCol = 0;
-    CGUIListItemPtr focusedItem;
+    std::shared_ptr<CGUIListItem> focusedItem;
     int current = (offset - cacheBefore) * m_itemsPerRow;
     int col = 0;
     while (pos < end && m_items.size())
@@ -119,7 +120,7 @@ void CGUIPanelContainer::Render()
         break;
       if (current >= 0)
       {
-        CGUIListItemPtr item = m_items[current];
+        std::shared_ptr<CGUIListItem> item = m_items[current];
         bool focused = (current == GetOffset() * m_itemsPerRow + GetCursor()) && m_bHasFocus;
         // render our item
         if (focused)
@@ -399,9 +400,18 @@ void CGUIPanelContainer::ValidateOffset()
 
 void CGUIPanelContainer::SetCursor(int cursor)
 {
+  // exceeds the number of items the panel can hold
   if (cursor > m_itemsPerPage * m_itemsPerRow - 1)
     cursor = m_itemsPerPage * m_itemsPerRow - 1;
-  if (cursor < 0) cursor = 0;
+
+  // exceeds the number of items being displayed
+  const int itemsOn = m_items.size() - 1 - GetOffset() * m_itemsPerRow;
+  if (cursor > itemsOn)
+    cursor = itemsOn;
+
+  if (cursor < 0)
+    cursor = 0;
+
   if (!m_wasReset)
     SetContainerMoving(cursor - GetCursor());
   CGUIBaseContainer::SetCursor(cursor);
@@ -565,3 +575,8 @@ bool CGUIPanelContainer::HasNextPage() const
   return (GetOffset() != (int)GetRows() - m_itemsPerPage && (int)GetRows() > m_itemsPerPage);
 }
 
+void CGUIPanelContainer::ScrollToOffset(int offset)
+{
+  CGUIBaseContainer::ScrollToOffset(offset);
+  SetCursor(GetCursor());
+}

@@ -12,8 +12,6 @@
 
 #include <memory>
 
-typedef std::shared_ptr<CGUIListItem> CGUIListItemPtr;
-
 /*!
  \ingroup controls
  \brief
@@ -22,11 +20,13 @@ typedef std::shared_ptr<CGUIListItem> CGUIListItemPtr;
 class IGUIContainer : public CGUIControl
 {
 protected:
-  VIEW_TYPE m_type;
+  VIEW_TYPE m_type = VIEW_TYPE_NONE;
   std::string m_label;
 public:
   IGUIContainer(int parentID, int controlID, float posX, float posY, float width, float height)
-   : CGUIControl(parentID, controlID, posX, posY, width, height), m_type(VIEW_TYPE_NONE) {}
+    : CGUIControl(parentID, controlID, posX, posY, width, height)
+  {
+  }
 
   bool IsContainer() const override { return true; }
 
@@ -38,6 +38,6 @@ public:
     m_label = label;
   }
 
-  virtual CGUIListItemPtr GetListItem(int offset, unsigned int flag = 0) const = 0;
+  virtual std::shared_ptr<CGUIListItem> GetListItem(int offset, unsigned int flag = 0) const = 0;
   virtual std::string GetLabel(int info) const                                 = 0;
 };

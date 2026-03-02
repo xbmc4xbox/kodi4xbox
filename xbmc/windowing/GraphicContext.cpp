@@ -37,7 +37,7 @@ void CGraphicContext::SetOrigin(float x, float y)
   if (!m_origins.empty())
     m_origins.push(CPoint(x,y) + m_origins.top());
   else
-    m_origins.push(CPoint(x,y));
+    m_origins.emplace(x, y);
 
   AddTransform(TransformMatrix::CreateTranslation(x, y));
 }
@@ -459,6 +459,9 @@ void CGraphicContext::SetVideoResolutionInternal(RESOLUTION res, bool forceUpdat
     // make sure all stereo stuff are correctly setup
     SetStereoView(RENDER_STEREO_VIEW_OFF);
 
+    // update anyone that relies on sizing information
+    CServiceBroker::GetInputManager().SetMouseResolution(info_org.iWidth, info_org.iHeight, 1, 1);
+
     CGUIComponent *gui = CServiceBroker::GetGUI();
     if (gui)
       gui->GetWindowManager().SendMessage(GUI_MSG_NOTIFY_ALL, 0, 0, GUI_MSG_WINDOW_RESIZE);
@@ -516,6 +519,7 @@ void CGraphicContext::ApplyVideoResolution(RESOLUTION res)
 
   // update anyone that relies on sizing information
   RESOLUTION_INFO info_org  = CDisplaySettings::GetInstance().GetResolutionInfo(res);
+  CServiceBroker::GetInputManager().SetMouseResolution(info_org.iWidth, info_org.iHeight, 1, 1);
   CServiceBroker::GetGUI()->GetWindowManager().SendMessage(GUI_MSG_NOTIFY_ALL, 0, 0, GUI_MSG_WINDOW_RESIZE);
 }
 
@@ -527,6 +531,19 @@ void CGraphicContext::UpdateInternalStateWithResolution(RESOLUTION res)
   m_iScreenHeight = info_mod.iHeight;
   m_Resolution = res;
   m_fFPSOverride = 0;
+}
+
+void CGraphicContext::ApplyModeChange(RESOLUTION res)
+{
+  ApplyVideoResolution(res);
+  CServiceBroker::GetWinSystem()->FinishModeChange(res);
+}
+
+void CGraphicContext::ApplyWindowResize(int newWidth, int newHeight)
+{
+  CServiceBroker::GetWinSystem()->SetWindowResolution(newWidth, newHeight);
+  ApplyVideoResolution(RES_WINDOW);
+  CServiceBroker::GetWinSystem()->FinishWindowResize(newWidth, newHeight);
 }
 
 RESOLUTION CGraphicContext::GetVideoResolution() const
@@ -623,6 +640,7 @@ void CGraphicContext::SetResInfo(RESOLUTION res, const RESOLUTION_INFO& info)
   curr.Overscan   = info.Overscan;
   curr.iSubtitles = info.iSubtitles;
   curr.fPixelRatio = info.fPixelRatio;
+  curr.guiInsets = info.guiInsets;
 
   if(info.dwFlags & D3DPRESENTFLAG_MODE3DSBS)
   {
@@ -700,10 +718,10 @@ void CGraphicContext::SetScalingResolution(const RESOLUTION_INFO &res, bool need
   // reset our origin and camera
   while (!m_origins.empty())
     m_origins.pop();
-  m_origins.push(CPoint(0, 0));
+  m_origins.emplace(.0f, .0f);
   while (!m_cameras.empty())
     m_cameras.pop();
-  m_cameras.push(CPoint(0.5f*m_iScreenWidth, 0.5f*m_iScreenHeight));
+  m_cameras.emplace(0.5f * m_iScreenWidth, 0.5f * m_iScreenHeight);
   while (!m_stereoFactors.empty())
     m_stereoFactors.pop();
   m_stereoFactors.push(0.0f);
@@ -914,6 +932,18 @@ float CGraphicContext::GetFPS() const
       return info.fRefreshRate;
   }
   return 60.0f;
+}
+
+float CGraphicContext::GetDisplayLatency() const
+{
+  float latency = CServiceBroker::GetWinSystem()->GetDisplayLatency();
+  if (latency < 0.0f)
+  {
+    // fallback
+    latency = (CServiceBroker::GetWinSystem()->NoOfBuffers() + 1) / GetFPS() * 1000.0f;
+  }
+
+  return latency;
 }
 
 bool CGraphicContext::IsFullScreenRoot () const

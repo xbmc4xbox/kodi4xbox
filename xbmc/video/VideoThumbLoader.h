@@ -10,7 +10,6 @@
 
 #include "FileItem.h"
 #include "ThumbLoader.h"
-#include "utils/JobManager.h"
 
 #include <map>
 #include <vector>
@@ -22,41 +21,7 @@ class EmbeddedArt;
 using ArtMap = std::map<std::string, std::string>;
 using ArtCache = std::map<std::pair<MediaType, int>, ArtMap>;
 
-/*!
- \ingroup thumbs,jobs
- \brief Thumb extractor job class
-
- Used by the CVideoThumbLoader to perform asynchronous generation of thumbs
-
- \sa CVideoThumbLoader and CJob
- */
-class CThumbExtractor : public CJob
-{
-public:
-  CThumbExtractor(const CFileItem& item, const std::string& listpath, bool thumb, const std::string& strTarget="", int64_t pos = -1, bool fillStreamDetails = true);
-  ~CThumbExtractor() override;
-
-  /*!
-   \brief Work function that extracts thumb.
-   */
-  bool DoWork() override;
-
-  const char* GetType() const override
-  {
-    return kJobTypeMediaFlags;
-  }
-
-  bool operator==(const CJob* job) const override;
-
-  std::string m_target; ///< thumbpath
-  std::string m_listpath; ///< path used in fileitem list
-  CFileItem  m_item;
-  bool       m_thumb; ///< extract thumb?
-  int64_t    m_pos; ///< position to extract thumb from
-  bool m_fillStreamDetails; ///< fill in stream details?
-};
-
-class CVideoThumbLoader : public CThumbLoader, public CJobQueue
+class CVideoThumbLoader : public CThumbLoader
 {
 public:
   CVideoThumbLoader();
@@ -107,19 +72,6 @@ public:
    \return true if we fill art, false otherwise
    */
  bool FillLibraryArt(CFileItem &item) override;
-
-  /*!
-   \brief Callback from CThumbExtractor on completion of a generated image
-
-   Performs the callbacks and updates the GUI.
-
-   \sa CImageLoader, IJobCallback
-   */
-  void OnJobComplete(unsigned int jobID, bool success, CJob *job) override;
-
-  static bool GetEmbeddedThumb(const std::string& path,
-                               const std::string& type,
-                               EmbeddedArt& art);
 
 protected:
   CVideoDatabase *m_videoDatabase;

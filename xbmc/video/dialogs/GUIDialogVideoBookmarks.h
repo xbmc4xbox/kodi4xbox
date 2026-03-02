@@ -9,16 +9,13 @@
 #pragma once
 
 #include "guilib/GUIDialog.h"
-#include "utils/JobManager.h"
 #include "video/VideoDatabase.h"
 #include "view/GUIViewControl.h"
 
 class CFileItemList;
 
-class CGUIDialogVideoBookmarks : public CGUIDialog, public CJobQueue
+class CGUIDialogVideoBookmarks : public CGUIDialog
 {
-  typedef std::map<CJob*, unsigned int> MAPJOBSCHAPS;
-
 public:
   CGUIDialogVideoBookmarks(void);
   ~CGUIDialogVideoBookmarks(void) override;
@@ -60,17 +57,19 @@ protected:
   void OnPopupMenu(int item);
   CGUIControl *GetFirstFocusableControl(int id) override;
 
-  void OnJobComplete(unsigned int jobID, bool success, CJob* job) override;
-
   CFileItemList* m_vecItems;
   CGUIViewControl m_viewControl;
   VECBOOKMARKS m_bookmarks;
 
 private:
-  void UpdateItem(unsigned int chapterIdx);
+  /*!
+   * \brief Return the bookmark index for the list item.
+   * \param[in] item Item number in the list
+   * \return bookmark index in m_bookmarks, or -1 for an invalid or a non-bookmark item.
+   */
+  int ItemToBookmarkIndex(int item) const;
+  void Delete(const CBookmark& bm);
 
-  int m_jobsStarted;
   std::string m_filePath;
   CCriticalSection m_refreshSection;
-  MAPJOBSCHAPS m_mapJobsChapter;
 };

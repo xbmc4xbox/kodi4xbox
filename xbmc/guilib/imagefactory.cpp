@@ -10,10 +10,14 @@
 
 #include "ServiceBroker.h"
 #include "addons/ExtsMimeSupportList.h"
+#include "addons/ImageDecoder.h"
 #include "addons/addoninfo/AddonType.h"
-#include "guilib/JpegIO.h"
-#include "guilib/cximage.h"
+#include "guilib/FFmpegImage.h"
 #include "utils/Mime.h"
+
+#include <mutex>
+
+CCriticalSection ImageFactory::m_createSec;
 
 using namespace KODI::ADDONS;
 
@@ -33,14 +37,23 @@ IImage* ImageFactory::CreateLoader(const CURL& url)
 
 IImage* ImageFactory::CreateLoaderFromMimeType(const std::string& strMimeType)
 {
-  if (strMimeType == "image/jpg" || strMimeType == "image/jpeg" || strMimeType == "image/tbn")
+  auto addonInfos = CServiceBroker::GetExtsMimeSupportList().GetMimetypeSupportedAddonInfos(
+      strMimeType, CExtsMimeSupportList::FilterSelect::all);
+  for (const auto& addonInfo : addonInfos)
   {
-    return new CJpegIO();
-  }
-  else if (strMimeType == "image/png")
-  {
-    return new CXImage(strMimeType);
+    // Check asked and given mime type is supported by only for here allowed imagedecoder addons.
+    if (addonInfo.first != ADDON::AddonType::IMAGEDECODER)
+      continue;
+
+    std::unique_lock<CCriticalSection> lock(m_createSec);
+    std::unique_ptr<CImageDecoder> result =
+        std::make_unique<CImageDecoder>(addonInfo.second, strMimeType);
+    if (!result->IsCreated())
+    {
+      continue;
+    }
+    return result.release();
   }
 
-  return nullptr;
+  return new CFFmpegImage(strMimeType);
 }

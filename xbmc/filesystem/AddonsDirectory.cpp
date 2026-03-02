@@ -20,6 +20,8 @@
 #include "addons/RepositoryUpdater.h"
 #include "addons/addoninfo/AddonInfo.h"
 #include "addons/addoninfo/AddonType.h"
+#include "games/GameUtils.h"
+#include "games/addons/GameClient.h"
 #include "guilib/LocalizeStrings.h"
 #include "guilib/TextureManager.h"
 #include "interfaces/generic/ScriptInvocationManager.h"
@@ -103,12 +105,13 @@ static bool IsGameType(AddonType type)
 
 static bool IsStandaloneGame(const AddonPtr& addon)
 {
-  return false;
+  return GAME::CGameUtils::IsStandaloneGame(addon);
 }
 
 static bool IsEmulator(const AddonPtr& addon)
 {
-  return false;
+  return addon->Type() == AddonType::GAMEDLL &&
+         std::static_pointer_cast<GAME::CGameClient>(addon)->SupportsPath();
 }
 
 static bool IsGameProvider(const AddonPtr& addon)
@@ -123,7 +126,9 @@ static bool IsGameResource(const AddonPtr& addon)
 
 static bool IsGameSupportAddon(const AddonPtr& addon)
 {
-  return false;
+  return addon->Type() == AddonType::GAMEDLL &&
+         !std::static_pointer_cast<GAME::CGameClient>(addon)->SupportsPath() &&
+         !std::static_pointer_cast<GAME::CGameClient>(addon)->SupportsStandalone();
 }
 
 static bool IsGameAddon(const AddonPtr& addon)

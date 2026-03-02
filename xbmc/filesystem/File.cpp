@@ -20,7 +20,7 @@
 #include "application/ApplicationComponents.h"
 #include "application/ApplicationPowerHandling.h"
 #include "commons/Exception.h"
-#include "settings/AdvancedSettings.h"
+#include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 #include "utils/BitstreamStats.h"
 #include "utils/StringUtils.h"
@@ -287,15 +287,19 @@ bool CFile::Open(const CURL& file, const unsigned int flags)
       if (URIUtils::IsDVD(pathToUrl) || URIUtils::IsBluray(pathToUrl) ||
           (m_flags & READ_AUDIO_VIDEO))
       {
-        const unsigned int iCacheBufferMode =
-            CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_cacheBufferMode;
-        if ((iCacheBufferMode == CACHE_BUFFER_MODE_INTERNET &&
+        const auto settings = CServiceBroker::GetSettingsComponent()->GetSettings();
+
+        const int cacheBufferMode = (settings)
+                                        ? settings->GetInt(CSettings::SETTING_FILECACHE_BUFFERMODE)
+                                        : CACHE_BUFFER_MODE_NETWORK;
+
+        if ((cacheBufferMode == CACHE_BUFFER_MODE_INTERNET &&
              URIUtils::IsInternetStream(pathToUrl, true)) ||
-            (iCacheBufferMode == CACHE_BUFFER_MODE_TRUE_INTERNET &&
+            (cacheBufferMode == CACHE_BUFFER_MODE_TRUE_INTERNET &&
              URIUtils::IsInternetStream(pathToUrl, false)) ||
-            (iCacheBufferMode == CACHE_BUFFER_MODE_NETWORK &&
+            (cacheBufferMode == CACHE_BUFFER_MODE_NETWORK &&
              URIUtils::IsNetworkFilesystem(pathToUrl)) ||
-            (iCacheBufferMode == CACHE_BUFFER_MODE_ALL &&
+            (cacheBufferMode == CACHE_BUFFER_MODE_ALL &&
              (URIUtils::IsNetworkFilesystem(pathToUrl) || URIUtils::IsHD(pathToUrl))))
         {
           m_flags |= READ_CACHED;
@@ -360,7 +364,7 @@ bool CFile::Open(const CURL& file, const unsigned int flags)
       return false;
     }
 
-    if (m_pFile->GetChunkSize() && !(m_flags & READ_CHUNKED))
+    if (ShouldUseStreamBuffer(url))
     {
       m_pBuffer = std::make_unique<CFileStreamBuffer>(0);
       m_pBuffer->Attach(m_pFile.get());
@@ -377,6 +381,21 @@ bool CFile::Open(const CURL& file, const unsigned int flags)
   XBMCCOMMONS_HANDLE_UNCHECKED
   catch (...) { CLog::Log(LOGERROR, "{} - Unhandled exception", __FUNCTION__); }
   CLog::Log(LOGERROR, "{} - Error opening {}", __FUNCTION__, file.GetRedacted());
+  return false;
+}
+
+bool CFile::ShouldUseStreamBuffer(const CURL& url)
+{
+  if (m_flags & READ_NO_BUFFER)
+    return false;
+
+  if (m_flags & READ_CHUNKED || m_pFile->GetChunkSize() > 0)
+    return true;
+
+  // file size > 200 MB but not in optical disk
+  if (m_pFile->GetLength() > 200 * 1024 * 1024 && !URIUtils::IsDVD(url.GetShareName()))
+    return true;
+
   return false;
 }
 
@@ -975,6 +994,7 @@ ssize_t CFile::LoadFile(const std::string& filename, std::vector<uint8_t>& outpu
 }
 
 ssize_t CFile::LoadFile(const CURL& file, std::vector<uint8_t>& outputBuffer)
+try
 {
   static const size_t max_file_size = 0x7FFFFFFF;
   static const size_t min_chunk_size = 64 * 1024U;
@@ -1038,6 +1058,12 @@ ssize_t CFile::LoadFile(const CURL& file, std::vector<uint8_t>& outputBuffer)
   outputBuffer.resize(total_read);
 
   return total_read;
+}
+catch (const std::bad_alloc&)
+{
+  outputBuffer.clear();
+  CLog::LogF(LOGERROR, "Failed to load {}: out of memory", file.GetFileName());
+  return -1;
 }
 
 double CFile::GetDownloadSpeed()

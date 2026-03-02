@@ -20,9 +20,6 @@
 #if defined(TARGET_POSIX)
 #include "platform/posix/filesystem/PosixFile.h"
 #define CacheLocalFile CPosixFile
-#elif defined(_XBOX)
-#include "platform/xbox/filesystem/XboxFile.h"
-#define CacheLocalFile CXboxFile
 #elif defined(TARGET_WINDOWS)
 #include "platform/win32/filesystem/Win32File.h"
 #define CacheLocalFile CWin32File

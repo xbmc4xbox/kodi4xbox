@@ -18,6 +18,7 @@
 #include "SettingDefinitions.h"
 #include "SettingDependency.h"
 #include "threads/SharedSection.h"
+#include "utils/logtypes.h"
 
 #include <map>
 #include <set>
@@ -504,6 +505,16 @@ private:
 
   using SettingMap = std::map<std::string, Setting>;
 
+  /*!
+   * \brief Refresh the visibility and enable status of a given setting
+   *
+   * \details A setting might have its visibility/enable status bound to complex conditions and, at the same time, depend
+   * on other settings. When those settings change, the visibility/enable status need to be refreshed (i.e. the complex condition must be re-evaluated)
+   *
+   * \param setting Setting object
+  */
+  void RefreshVisibilityAndEnableStatus(const std::shared_ptr<const CSetting>& setting);
+
   void ResolveSettingDependencies(const std::shared_ptr<CSetting>& setting);
   void ResolveSettingDependencies(const Setting& setting);
 
@@ -538,4 +549,6 @@ private:
 
   mutable CSharedSection m_critical;
   mutable CSharedSection m_settingsCritical;
+
+  Logger m_logger;
 };

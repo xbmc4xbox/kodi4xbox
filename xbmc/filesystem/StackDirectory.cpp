@@ -46,7 +46,7 @@ namespace XFILE
   std::string CStackDirectory::GetStackedTitlePath(const std::string &strPath)
   {
     // Load up our REs
-    std::vector<CRegExp>  RegExps;
+    VECCREGEXP  RegExps;
     CRegExp     tempRE(true, CRegExp::autoUtf8);
     const std::vector<std::string>& strRegExps = CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_videoStackRegExps;
     std::vector<std::string>::const_iterator itRegExp = strRegExps.begin();
@@ -57,13 +57,13 @@ namespace XFILE
         RegExps.push_back(tempRE);
       else
         CLog::Log(LOGERROR, "Invalid video stack RE ({}). Must have exactly 4 captures.",
-                  itRegExp->c_str());
+                  *itRegExp);
       ++itRegExp;
     }
     return GetStackedTitlePath(strPath, RegExps);
   }
 
-  std::string CStackDirectory::GetStackedTitlePath(const std::string &strPath, std::vector<CRegExp>& RegExps)
+  std::string CStackDirectory::GetStackedTitlePath(const std::string &strPath, VECCREGEXP& RegExps)
   {
     CStackDirectory stack;
     CFileItemList   files;

@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include "utils/logtypes.h"
+
 #include <string>
 
 class TiXmlNode;
@@ -29,4 +31,6 @@ public:
 protected:
   bool m_delayed = false;
   std::string m_format;
+
+  static Logger s_logger;
 };

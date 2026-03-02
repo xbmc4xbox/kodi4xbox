@@ -15,13 +15,6 @@ namespace PLATFORM
 {
 namespace WINDOWS
 {
-#ifdef NXDK
-std::string FromW(const WCHAR* str)
-{
-  return FromW(reinterpret_cast<const wchar_t*>(str), wcslen(reinterpret_cast<const wchar_t*>(str)));
-}
-#endif
-
 std::string FromW(const wchar_t* str, size_t length)
 {
   int result = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, str, length, nullptr, 0, nullptr, nullptr);
