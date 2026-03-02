@@ -254,7 +254,6 @@ extern "C" void tracker_heapobjects_free_all(DllTrackInfo* pInfo)
     pInfo->heapobjectList.erase(pInfo->heapobjectList.begin(), pInfo->heapobjectList.end());
   }
 #endif
-  assert(0);
 }
 
 HANDLE
