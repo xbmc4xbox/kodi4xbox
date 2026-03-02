@@ -157,9 +157,9 @@ public:
 
   void UpdateCurrentPlayArt();
 
-  bool ExecuteXBMCAction(std::string action, const CGUIListItemPtr &item = NULL);
+  bool ExecuteXBMCAction(std::string action, const std::shared_ptr<CGUIListItem>& item = NULL);
 
-#ifdef HAS_DVD_DRIVE
+#ifdef HAS_OPTICAL_DRIVE
   std::unique_ptr<MEDIA_DETECT::CAutorun> m_Autorun;
 #endif
 
@@ -229,6 +229,7 @@ private:
 
   CCriticalSection m_frameMoveGuard;              /*!< critical section for synchronizing GUI actions from inside and outside (python) */
   int m_ExitCode{EXITCODE_QUIT};
+  std::shared_ptr<CFileItem> m_itemCurrentFile; //!< Currently playing file
 };
 
 XBMC_GLOBAL_REF(CApplication,g_application);

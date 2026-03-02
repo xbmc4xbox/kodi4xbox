@@ -35,10 +35,13 @@
 #if !defined(TARGET_WINDOWS) && defined(HAS_DVD_DRIVE)
 #include "storage/DetectDVDType.h"
 #endif
+#include "pictures/SlideShowDelegator.h"
 #include "storage/MediaManager.h"
 #include "utils/FileExtensionProvider.h"
 #include "utils/log.h"
 #include "weather/WeatherManager.h"
+
+#include <memory>
 
 using namespace KODI;
 
@@ -56,17 +59,17 @@ CServiceManager::~CServiceManager()
 
 bool CServiceManager::InitForTesting()
 {
-  m_databaseManager.reset(new CDatabaseManager);
+  m_databaseManager = std::make_unique<CDatabaseManager>();
 
-  m_addonMgr.reset(new ADDON::CAddonMgr());
+  m_addonMgr = std::make_unique<ADDON::CAddonMgr>();
   if (!m_addonMgr->Init())
   {
     CLog::Log(LOGFATAL, "CServiceManager::{}: Unable to start CAddonMgr", __FUNCTION__);
     return false;
   }
 
-  m_extsMimeSupportList.reset(new ADDONS::CExtsMimeSupportList(*m_addonMgr));
-  m_fileExtensionProvider.reset(new CFileExtensionProvider(*m_addonMgr));
+  m_extsMimeSupportList = std::make_unique<ADDONS::CExtsMimeSupportList>(*m_addonMgr);
+  m_fileExtensionProvider = std::make_unique<CFileExtensionProvider>(*m_addonMgr);
 
   init_level = 1;
   return true;
@@ -88,12 +91,13 @@ bool CServiceManager::InitStageOne()
     return false;
 
 #ifdef HAS_PYTHON
-  m_XBPython.reset(new XBPython());
+  m_XBPython = std::make_unique<XBPython>();
   CScriptInvocationManager::GetInstance().RegisterLanguageInvocationHandler(m_XBPython.get(),
                                                                             ".py");
 #endif
 
-  m_playlistPlayer.reset(new PLAYLIST::CPlayListPlayer());
+  m_playlistPlayer = std::make_unique<PLAYLIST::CPlayListPlayer>();
+  m_slideShowDelegator = std::make_unique<CSlideShowDelegator>();
 
   init_level = 1;
   return true;
@@ -102,45 +106,45 @@ bool CServiceManager::InitStageOne()
 bool CServiceManager::InitStageTwo(const std::string& profilesUserDataFolder)
 {
   // Initialize the addon database (must be before the addon manager is init'd)
-  m_databaseManager.reset(new CDatabaseManager);
+  m_databaseManager = std::make_unique<CDatabaseManager>();
 
-  m_addonMgr.reset(new ADDON::CAddonMgr());
+  m_addonMgr = std::make_unique<ADDON::CAddonMgr>();
   if (!m_addonMgr->Init())
   {
     CLog::Log(LOGFATAL, "CServiceManager::{}: Unable to start CAddonMgr", __FUNCTION__);
     return false;
   }
 
-  m_repositoryUpdater.reset(new ADDON::CRepositoryUpdater(*m_addonMgr));
+  m_repositoryUpdater = std::make_unique<ADDON::CRepositoryUpdater>(*m_addonMgr);
 
-  m_extsMimeSupportList.reset(new ADDONS::CExtsMimeSupportList(*m_addonMgr));
+  m_extsMimeSupportList = std::make_unique<ADDONS::CExtsMimeSupportList>(*m_addonMgr);
 
-  m_dataCacheCore.reset(new CDataCacheCore());
+  m_dataCacheCore = std::make_unique<CDataCacheCore>();
 
-  m_binaryAddonCache.reset(new ADDON::CBinaryAddonCache());
+  m_binaryAddonCache = std::make_unique<ADDON::CBinaryAddonCache>();
   m_binaryAddonCache->Init();
 
-  m_favouritesService.reset(new CFavouritesService(profilesUserDataFolder));
+  m_favouritesService = std::make_unique<CFavouritesService>(profilesUserDataFolder);
 
-  m_serviceAddons.reset(new ADDON::CServiceAddonManager(*m_addonMgr));
+  m_serviceAddons = std::make_unique<ADDON::CServiceAddonManager>(*m_addonMgr);
 
-  m_contextMenuManager.reset(new CContextMenuManager(*m_addonMgr));
+  m_contextMenuManager = std::make_unique<CContextMenuManager>(*m_addonMgr);
 
-  m_inputManager.reset(new CInputManager());
+  m_inputManager = std::make_unique<CInputManager>();
   m_inputManager->InitializeInputs();
 
-  m_fileExtensionProvider.reset(new CFileExtensionProvider(*m_addonMgr));
+  m_fileExtensionProvider = std::make_unique<CFileExtensionProvider>(*m_addonMgr);
 
-  m_powerManager.reset(new CPowerManager());
+  m_powerManager = std::make_unique<CPowerManager>();
   m_powerManager->Initialize();
   m_powerManager->SetDefaults();
 
-  m_weatherManager.reset(new CWeatherManager());
+  m_weatherManager = std::make_unique<CWeatherManager>();
 
-  m_mediaManager.reset(new CMediaManager());
+  m_mediaManager = std::make_unique<CMediaManager>();
   m_mediaManager->Initialize();
 
-#if !defined(TARGET_WINDOWS) && defined(HAS_DVD_DRIVE)
+#if !defined(TARGET_WINDOWS) && defined(HAS_OPTICAL_DRIVE)
   m_DetectDVDType = std::make_unique<MEDIA_DETECT::CDetectDVDMedia>();
 #endif
 
@@ -158,7 +162,7 @@ bool CServiceManager::InitStageTwo(const std::string& profilesUserDataFolder)
 // stage 3 is called after successful initialization of WindowManager
 bool CServiceManager::InitStageThree(const std::shared_ptr<CProfileManager>& profileManager)
 {
-#if !defined(TARGET_WINDOWS) && defined(HAS_DVD_DRIVE)
+#if !defined(TARGET_WINDOWS) && defined(HAS_OPTICAL_DRIVE)
   // Start Thread for DVD Mediatype detection
   CLog::Log(LOGINFO, "[Media Detection] starting service for optical media detection");
   m_DetectDVDType->Create(false);
@@ -166,7 +170,7 @@ bool CServiceManager::InitStageThree(const std::shared_ptr<CProfileManager>& pro
 
   m_contextMenuManager->Init();
 
-  m_playerCoreFactory.reset(new CPlayerCoreFactory(*profileManager));
+  m_playerCoreFactory = std::make_unique<CPlayerCoreFactory>(*profileManager);
 
   if (!m_Platform->InitStageThree())
     return false;
@@ -178,7 +182,7 @@ bool CServiceManager::InitStageThree(const std::shared_ptr<CProfileManager>& pro
 void CServiceManager::DeinitStageThree()
 {
   init_level = 2;
-#if !defined(TARGET_WINDOWS) && defined(HAS_DVD_DRIVE)
+#if !defined(TARGET_WINDOWS) && defined(HAS_OPTICAL_DRIVE)
   m_DetectDVDType->StopThread();
   m_DetectDVDType.reset();
 #endif
@@ -221,6 +225,7 @@ void CServiceManager::DeinitStageOne()
   init_level = 0;
 
   m_playlistPlayer.reset();
+  m_slideShowDelegator.reset();
 #ifdef HAS_PYTHON
   CScriptInvocationManager::GetInstance().UnregisterLanguageInvocationHandler(m_XBPython.get());
   m_XBPython.reset();
@@ -269,7 +274,7 @@ XBPython& CServiceManager::GetXBPython()
 }
 #endif
 
-#if !defined(TARGET_WINDOWS) && defined(HAS_DVD_DRIVE)
+#if !defined(TARGET_WINDOWS) && defined(HAS_OPTICAL_DRIVE)
 MEDIA_DETECT::CDetectDVDMedia& CServiceManager::GetDetectDVDMedia()
 {
   return *m_DetectDVDType;
@@ -316,22 +321,6 @@ CPowerManager& CServiceManager::GetPowerManager()
   return *m_powerManager;
 }
 
-// deleters for unique_ptr
-void CServiceManager::delete_dataCacheCore::operator()(CDataCacheCore* p) const
-{
-  delete p;
-}
-
-void CServiceManager::delete_contextMenuManager::operator()(CContextMenuManager* p) const
-{
-  delete p;
-}
-
-void CServiceManager::delete_favouritesService::operator()(CFavouritesService* p) const
-{
-  delete p;
-}
-
 CWeatherManager& CServiceManager::GetWeatherManager()
 {
   return *m_weatherManager;
@@ -350,4 +339,9 @@ CDatabaseManager& CServiceManager::GetDatabaseManager()
 CMediaManager& CServiceManager::GetMediaManager()
 {
   return *m_mediaManager;
+}
+
+CSlideShowDelegator& CServiceManager::GetSlideShowDelegator()
+{
+  return *m_slideShowDelegator;
 }

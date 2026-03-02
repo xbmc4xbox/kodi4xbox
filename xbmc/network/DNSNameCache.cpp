@@ -9,7 +9,6 @@
 #include "DNSNameCache.h"
 
 #include "threads/CriticalSection.h"
-#include "utils/StringUtils.h"
 #include "utils/log.h"
 
 #include <mutex>
@@ -26,6 +25,10 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
+
+#if defined(TARGET_FREEBSD)
+#include <sys/socket.h>
+#endif
 #endif
 
 CDNSNameCache g_DNSCache;
@@ -42,28 +45,37 @@ bool CDNSNameCache::Lookup(const std::string& strHostName, std::string& strIpAdd
     return false;
 
   // first see if this is already an ip address
-  unsigned long address = inet_addr(strHostName.c_str());
+  in_addr addr4;
+  in6_addr addr6;
   strIpAddress.clear();
 
-  if (address != INADDR_NONE)
+  if (inet_pton(AF_INET, strHostName.c_str(), &addr4) ||
+      inet_pton(AF_INET6, strHostName.c_str(), &addr6))
   {
-    strIpAddress = StringUtils::Format("{}.{}.{}.{}", (address & 0xFF), (address & 0xFF00) >> 8,
-                                       (address & 0xFF0000) >> 16, (address & 0xFF000000) >> 24);
+    strIpAddress = strHostName;
     return true;
   }
 
   // check if there's a custom entry or if it's already cached
-  if(g_DNSCache.GetCached(strHostName, strIpAddress))
+  if (g_DNSCache.GetCached(strHostName, strIpAddress))
     return true;
 
   // perform dns lookup
-  struct hostent *host = gethostbyname(strHostName.c_str());
-  if (host && host->h_addr_list[0])
+  addrinfo hints{};
+  addrinfo* res;
+
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_flags |= AI_CANONNAME;
+
+  if (getaddrinfo(strHostName.c_str(), nullptr, &hints, &res) == 0)
   {
-    strIpAddress = StringUtils::Format("{}.{}.{}.{}", (unsigned char)host->h_addr_list[0][0],
-                                       (unsigned char)host->h_addr_list[0][1],
-                                       (unsigned char)host->h_addr_list[0][2],
-                                       (unsigned char)host->h_addr_list[0][3]);
+#if 0
+    strIpAddress = CNetworkBase::GetIpStr(res->ai_addr);
+#else
+    strIpAddress = "0.0.0.0";
+#endif
+    freeaddrinfo(res);
     g_DNSCache.Add(strHostName, strIpAddress);
     return true;
   }

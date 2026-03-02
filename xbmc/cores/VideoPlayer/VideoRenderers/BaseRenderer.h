@@ -8,11 +8,34 @@
 
 #pragma once
 
+#include "cores/IPlayer.h"
+#include "utils/Geometry.h"
+
+#include <utility>
+#include <vector>
+
+#define MAX_FIELDS 3
+#define NUM_BUFFERS 6
+
+class CSetting;
+struct IntegerSettingOption;
+
+enum EFIELDSYNC
+{
+  FS_NONE,
+  FS_TOP,
+  FS_BOT
+};
+
 // Render Methods
 enum RenderMethods
 {
-  RENDER_LQ_RGB_SHADER     = 0,
-  RENDER_OVERLAYS,
-  RENDER_HQ_RGB_SHADER,
-  RENDER_HQ_RGB_SHADERV2
+  RENDER_METHOD_AUTO     = 0,
+  RENDER_METHOD_GLSL,
+  RENDER_METHOD_SOFTWARE,
+  RENDER_METHOD_D3D_PS,
+  RENDER_METHOD_DXVA,
+  RENDER_OVERLAYS        = 99   // to retain compatibility
 };
+
+struct VideoPicture;

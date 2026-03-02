@@ -25,24 +25,20 @@ class CTexture;
 class CTextureDetails
 {
 public:
-  CTextureDetails()
-  {
-    id = -1;
-    width = height = 0;
-    updateable = false;
-  };
   bool operator==(const CTextureDetails &right) const
   {
     return (id    == right.id    &&
             file  == right.file  &&
             width == right.width );
   };
-  int          id;
-  std::string  file;
-  std::string  hash;
-  unsigned int width;
-  unsigned int height;
-  bool         updateable;
+
+  int id{-1};
+  std::string file;
+  std::string hash;
+  unsigned int width{0};
+  unsigned int height{0};
+  bool updateable{false};
+  bool hashRevalidated{false};
 };
 
 /*!
@@ -80,15 +76,6 @@ private:
    \return a hash string for this image
    */
   static std::string GetImageHash(const std::string &url);
-
-  /*! \brief Check whether a given URL represents an image that can be updated
-   We currently don't check http:// and https:// URLs for updates, under the assumption that
-   a image URL is much more likely to be static and the actual image at the URL is unlikely
-   to change, so no point checking all the time.
-   \param url the url to check
-   \return true if the image given by the URL should be checked for updates, false otherwise
-   */
-  bool UpdateableURL(const std::string &url) const;
 
   /*! \brief Decode an image URL to the underlying image, width, height and orientation
    \param url wrapped URL of the image

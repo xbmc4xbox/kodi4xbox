@@ -35,6 +35,7 @@
 #include "utils/URIUtils.h"
 #include "utils/log.h"
 #include "video/VideoInfoTag.h"
+#include "video/VideoManagerTypes.h"
 #include "video/VideoThumbLoader.h"
 
 #include <math.h>
@@ -317,6 +318,12 @@ bool CVideoGUIInfo::GetLabel(std::string& value, const CFileItem *item, int cont
       case LISTITEM_TAGLINE:
         value = tag->m_strTagLine;
         return true;
+      case VIDEOPLAYER_VIDEOVERSION_NAME:
+      case LISTITEM_VIDEOVERSION_NAME:
+        value = tag->GetAssetInfo().GetType() == VideoAssetType::VERSION
+                    ? tag->GetAssetInfo().GetTitle()
+                    : "";
+        return true;
       case VIDEOPLAYER_LASTPLAYED:
       case LISTITEM_LASTPLAYED:
       {
@@ -436,6 +443,20 @@ bool CVideoGUIInfo::GetLabel(std::string& value, const CFileItem *item, int cont
       case LISTITEM_VIDEO_ASPECT:
         value = CStreamDetails::VideoAspectToAspectDescription(tag->m_streamDetails.GetVideoAspect());
         return true;
+      case LISTITEM_VIDEO_WIDTH:
+      {
+        const int val = tag->m_streamDetails.GetVideoWidth();
+        if (val > 0)
+          value = std::to_string(val);
+        return true;
+      }
+      case LISTITEM_VIDEO_HEIGHT:
+      {
+        const int val = tag->m_streamDetails.GetVideoHeight();
+        if (val > 0)
+          value = std::to_string(val);
+        return true;
+      }
       case LISTITEM_AUDIO_CODEC:
         value = tag->m_streamDetails.GetAudioCodec();
         return true;
@@ -505,6 +526,25 @@ bool CVideoGUIInfo::GetLabel(std::string& value, const CFileItem *item, int cont
       case LISTITEM_VIDEO_HDR_TYPE:
         value = tag->m_streamDetails.GetVideoHdrType();
         return true;
+      case LISTITEM_LABEL:
+      {
+        //! @todo get rid of "videos with versions as folder" hack!
+
+        // special casing for "show videos with multiple versions as folders", where the label
+        // should be the video version, not the movie title.
+        if (!item->HasVideoVersions())
+          break;
+
+        CGUIWindow* videoNav{
+            CServiceBroker::GetGUI()->GetWindowManager().GetWindow(WINDOW_VIDEO_NAV)};
+        if (videoNav && videoNav->GetProperty("VideoVersionsFolderView").asBoolean() &&
+            videoNav->IsActive())
+        {
+          value = tag->GetAssetInfo().GetTitle();
+          return true;
+        }
+        break;
+      }
     }
   }
 
@@ -625,7 +665,7 @@ bool CVideoGUIInfo::GetPlaylistInfo(std::string& value, const CGUIInfo& info) co
     if (CServiceBroker::GetPlaylistPlayer().GetCurrentPlaylist() != PLAYLIST::TYPE_VIDEO)
       return false;
 
-    index = CServiceBroker::GetPlaylistPlayer().GetNextSong(index);
+    index = CServiceBroker::GetPlaylistPlayer().GetNextItemIdx(index);
   }
 
   if (index < 0 || index >= playlist.size())
@@ -745,15 +785,22 @@ bool CVideoGUIInfo::GetBool(bool& value, const CGUIListItem *gitem, int contextW
       case VIDEOPLAYER_HAS_INFO:
         value = !tag->IsEmpty();
         return true;
+      case VIDEOPLAYER_HAS_VIDEOVERSIONS:
+      case LISTITEM_HASVIDEOVERSIONS:
+        value = tag->HasVideoVersions();
+        return true;
 
       /////////////////////////////////////////////////////////////////////////////////////////////
       // LISTITEM_*
       /////////////////////////////////////////////////////////////////////////////////////////////
-      case LISTITEM_IS_RESUMABLE:
-        value = tag->GetResumePoint().timeInSeconds > 0;
-        return true;
       case LISTITEM_IS_COLLECTION:
         value = tag->m_type == MediaTypeVideoCollection;
+        return true;
+      case LISTITEM_ISVIDEOEXTRA:
+        value = (tag->GetAssetInfo().GetType() == VideoAssetType::EXTRA);
+        return true;
+      case LISTITEM_HASVIDEOEXTRAS:
+        value = tag->HasVideoExtras();
         return true;
     }
   }
@@ -804,6 +851,9 @@ bool CVideoGUIInfo::GetBool(bool& value, const CGUIListItem *gitem, int contextW
     ///////////////////////////////////////////////////////////////////////////////////////////////
     // LISTITEM_*
     ///////////////////////////////////////////////////////////////////////////////////////////////
+    case LISTITEM_IS_RESUMABLE:
+      value = item->IsResumable();
+      return true;
 #ifndef _XBOX
     case LISTITEM_IS_STEREOSCOPIC:
     {

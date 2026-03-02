@@ -70,11 +70,16 @@ public:
   bool IsExternalPlaying() const;
   bool IsRemotePlaying() const;
 
+  /*!
+   * \brief Get the name of the player in use
+   * \return the player name if a player is active, otherwise it returns an empty string
+   */
+  std::string GetName() const;
+
   // proxy calls
   void AddSubtitle(const std::string& strSubPath);
   bool CanPause() const;
   bool CanSeek() const;
-  void DoAudioWork();
   int GetAudioDelay() const;
   void GetAudioCapabilities(std::vector<int>& audioCaps) const;
   int GetAudioStream();

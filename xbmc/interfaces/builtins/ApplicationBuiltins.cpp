@@ -12,7 +12,7 @@
 #include "application/ApplicationComponents.h"
 #include "application/ApplicationPowerHandling.h"
 #include "application/ApplicationVolumeHandling.h"
-#include "input/Key.h"
+#include "input/actions/ActionIDs.h"
 #include "interfaces/AnnouncementManager.h"
 #include "messaging/ApplicationMessenger.h"
 #include "settings/AdvancedSettings.h"
@@ -44,7 +44,11 @@ static int Extract(const std::vector<std::string>& params)
     URIUtils::AddSlashAtEnd(strDestDirect);
 
     if (URIUtils::IsZIP(params[0]))
+#if 0
+      g_ZipManager.ExtractArchive(params[0],strDestDirect);
+#else
       return 0;
+#endif
     else
       CLog::Log(LOGERROR, "Extract, No archive given");
 

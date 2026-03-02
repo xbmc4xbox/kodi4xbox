@@ -9,11 +9,9 @@
 #include "VideoInfoTagLoaderFactory.h"
 
 #include "FileItem.h"
-#include "ServiceBroker.h"
 #include "VideoTagLoaderNFO.h"
 #include "VideoTagLoaderPlugin.h"
-#include "settings/Settings.h"
-#include "settings/SettingsComponent.h"
+#include "video/tags/VideoTagExtractionHelper.h"
 
 using namespace VIDEO;
 

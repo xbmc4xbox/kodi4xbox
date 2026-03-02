@@ -11,9 +11,7 @@
 #include "dialogs/GUIDialogSelect.h"
 #include "guilib/GUIDialog.h"
 
-#if 0
 class CGUIVisualisationControl;
-#endif
 class CFileItemList;
 
 class CGUIDialogVisualisationPresetList : public CGUIDialogSelect
@@ -29,8 +27,6 @@ protected:
 
 private:
   void ClearVisualisation();
-#if 0
   void SetVisualisation(CGUIVisualisationControl *addon);
   CGUIVisualisationControl* m_viz = nullptr;
-#endif
 };

@@ -59,7 +59,9 @@ bool CGUIAction::ExecuteActions() const
   return ExecuteActions(DEFAULT_CONTROL_ID, DEFAULT_CONTROL_ID);
 }
 
-bool CGUIAction::ExecuteActions(int controlID, int parentID, const CGUIListItemPtr &item /* = NULL */) const
+bool CGUIAction::ExecuteActions(int controlID,
+                                int parentID,
+                                const std::shared_ptr<CGUIListItem>& item /* = NULL */) const
 {
   if (m_actions.empty())
     return false;
@@ -121,6 +123,16 @@ void CGUIAction::SetNavigation(int id)
   m_actions.emplace_back(std::move(strId));
 }
 
+bool CGUIAction::HasConditionalActions() const
+{
+  for (const auto& i : m_actions)
+  {
+    if (i.HasCondition())
+      return true;
+  }
+  return false;
+}
+
 bool CGUIAction::HasActionsMeetingCondition() const
 {
   CGUIInfoManager& infoMgr = CServiceBroker::GetGUI()->GetInfoManager();
@@ -135,6 +147,11 @@ bool CGUIAction::HasActionsMeetingCondition() const
 bool CGUIAction::HasAnyActions() const
 {
   return m_actions.size() > 0;
+}
+
+size_t CGUIAction::GetActionCount() const
+{
+  return m_actions.size();
 }
 
 void CGUIAction::Append(const CExecutableAction& action)

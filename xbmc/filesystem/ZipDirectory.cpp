@@ -10,6 +10,7 @@
 
 #include "FileItem.h"
 #include "URL.h"
+#include "filesystem/Directorization.h"
 #include "utils/CharsetConverter.h"
 #include "utils/StringUtils.h"
 #include "utils/URIUtils.h"

@@ -18,14 +18,16 @@
 #include "URL.h"
 #include "dialogs/GUIDialogYesNo.h"
 
+#include <memory>
+
 CGUIComponent::CGUIComponent()
+  : m_pWindowManager(std::make_unique<CGUIWindowManager>()),
+    m_pTextureManager(std::make_unique<CGUITextureManager>()),
+    m_pLargeTextureManager(std::make_unique<CGUILargeTextureManager>()),
+    m_guiInfoManager(std::make_unique<CGUIInfoManager>()),
+    m_guiColorManager(std::make_unique<CGUIColorManager>()),
+    m_guiAudioManager(std::make_unique<CGUIAudioManager>())
 {
-  m_pWindowManager.reset(new CGUIWindowManager());
-  m_pTextureManager.reset(new CGUITextureManager());
-  m_pLargeTextureManager.reset(new CGUILargeTextureManager());
-  m_guiInfoManager.reset(new CGUIInfoManager());
-  m_guiColorManager.reset(new CGUIColorManager());
-  m_guiAudioManager.reset(new CGUIAudioManager());
 }
 
 CGUIComponent::~CGUIComponent()

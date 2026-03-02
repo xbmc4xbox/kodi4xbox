@@ -44,7 +44,8 @@ public:
   CGUIEditControl(int parentID, int controlID, float posX, float posY,
                   float width, float height, const CTextureInfo &textureFocus, const CTextureInfo &textureNoFocus,
                   const CLabelInfo& labelInfo, const std::string &text);
-  explicit CGUIEditControl(const CGUIButtonControl &button);
+  explicit CGUIEditControl(const CGUIButtonControl& button);
+  explicit CGUIEditControl(const CGUIEditControl& button);
   ~CGUIEditControl(void) override;
   CGUIEditControl* Clone() const override { return new CGUIEditControl(*this); }
 
@@ -81,7 +82,13 @@ protected:
   std::wstring GetDisplayedText() const;
   std::string GetDescriptionByIndex(int index) const override;
   bool SetStyledText(const std::wstring &text);
-  void RecalcLabelPosition();
+
+  /*!
+   * \brief Recalculate the text offset position for the right label
+   *        by updating m_textOffset and validate the cursor position.
+   */
+  void RecalcRightLabelPosition();
+
   void ValidateCursor();
   void UpdateText(bool sendUpdate = true);
   void OnPasteClipboard();
@@ -96,17 +103,35 @@ protected:
    */
   bool ClearMD5();
 
+  /*! \brief Append a given char to the composing cursor
+   * \param deadUnicodeKey - the unicode key that started the composing sequence
+   */
+  void ComposingCursorAppendChar(std::uint32_t deadUnicodeKey);
+  /*! \brief Reset the cursor aspect to normal input (i.e. not composing a key)
+   */
+  void ResetCursor();
+  /*! \brief Cancel the key composition
+   * \param deadUnicodeKey - the unicode key that ended/cancelled the composing sequence
+   */
+  void CancelKeyComposition(std::uint32_t deadUnicodeKey);
+  /*! \brief Check if the control is composing a key
+   * \return true if a key is being composed, false otherwise
+   */
+  bool IsComposingKey() const;
+
   std::wstring m_text2;
   std::string  m_text;
   KODI::GUILIB::GUIINFO::CGUIInfoLabel m_hintInfo;
   float m_textOffset;
-  float m_textWidth;
   CRect m_clipRect; ///< clipping rect for the second label
 
-  static const int spaceWidth = 5;
-
   unsigned int m_cursorPos;
+  bool m_cursorBlinkEnabled{true};
   unsigned int m_cursorBlink;
+  // visible cursor chars
+  std::vector<std::uint32_t> m_cursorChars{'|'};
+  // cursor char buffer
+  std::vector<std::uint32_t> m_cursorCharsBuffer{};
 
   std::string m_inputHeading;
   INPUT_TYPE m_inputType;
@@ -125,7 +150,4 @@ protected:
   std::wstring m_edit;
   int          m_editOffset;
   int          m_editLength;
-
-  static const char*        smsLetters[10];
-  static const unsigned int smsDelay;
 };

@@ -31,12 +31,12 @@
 #include "profiles/ProfileManager.h"
 #include "programs/GUIViewStatePrograms.h"
 #include "settings/MediaSourceSettings.h"
-#include "settings/SettingUtils.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 #include "settings/lib/Setting.h"
 #include "utils/URIUtils.h"
 #include "video/GUIViewStateVideo.h"
+#include "video/VideoUtils.h"
 #include "view/ViewState.h"
 
 #define PROPERTY_SORT_ORDER         "sort.order"
@@ -238,6 +238,7 @@ void CGUIViewState::GetSortMethodLabelMasks(LABEL_MASKS& masks) const
 std::vector<SortDescription> CGUIViewState::GetSortDescriptions() const
 {
   std::vector<SortDescription> descriptions;
+  descriptions.reserve(m_sortMethods.size());
   for (const auto& desc : m_sortMethods)
   {
     descriptions.emplace_back(desc.m_sortDescription);
@@ -419,7 +420,7 @@ VECSOURCES& CGUIViewState::GetSources()
 void CGUIViewState::AddLiveTVSources()
 {
   VECSOURCES *sources = CMediaSourceSettings::GetInstance().GetSources("video");
-  for (IVECSOURCES it = sources->begin(); it != sources->end(); it++)
+  for (IVECSOURCES it = sources->begin(); it != sources->end(); ++it)
   {
     if (URIUtils::IsLiveTV((*it).strPath))
     {
@@ -450,24 +451,7 @@ bool CGUIViewState::AutoPlayNextVideoItem() const
   if (GetPlaylist() != PLAYLIST::TYPE_VIDEO)
     return false;
 
-  int settingValue(-1);
-  if (m_items.GetContent() == "musicvideos")
-    settingValue = SETTING_AUTOPLAYNEXT_MUSICVIDEOS;
-  else if (m_items.GetContent() == "tvshows")
-    settingValue = SETTING_AUTOPLAYNEXT_TVSHOWS;
-  else if (m_items.GetContent() == "episodes")
-    settingValue = SETTING_AUTOPLAYNEXT_EPISODES;
-  else if (m_items.GetContent() == "movies")
-    settingValue = SETTING_AUTOPLAYNEXT_MOVIES;
-  else
-    settingValue = SETTING_AUTOPLAYNEXT_UNCATEGORIZED;
-
-  const auto setting = std::dynamic_pointer_cast<CSettingList>(
-      CServiceBroker::GetSettingsComponent()->GetSettings()->GetSetting(
-          CSettings::SETTING_VIDEOPLAYER_AUTOPLAYNEXTITEM));
-
-  return settingValue >= 0 && setting != nullptr &&
-         CSettingUtils::FindIntInList(setting, settingValue);
+  return VIDEO_UTILS::IsAutoPlayNextItem(m_items.GetContent());
 }
 
 void CGUIViewState::LoadViewState(const std::string &path, int windowID)

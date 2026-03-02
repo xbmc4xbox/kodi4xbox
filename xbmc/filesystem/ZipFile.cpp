@@ -20,10 +20,16 @@ using namespace XFILE;
 
 CZipFile::CZipFile()
 {
+  m_szStringBuffer = NULL;
+  m_szStartOfStringBuffer = NULL;
+  m_iDataInStringBuffer = 0;
+  m_bCached = false;
+  m_iRead = -1;
 }
 
 CZipFile::~CZipFile()
 {
+  delete[] m_szStringBuffer;
   Close();
 }
 

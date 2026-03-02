@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2018 Team Kodi
+ *  Copyright (C) 2005-2024 Team Kodi
  *  This file is part of Kodi - https://kodi.tv
  *
  *  SPDX-License-Identifier: GPL-2.0-or-later
@@ -8,9 +8,7 @@
 
 #include "InputManager.h"
 
-#include "ButtonTranslator.h"
 #include "ServiceBroker.h"
-#include "XBMC_vkeys.h"
 #include "application/Application.h"
 #include "application/ApplicationComponents.h"
 #include "application/ApplicationPowerHandling.h"
@@ -19,7 +17,11 @@
 #include "guilib/GUIControl.h"
 #include "guilib/GUIWindow.h"
 #include "guilib/GUIWindowManager.h"
-#include "input/Key.h"
+#include "input/actions/Action.h"
+#include "input/actions/ActionIDs.h"
+#include "input/keyboard/Key.h"
+#include "input/keyboard/KeyIDs.h"
+#include "input/keymaps/ButtonTranslator.h"
 #include "messaging/ApplicationMessenger.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
@@ -38,7 +40,7 @@ using namespace KODI;
 const std::string CInputManager::SETTING_INPUT_ENABLE_CONTROLLER = "input.enablejoystick";
 
 CInputManager::CInputManager()
-  : m_buttonTranslator(new CButtonTranslator)
+  : m_buttonTranslator(new KEYMAP::CButtonTranslator)
 {
   // Register settings
   std::set<std::string> settingSet;
@@ -94,9 +96,8 @@ void CInputManager::QueueAction(const CAction& action)
   if (action.IsAnalog())
   {
     m_queuedActions.erase(std::remove_if(m_queuedActions.begin(), m_queuedActions.end(),
-                                         [&action](const CAction& queuedAction) {
-                                           return action.GetID() == queuedAction.GetID();
-                                         }),
+                                         [&action](const CAction& queuedAction)
+                                         { return action.GetID() == queuedAction.GetID(); }),
                           m_queuedActions.end());
   }
 

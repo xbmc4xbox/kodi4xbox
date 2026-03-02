@@ -11,7 +11,8 @@
 #include "FileItem.h"
 #include "GUIListItemLayout.h"
 #include "GUIMessage.h"
-#include "input/Key.h"
+#include "input/actions/Action.h"
+#include "input/actions/ActionIDs.h"
 
 CGUIWrappingListContainer::CGUIWrappingListContainer(int parentID, int controlID, float posX, float posY, float width, float height, ORIENTATION orientation, const CScroller& scroller, int preloadItems, int fixedPosition)
     : CGUIBaseContainer(parentID, controlID, posX, posY, width, height, orientation, scroller, preloadItems)
@@ -130,7 +131,7 @@ void CGUIWrappingListContainer::ValidateOffset()
       // add additional copies of items, as we require extras at render time
       for (unsigned int i = 0; i < numItems; i++)
       {
-        m_items.push_back(CGUIListItemPtr(m_items[i]->Clone()));
+        m_items.push_back(std::shared_ptr<CGUIListItem>(m_items[i]->Clone()));
         m_extraItems++;
       }
     }

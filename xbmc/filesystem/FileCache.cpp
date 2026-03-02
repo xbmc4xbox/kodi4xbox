@@ -11,7 +11,7 @@
 #include "CircularCache.h"
 #include "ServiceBroker.h"
 #include "URL.h"
-#include "settings/AdvancedSettings.h"
+#include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 #include "threads/Thread.h"
 #include "utils/log.h"
@@ -24,7 +24,6 @@
 
 #include <algorithm>
 #include <cassert>
-#include <chrono>
 #include <inttypes.h>
 #include <memory>
 
@@ -33,17 +32,14 @@
 #endif
 
 using namespace XFILE;
-using namespace std::chrono_literals;
 
 class CWriteRate
 {
 public:
-  CWriteRate()
+  CWriteRate() : m_stamp(std::chrono::steady_clock::now()), m_time(std::chrono::milliseconds(0))
   {
-    m_stamp = std::chrono::steady_clock::now();
     m_pos   = 0;
     m_size = 0;
-    m_time = std::chrono::milliseconds(0);
   }
 
   void Reset(int64_t pos, bool bResetAll = true)
@@ -80,22 +76,8 @@ private:
   int64_t  m_size;
 };
 
-
 CFileCache::CFileCache(const unsigned int flags)
-  : CThread("FileCache"),
-    m_seekPossible(0),
-    m_nSeekResult(0),
-    m_seekPos(0),
-    m_readPos(0),
-    m_writePos(0),
-    m_chunkSize(0),
-    m_writeRate(0),
-    m_writeRateActual(0),
-    m_writeRateLowSpeed(0),
-    m_forwardCacheSize(0),
-    m_bFilling(false),
-    m_fileSize(0),
-    m_flags(flags)
+  : CThread("FileCache"), m_fileSize(0), m_flags(flags)
 {
 }
 
@@ -119,13 +101,22 @@ bool CFileCache::Open(const CURL& url)
 
   CLog::Log(LOGDEBUG, "CFileCache::{} - <{}> opening", __FUNCTION__, m_sourcePath);
 
-  // opening the source file.
-  if (!m_source.Open(url.Get(), READ_NO_CACHE | READ_TRUNCATED | READ_CHUNKED))
+  // Opening the source file.
+  // The READ_NO_CACHE and READ_NO_BUFFER flags are required to avoid create other intances of
+  // FileCache or StreamBuffer since CFile::Open is called again in loop
+  if (!m_source.Open(url.Get(), READ_NO_CACHE | READ_TRUNCATED | READ_NO_BUFFER))
   {
     CLog::Log(LOGERROR, "CFileCache::{} - <{}> failed to open", __FUNCTION__, m_sourcePath);
     Close();
     return false;
   }
+
+  const auto settings = CServiceBroker::GetSettingsComponent()->GetSettings();
+  if (!settings)
+    return false;
+
+  const unsigned int cacheMemSize =
+      settings->GetInt(CSettings::SETTING_FILECACHE_MEMORYSIZE) * 1024 * 1024;
 
   m_source.IoControl(IOCTRL_SET_CACHE, this);
 
@@ -136,9 +127,8 @@ bool CFileCache::Open(const CURL& url)
   m_seekPossible = m_source.IoControl(IOCTRL_SEEK_POSSIBLE, NULL);
 
   // Determine the best chunk size we can use
-  m_chunkSize = CFile::DetermineChunkSize(
-      m_source.GetChunkSize(),
-      CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_cacheChunkSize);
+  m_chunkSize = CFile::DetermineChunkSize(m_source.GetChunkSize(),
+                                          settings->GetInt(CSettings::SETTING_FILECACHE_CHUNKSIZE));
   CLog::Log(LOGDEBUG,
             "CFileCache::{} - <{}> source chunk size is {}, setting cache chunk size to {}",
             __FUNCTION__, m_sourcePath, m_source.GetChunkSize(), m_chunkSize);
@@ -147,16 +137,17 @@ bool CFileCache::Open(const CURL& url)
 
   if (!m_pCache)
   {
-    if (CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_cacheMemSize == 0)
+    if (cacheMemSize == 0)
     {
       // Use cache on disk
-      m_pCache = std::unique_ptr<CSimpleFileCache>(new CSimpleFileCache()); // C++14 - Replace with std::make_unique
+      m_pCache = std::make_unique<CSimpleFileCache>();
       m_forwardCacheSize = 0;
+      m_maxForward = m_fileSize;
     }
     else
     {
       size_t cacheSize;
-      if (m_fileSize > 0 && m_fileSize < CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_cacheMemSize && !(m_flags & READ_AUDIO_VIDEO))
+      if (m_fileSize > 0 && m_fileSize < cacheMemSize && !(m_flags & READ_AUDIO_VIDEO))
       {
         // Cap cache size by filesize, but not for audio/video files as those may grow.
         // We don't need to take into account READ_MULTI_STREAM here as that's only used for audio/video
@@ -168,7 +159,7 @@ bool CFileCache::Open(const CURL& url)
       }
       else
       {
-        cacheSize = CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_cacheMemSize;
+        cacheSize = cacheMemSize;
 
         // NOTE: READ_MULTI_STREAM is only used with READ_AUDIO_VIDEO
         if (m_flags & READ_MULTI_STREAM)
@@ -192,14 +183,15 @@ bool CFileCache::Open(const CURL& url)
       const size_t back = cacheSize / 4;
       const size_t front = cacheSize - back;
 
-      m_pCache = std::unique_ptr<CCircularCache>(new CCircularCache(front, back)); // C++14 - Replace with std::make_unique
+      m_pCache = std::make_unique<CCircularCache>(front, back);
       m_forwardCacheSize = front;
+      m_maxForward = m_forwardCacheSize;
     }
 
     if (m_flags & READ_MULTI_STREAM)
     {
       // If READ_MULTI_STREAM flag is set: Double buffering is required
-      m_pCache = std::unique_ptr<CDoubleCache>(new CDoubleCache(m_pCache.release())); // C++14 - Replace with std::make_unique
+      m_pCache = std::make_unique<CDoubleCache>(m_pCache.release());
     }
   }
 
@@ -242,6 +234,14 @@ void CFileCache::Process()
               m_sourcePath);
     return;
   }
+
+  const auto settings = CServiceBroker::GetSettingsComponent()->GetSettings();
+  if (!settings)
+    return;
+
+  float readFactor = settings->GetInt(CSettings::SETTING_FILECACHE_READFACTOR) / 100.0f;
+
+  const bool useAdaptativeReadFactor = (readFactor < 1.0f);
 
   CWriteRate limiter;
   CWriteRate average;
@@ -293,18 +293,26 @@ void CFileCache::Process()
       m_seekEnded.Set();
     }
 
+    // variable read factor based on cache level
+    if (useAdaptativeReadFactor)
+    {
+      // cache level [0.0 - 1.0]
+      const double level = static_cast<double>(m_writePos - m_readPos) / m_maxForward;
+      readFactor = static_cast<float>(level * -2.5 + 4.0); // read factor [4.0x - 1.5x]
+    }
+
     while (m_writeRate)
     {
-      if (m_writePos - m_readPos < m_writeRate * CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_cacheReadFactor)
+      if (m_writePos - m_readPos < m_writeRate * readFactor)
       {
         limiter.Reset(m_writePos);
         break;
       }
 
-      if (limiter.Rate(m_writePos) < m_writeRate * CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_cacheReadFactor)
+      if (limiter.Rate(m_writePos) < m_writeRate * readFactor)
         break;
 
-      if (m_seekEvent.Wait(100ms))
+      if (m_seekEvent.Wait(m_processWait))
       {
         if (!m_bStop)
           m_seekEvent.Set();
@@ -609,6 +617,7 @@ int CFileCache::IoControl(EIoControl request, void* param)
   if (request == IOCTRL_CACHE_STATUS)
   {
     SCacheStatus* status = (SCacheStatus*)param;
+    status->maxforward = m_maxForward;
     status->forward = m_pCache->WaitForData(0, 0ms);
     status->maxrate = m_writeRate;
     status->currate = m_writeRateActual;
@@ -620,6 +629,18 @@ int CFileCache::IoControl(EIoControl request, void* param)
   if (request == IOCTRL_CACHE_SETRATE)
   {
     m_writeRate = *static_cast<uint32_t*>(param);
+
+    const double mBits = m_writeRate / 1024.0 / 1024.0 * 8.0; // Mbit/s
+
+    // calculates wait time inversely proportional to the bitrate
+    // and limited between 30 - 100 ms
+    const int wait = std::clamp(static_cast<int>(110.0 - mBits), 30, 100);
+
+    m_processWait = std::chrono::milliseconds(wait);
+
+    CLog::Log(LOGDEBUG,
+              "CFileCache::IoControl - setting maxRate to {:.2f} Mbit/s with processWait of {} ms",
+              mBits, wait);
     return 0;
   }
 

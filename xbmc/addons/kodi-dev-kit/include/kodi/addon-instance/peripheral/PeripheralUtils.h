@@ -178,7 +178,7 @@ public:
     m_cStructure->provides_joystick_rumble = providesJoystickRumble;
   }
 
-    /// @brief To get with @ref SetProvidesJoystickRumble changed values.
+  /// @brief To get with @ref SetProvidesJoystickRumble changed values.
   bool GetProvidesJoystickRumble() const { return m_cStructure->provides_joystick_rumble; }
 
   /// @brief Set true if the add-on provides power off about joystick.
@@ -257,6 +257,20 @@ public:
 
   /// @brief Destructor.
   virtual ~Peripheral(void) = default;
+
+  /// @brief Comparison operator
+  ///
+  /// @note The index is not included in the comparison because it is affected
+  ///       by the presence of other peripherals
+  bool operator==(const Peripheral& rhs) const
+  {
+    // clang-format off
+    return m_type == rhs.m_type &&
+           m_strName == rhs.m_strName &&
+           m_vendorId == rhs.m_vendorId &&
+           m_productId == rhs.m_productId;
+    // clang-format on
+  }
 
   /// @brief Get peripheral type.
   ///
@@ -635,6 +649,21 @@ public:
       m_supportsPowerOff = rhs.m_supportsPowerOff;
     }
     return *this;
+  }
+
+  /// @brief Comparison operator
+  bool operator==(const Joystick& rhs) const
+  {
+    // clang-format off
+    return Peripheral::operator==(rhs) &&
+           m_provider == rhs.m_provider &&
+           m_requestedPort == rhs.m_requestedPort &&
+           m_buttonCount == rhs.m_buttonCount &&
+           m_hatCount == rhs.m_hatCount &&
+           m_axisCount == rhs.m_axisCount &&
+           m_motorCount == rhs.m_motorCount &&
+           m_supportsPowerOff == rhs.m_supportsPowerOff;
+    // clang-format on
   }
 
   /// @brief Get provider name.
@@ -1234,7 +1263,7 @@ public:
 
   /// @brief Get all primitives on this class (as constant).
   ///
-  /// @return Constant a´rray list of primitives
+  /// @return Constant array list of primitives
   const std::array<DriverPrimitive, JOYSTICK_PRIMITIVE_MAX>& Primitives() const
   {
     return m_primitives;

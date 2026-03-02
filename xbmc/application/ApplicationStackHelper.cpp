@@ -74,12 +74,12 @@ bool CApplicationStackHelper::InitializeStack(const CFileItem & item)
     SetRegisteredStack(GetStackPartFileItem(i), stack);
     SetRegisteredStackPartNumber(GetStackPartFileItem(i), i);
   }
-  m_currentStackIsDiscImageStack = CFileItem(CStackDirectory::GetFirstStackedFile(item.GetPath()), false).IsDiscImage();
+  m_currentStackIsDiscImageStack = URIUtils::IsDiscImageStack(item.GetDynPath());
 
   return true;
 }
 
-int CApplicationStackHelper::InitializeStackStartPartAndOffset(const CFileItem& item)
+std::optional<int> CApplicationStackHelper::InitializeStackStartPartAndOffset(const CFileItem& item)
 {
   CVideoDatabase dbs;
   int64_t startoffset = 0;
@@ -162,7 +162,7 @@ int CApplicationStackHelper::InitializeStackStartPartAndOffset(const CFileItem& 
         if (!CDVDFileInfo::GetFileDuration(GetStackPartFileItem(i).GetPath(), duration))
         {
           m_currentStack->Clear();
-          return false;
+          return std::nullopt;
         }
         totalTimeMs += duration;
         // set end time in every part

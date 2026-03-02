@@ -196,6 +196,19 @@ std::string URIUtils::GetFileName(const std::string& strFileNameAndPath)
   return strFileNameAndPath.substr(slash+1);
 }
 
+std::string URIUtils::GetFileOrFolderName(const std::string& path)
+{
+  std::string temp = path;
+
+  char ch = path[path.size() - 1];
+  if (ch == '/' || ch == '\\')
+  {
+    temp = path.substr(0, path.size() - 1);
+  }
+
+  return temp.substr(temp.find_last_of("/\\") + 1);
+}
+
 void URIUtils::Split(const std::string& strFileNameAndPath,
                      std::string& strPath, std::string& strFileName)
 {
@@ -231,7 +244,7 @@ void URIUtils::Split(const std::string& strFileNameAndPath,
       else i--;
     }
     if (i > 0)
-      strFileName = strFileName.substr(0, i);
+      strFileName.resize(i);
   }
 }
 
@@ -640,16 +653,16 @@ bool URIUtils::IsOnDVD(const std::string& strFile)
   return false;
 }
 
-bool URIUtils::IsOnLAN(const std::string& strPath)
+bool URIUtils::IsOnLAN(const std::string& strPath, LanCheckMode lanCheckMode)
 {
   if(IsMultiPath(strPath))
-    return IsOnLAN(CMultiPathDirectory::GetFirstPath(strPath));
+    return IsOnLAN(CMultiPathDirectory::GetFirstPath(strPath), lanCheckMode);
 
   if(IsStack(strPath))
-    return IsOnLAN(CStackDirectory::GetFirstStackedFile(strPath));
+    return IsOnLAN(CStackDirectory::GetFirstStackedFile(strPath), lanCheckMode);
 
   if(IsSpecial(strPath))
-    return IsOnLAN(CSpecialProtocol::TranslatePath(strPath));
+    return IsOnLAN(CSpecialProtocol::TranslatePath(strPath), lanCheckMode);
 
   if(IsPlugin(strPath))
     return false;
@@ -659,14 +672,14 @@ bool URIUtils::IsOnLAN(const std::string& strPath)
 
   CURL url(strPath);
   if (HasParentInHostname(url))
-    return IsOnLAN(url.GetHostName());
+    return IsOnLAN(url.GetHostName(), lanCheckMode);
 
   if(!IsRemote(strPath))
     return false;
 
   const std::string& host = url.GetHostName();
 
-  return IsHostOnLAN(host);
+  return IsHostOnLAN(host, lanCheckMode);
 }
 
 static bool addr_match(uint32_t addr, const char* target, const char* submask)
@@ -676,7 +689,7 @@ static bool addr_match(uint32_t addr, const char* target, const char* submask)
   return (addr & mask) == (addr2 & mask);
 }
 
-bool URIUtils::IsHostOnLAN(const std::string& host, bool offLineCheck)
+bool URIUtils::IsHostOnLAN(const std::string& host, LanCheckMode lanCheckMode)
 {
   if(host.length() == 0)
     return false;
@@ -696,7 +709,9 @@ bool URIUtils::IsHostOnLAN(const std::string& host, bool offLineCheck)
 
   if(address != INADDR_NONE)
   {
-    if (offLineCheck) // check if in private range, ref https://en.wikipedia.org/wiki/Private_network
+    if (lanCheckMode ==
+        LanCheckMode::
+            ANY_PRIVATE_SUBNET) // check if in private range, ref https://en.wikipedia.org/wiki/Private_network
     {
       if (
         addr_match(address, "192.168.0.0", "255.255.0.0") ||
@@ -845,6 +860,16 @@ bool URIUtils::IsZIP(const std::string& strFile) // also checks for comic books!
 bool URIUtils::IsArchive(const std::string& strFile)
 {
   return HasExtension(strFile, ".zip|.rar|.apk|.cbz|.cbr");
+}
+
+bool URIUtils::IsDiscImage(const std::string& file)
+{
+  return HasExtension(file, ".img|.iso|.nrg|.udf");
+}
+
+bool URIUtils::IsDiscImageStack(const std::string& file)
+{
+  return IsStack(file) && IsDiscImage(CStackDirectory::GetFirstStackedFile(file));
 }
 
 bool URIUtils::IsSpecial(const std::string& strFile)

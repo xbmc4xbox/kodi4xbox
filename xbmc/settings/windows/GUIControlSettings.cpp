@@ -124,8 +124,7 @@ static bool GetIntegerOptions(const SettingConstPtr& setting,
       const TranslatableIntegerSettingOptions& settingOptions =
           pSettingInt->GetTranslatableOptions();
       for (const auto& option : settingOptions)
-        options.push_back(
-            IntegerSettingOption(Localize(option.label, localizer, option.addonId), option.value));
+        options.emplace_back(Localize(option.label, localizer, option.addonId), option.value);
       break;
     }
 
@@ -163,7 +162,7 @@ static bool GetIntegerOptions(const SettingConstPtr& setting,
         else
           strLabel = StringUtils::Format(control->GetFormatString(), i);
 
-        options.push_back(IntegerSettingOption(strLabel, i));
+        options.emplace_back(strLabel, i);
       }
 
       break;
@@ -230,7 +229,7 @@ static bool GetStringOptions(const SettingConstPtr& setting,
       const TranslatableStringSettingOptions& settingOptions =
           pSettingString->GetTranslatableOptions();
       for (const auto& option : settingOptions)
-        options.push_back(StringSettingOption(Localize(option.first, localizer), option.second));
+        options.emplace_back(Localize(option.first, localizer), option.second);
       break;
     }
 
@@ -295,11 +294,7 @@ static bool GetStringOptions(const SettingConstPtr& setting,
 CGUIControlBaseSetting::CGUIControlBaseSetting(int id,
                                                std::shared_ptr<CSetting> pSetting,
                                                ILocalizer* localizer)
-  : m_id(id),
-    m_pSetting(std::move(pSetting)),
-    m_localizer(localizer),
-    m_delayed(false),
-    m_valid(true)
+  : m_id(id), m_pSetting(std::move(pSetting)), m_localizer(localizer)
 {
 }
 
@@ -1304,7 +1299,7 @@ CGUIControlEditSetting::CGUIControlEditSetting(CGUIEditControl* pEdit,
   else if (controlFormat == "md5")
     inputType = CGUIEditControl::INPUT_TYPE_PASSWORD_MD5;
 
-  m_pEdit->SetInputType(inputType, heading);
+  m_pEdit->SetInputType(inputType, localizer ? CVariant{localizer->Localize(heading)} : heading);
 
   // this will automatically trigger validation so it must be executed after
   // having set the value of the control based on the value of the setting

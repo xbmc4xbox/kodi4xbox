@@ -16,10 +16,12 @@
 #include "GUIWindowManager.h"
 #include "ServiceBroker.h"
 #include "input/InputManager.h"
-#include "input/Key.h"
+#include "input/actions/Action.h"
+#include "input/actions/ActionIDs.h"
 #include "utils/log.h"
 
-using namespace KODI::GUILIB;
+using namespace KODI;
+using namespace GUILIB;
 
 CGUIControl::CGUIControl()
 {
@@ -557,34 +559,15 @@ bool CGUIControl::HitTest(const CPoint &point) const
   return m_hitRect.PtInRect(point);
 }
 
-EVENT_RESULT CGUIControl::SendMouseEvent(const CPoint &point, const CMouseEvent &event)
+EVENT_RESULT CGUIControl::SendMouseEvent(const CPoint& point, const MOUSE::CMouseEvent& event)
 {
-  CPoint childPoint(point);
-  m_transform.InverseTransformPosition(childPoint.x, childPoint.y);
-  if (!CanFocusFromPoint(childPoint))
-    return EVENT_RESULT_UNHANDLED;
-
-  bool handled = event.m_id != ACTION_MOUSE_MOVE || OnMouseOver(childPoint);
-  EVENT_RESULT ret = OnMouseEvent(childPoint, event);
-  if (ret)
-    return ret;
-  return (handled && (event.m_id == ACTION_MOUSE_MOVE)) ? EVENT_RESULT_HANDLED : EVENT_RESULT_UNHANDLED;
+  return EVENT_RESULT_UNHANDLED;
 }
 
 // override this function to implement custom mouse behaviour
 bool CGUIControl::OnMouseOver(const CPoint &point)
 {
-#if 0
-  if (CServiceBroker::GetInputManager().GetMouseState() != MOUSE_STATE_DRAG)
-    CServiceBroker::GetInputManager().SetMouseState(MOUSE_STATE_FOCUS);
-  if (!CanFocus()) return false;
-  if (!HasFocus())
-  {
-    CGUIMessage msg(GUI_MSG_SETFOCUS, GetParentID(), GetID());
-    OnMessage(msg);
-  }
-#endif
-  return true;
+  return false;
 }
 
 void CGUIControl::UpdateVisibility(const CGUIListItem *item)

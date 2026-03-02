@@ -49,7 +49,7 @@ using namespace std::chrono_literals;
 #define FITS_INT(a) (((a) <= INT_MAX) && ((a) >= INT_MIN))
 
 #if 0
-curl_proxytype proxyType2CUrlProxyType[] = {
+long proxyType2CUrlProxyType[] = {
     CURLPROXY_HTTP,   CURLPROXY_SOCKS4,          CURLPROXY_SOCKS4A,
     CURLPROXY_SOCKS5, CURLPROXY_SOCKS5_HOSTNAME, CURLPROXY_HTTPS,
 };
@@ -392,8 +392,14 @@ long CCurlFile::CReadState::Connect(unsigned int size)
       return -1;
   }
 
+#if LIBCURL_VERSION_NUM >= 0x073700 // CURL_AT_LEAST_VERSION(0, 7, 55)
+  curl_off_t length;
+  if (CURLE_OK ==
+      g_curlInterface.easy_getinfo(m_easyHandle, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &length))
+#else
   double length;
   if (CURLE_OK == g_curlInterface.easy_getinfo(m_easyHandle, CURLINFO_CONTENT_LENGTH_DOWNLOAD, &length))
+#endif
   {
     if (length < 0)
       length = 0.0;
@@ -607,6 +613,8 @@ void CCurlFile::SetCommonOptions(CReadState* state, bool failOnError /* = true *
       g_curlInterface.easy_setopt(h, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
     else if( m_httpauth == "ntlm" )
       g_curlInterface.easy_setopt(h, CURLOPT_HTTPAUTH, CURLAUTH_NTLM);
+    else if (m_httpauth == "basic")
+      g_curlInterface.easy_setopt(h, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
     else
       bAuthSet = false;
   }
@@ -1639,8 +1647,14 @@ int CCurlFile::Stat(const CURL& url, struct __stat64* buffer)
     return -1;
   }
 
+#if LIBCURL_VERSION_NUM >= 0x073700 // CURL_AT_LEAST_VERSION(0, 7, 55)
+  curl_off_t length;
+  result = g_curlInterface.easy_getinfo(m_state->m_easyHandle, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T,
+                                        &length);
+#else
   double length;
   result = g_curlInterface.easy_getinfo(m_state->m_easyHandle, CURLINFO_CONTENT_LENGTH_DOWNLOAD, &length);
+#endif
   if (result != CURLE_OK || length < 0.0)
   {
     if (url.IsProtocol("ftp"))
@@ -1801,6 +1815,7 @@ int8_t CCurlFile::CReadState::FillBuffer(unsigned int want)
             if ( (msg->data.result == CURLE_OPERATION_TIMEDOUT ||
                   msg->data.result == CURLE_PARTIAL_FILE       ||
                   msg->data.result == CURLE_COULDNT_CONNECT    ||
+                  msg->data.result == CURLE_HTTP2_STREAM       ||
                   msg->data.result == CURLE_RECV_ERROR)        &&
                   !m_bFirstLoop)
             {
@@ -2206,8 +2221,9 @@ double CCurlFile::GetDownloadSpeed()
 {
 #if 0
 #if LIBCURL_VERSION_NUM >= 0x073a00 // 0.7.58.0
-  double speed = 0.0;
-  if (g_curlInterface.easy_getinfo(m_state->m_easyHandle, CURLINFO_SPEED_DOWNLOAD, &speed) == CURLE_OK)
+  curl_off_t speed = 0;
+  if (g_curlInterface.easy_getinfo(m_state->m_easyHandle, CURLINFO_SPEED_DOWNLOAD_T, &speed) ==
+      CURLE_OK)
     return speed;
 #else
   double time = 0.0, size = 0.0;

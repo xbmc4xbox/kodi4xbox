@@ -105,7 +105,7 @@ bool CApplicationPlayer::OpenFile(const CFileItem& item, const CPlayerOptions& o
     if (player->m_name != newPlayer)
       needToClose = true;
 
-    if (player->m_type != "video")
+    if (player->m_type != "video" && player->m_type != "remote")
       needToClose = true;
 
     if (needToClose)
@@ -542,13 +542,6 @@ void CApplicationPlayer::FrameAdvance(int frames)
   std::shared_ptr<IPlayer> player = GetInternal();
   if (player)
     player->FrameAdvance(frames);
-}
-
-void CApplicationPlayer::DoAudioWork()
-{
-  std::shared_ptr<IPlayer> player = GetInternal();
-  if (player)
-    player->DoAudioWork();
 }
 
 std::string CApplicationPlayer::GetPlayerState()
@@ -994,6 +987,16 @@ bool CApplicationPlayer::IsRemotePlaying() const
       return true;
   }
   return false;
+}
+
+std::string CApplicationPlayer::GetName() const
+{
+  const std::shared_ptr<const IPlayer> player = GetInternal();
+  if (player)
+  {
+    return player->m_name;
+  }
+  return {};
 }
 
 CVideoSettings CApplicationPlayer::GetVideoSettings() const

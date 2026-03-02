@@ -55,6 +55,7 @@ class CGUIFontTTFBase;
 #define XBFONT_CENTER_Y   0x00000004 ///< Align Y center
 #define XBFONT_TRUNCATED  0x00000008 ///< Truncated text
 #define XBFONT_JUSTIFIED  0x00000010 ///< Justify text
+#define XBFONT_TRUNCATED_LEFT 0x00000020 ///< Truncated text from left (text start with ellipses)
 /// @}
 
 // flags for font style. lower 16 bits are the unicode code

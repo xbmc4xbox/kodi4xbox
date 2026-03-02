@@ -8,19 +8,24 @@
 
 #include "ProfileManager.h"
 
+#include "ContextMenuManager.h" //! @todo Remove me
 #include "DatabaseManager.h"
 #include "FileItem.h"
 #include "GUIInfoManager.h"
 #include "GUIPassword.h"
 #include "PasswordManager.h"
+#include "PlayListPlayer.h" //! @todo Remove me
 #include "ServiceBroker.h"
 #include "Util.h"
+#include "addons/AddonManager.h" //! @todo Remove me
+#include "addons/Service.h" //! @todo Remove me
 #include "addons/Skin.h"
 #include "application/Application.h" //! @todo Remove me
 #include "application/ApplicationComponents.h"
 #include "application/ApplicationPowerHandling.h"
 #include "dialogs/GUIDialogKaiToast.h"
 #include "dialogs/GUIDialogYesNo.h"
+#include "favourites/FavouritesService.h" //! @todo Remove me
 #include "filesystem/Directory.h"
 #include "filesystem/DirectoryCache.h"
 #include "filesystem/File.h"
@@ -33,21 +38,10 @@
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 #include "settings/lib/SettingsManager.h"
-#include "threads/SingleLock.h"
-
-#include <algorithm>
-#include <mutex>
-#include <string>
-#include <vector>
-#if !defined(TARGET_WINDOWS) && defined(HAS_DVD_DRIVE)
+#if !defined(TARGET_WINDOWS) && defined(HAS_OPTICAL_DRIVE)
 #include "storage/DetectDVDType.h"
 #endif
-#include "ContextMenuManager.h" //! @todo Remove me
-#include "PlayListPlayer.h" //! @todo Remove me
-#include "addons/AddonManager.h" //! @todo Remove me
-#include "addons/Service.h" //! @todo Remove me
-#include "application/Application.h" //! @todo Remove me
-#include "favourites/FavouritesService.h" //! @todo Remove me
+#include "threads/SingleLock.h"
 #include "utils/FileUtils.h"
 #include "utils/StringUtils.h"
 #include "utils/URIUtils.h"
@@ -56,6 +50,12 @@
 #include "utils/log.h"
 #include "video/VideoLibraryQueue.h" //! @todo Remove me
 #include "weather/WeatherManager.h" //! @todo Remove me
+
+#include <algorithm>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <vector>
 
 //! @todo
 //! eventually the profile should dictate where special://masterprofile/ is
@@ -338,7 +338,7 @@ bool CProfileManager::LoadProfile(unsigned int index)
   CPasswordManager::GetInstance().Clear();
 
   // to set labels - shares are reloaded
-#if !defined(TARGET_WINDOWS) && defined(HAS_DVD_DRIVE)
+#if !defined(TARGET_WINDOWS) && defined(HAS_OPTICAL_DRIVE)
   MEDIA_DETECT::CDetectDVDMedia::UpdateState();
 #endif
 
@@ -468,7 +468,8 @@ bool CProfileManager::DeleteProfile(unsigned int index)
     m_settings->Save();
   }
 
-  CFileItemPtr item = CFileItemPtr(new CFileItem(URIUtils::AddFileToFolder(GetUserDataFolder(), strDirectory)));
+  CFileItemPtr item =
+      std::make_shared<CFileItem>(URIUtils::AddFileToFolder(GetUserDataFolder(), strDirectory));
   item->SetPath(URIUtils::AddFileToFolder(GetUserDataFolder(), strDirectory + "/"));
   item->m_bIsFolder = true;
   item->Select(true);

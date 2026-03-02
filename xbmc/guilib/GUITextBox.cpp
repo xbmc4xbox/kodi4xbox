@@ -227,8 +227,6 @@ void CGUITextBox::Render()
     // alignment correction
     if (alignment & XBFONT_CENTER_X)
       posX += m_width * 0.5f;
-    if (alignment & XBFONT_RIGHT)
-      posX += m_width;
 
     if (m_font)
     {
@@ -241,10 +239,14 @@ void CGUITextBox::Render()
 
       while (posY < m_posY + m_renderHeight && current < (int)m_lines.size())
       {
+        const CGUIString& lineString = m_lines[current];
         uint32_t align = alignment;
-        if (m_lines[current].m_text.size() && m_lines[current].m_carriageReturn)
+
+        if (lineString.m_text.size() && lineString.m_carriageReturn)
           align &= ~XBFONT_JUSTIFIED; // last line of a paragraph shouldn't be justified
-        m_font->DrawText(posX, posY, m_colors, m_label.shadowColor, m_lines[current].m_text, align, m_width);
+
+        m_font->DrawText(posX, posY, m_colors, m_label.shadowColor, lineString.m_text, align,
+                         m_width);
         posY += m_itemHeight;
         current++;
       }

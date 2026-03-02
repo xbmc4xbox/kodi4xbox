@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2018 Team Kodi
+ *  Copyright (C) 2005-2024 Team Kodi
  *  This file is part of Kodi - https://kodi.tv
  *
  *  SPDX-License-Identifier: GPL-2.0-or-later
@@ -8,27 +8,35 @@
 
 #pragma once
 
-#include "input/Key.h"
 #include "input/actions/Action.h"
-#include "interfaces/IActionListener.h"
+#include "input/actions/interfaces/IActionListener.h"
 #include "settings/lib/ISettingCallback.h"
 #include "threads/CriticalSection.h"
 #include "utils/Observer.h"
+#include "input/keyboard/Key.h"
 
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
 
-class CButtonTranslator;
 class CKey;
 class CProfileManager;
+
+namespace KODI
+{
+namespace KEYMAP
+{
+class CButtonTranslator;
+} // namespace KEYMAP
+} // namespace KODI
 
 /// \addtogroup input
 /// \{
 
 /*!
- * \ingroup input keyboard mouse touch joystick
+ * \ingroup input keyboard mouse touch joystick keymap
+ *
  * \brief Main input processing class.
  *
  * This class consolidates all input generated from different sources such as
@@ -37,7 +45,9 @@ class CProfileManager;
  * \copydoc keyboard
  * \copydoc mouse
  */
-class CInputManager : public ISettingCallback, public IActionListener, public Observable
+class CInputManager : public ISettingCallback,
+                      public KODI::ACTION::IActionListener,
+                      public Observable
 {
 public:
   CInputManager();
@@ -189,7 +199,7 @@ private:
   CCriticalSection m_actionMutex;
 
   // Button translation
-  std::unique_ptr<CButtonTranslator> m_buttonTranslator;
+  std::unique_ptr<KODI::KEYMAP::CButtonTranslator> m_buttonTranslator;
 
   // Input state
   bool m_enableController = true;

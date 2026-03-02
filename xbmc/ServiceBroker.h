@@ -61,7 +61,7 @@ class CLog;
 class CPlatform;
 class CTextureCache;
 class CJobManager;
-class CKeyboardLayoutManager;
+class CSlideShowDelegator;
 
 namespace KODI
 {
@@ -69,6 +69,11 @@ namespace ADDONS
 {
 class CExtsMimeSupportList;
 }
+
+namespace KEYBOARD
+{
+class CKeyboardLayoutManager;
+} // namespace KEYBOARD
 } // namespace KODI
 
 class CServiceBroker
@@ -93,6 +98,7 @@ public:
   static CDataCacheCore& GetDataCacheCore();
   static CPlatform& GetPlatform();
   static PLAYLIST::CPlayListPlayer& GetPlaylistPlayer();
+  static CSlideShowDelegator& GetSlideShowDelegator();
   static CFavouritesService& GetFavouritesService();
   static ADDON::CServiceAddonManager& GetServiceAddons();
   static ADDON::CRepositoryUpdater& GetRepositoryUpdater();
@@ -138,22 +144,23 @@ public:
   static std::shared_ptr<KODI::MESSAGING::CApplicationMessenger> GetAppMessenger();
 
   static void RegisterKeyboardLayoutManager(
-      const std::shared_ptr<CKeyboardLayoutManager>& keyboardLayoutManager);
+      const std::shared_ptr<KODI::KEYBOARD::CKeyboardLayoutManager>& keyboardLayoutManager);
   static void UnregisterKeyboardLayoutManager();
-  static std::shared_ptr<CKeyboardLayoutManager> GetKeyboardLayoutManager();
+  static std::shared_ptr<KODI::KEYBOARD::CKeyboardLayoutManager> GetKeyboardLayoutManager();
 
 private:
   std::shared_ptr<CAppParams> m_appParams;
   std::unique_ptr<CLog> m_logging;
   std::shared_ptr<ANNOUNCEMENT::CAnnouncementManager> m_pAnnouncementManager;
-  CGUIComponent* m_pGUI;
-  CWinSystemBase* m_pWinSystem;
+  CGUIComponent* m_pGUI = nullptr;
+  CWinSystemBase* m_pWinSystem = nullptr;
   std::shared_ptr<CSettingsComponent> m_pSettingsComponent;
   std::shared_ptr<CCPUInfo> m_cpuInfo;
   std::shared_ptr<CTextureCache> m_textureCache;
   std::shared_ptr<CJobManager> m_jobManager;
   std::shared_ptr<KODI::MESSAGING::CApplicationMessenger> m_appMessenger;
-  std::shared_ptr<CKeyboardLayoutManager> m_keyboardLayoutManager;
+  std::shared_ptr<KODI::KEYBOARD::CKeyboardLayoutManager> m_keyboardLayoutManager;
+  std::shared_ptr<CSlideShowDelegator> m_slideshowDelegator;
 };
 
 XBMC_GLOBAL_REF(CServiceBroker, g_serviceBroker);

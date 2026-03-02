@@ -18,7 +18,8 @@
 #include "filesystem/PlaylistFileDirectory.h"
 #include "guilib/GUIKeyboardFactory.h"
 #include "guilib/LocalizeStrings.h"
-#include "input/Key.h"
+#include "input/actions/Action.h"
+#include "input/actions/ActionIDs.h"
 #include "music/MusicUtils.h"
 #include "playlists/PlayListM3U.h"
 #include "settings/Settings.h"
@@ -240,7 +241,7 @@ void CGUIWindowMusicPlaylistEditor::PlayItem(int iItem)
   if (m_vecItems->IsVirtualDirectoryRoot() && !m_vecItems->Get(iItem)->IsDVD())
     return;
 
-#ifdef HAS_DVD_DRIVE
+#ifdef HAS_OPTICAL_DRIVE
   if (m_vecItems->Get(iItem)->IsDVD())
     MEDIA_DETECT::CAutorun::PlayDiscAskResume(m_vecItems->Get(iItem)->GetPath());
   else
@@ -342,7 +343,7 @@ void CGUIWindowMusicPlaylistEditor::OnLoadPlaylist()
   // Prompt user for file to load from music playlists folder
   std::string playlist;
   if (CGUIDialogFileBrowser::ShowAndGetFile("special://musicplaylists/",
-                                            ".m3u|.pls|.b4s|.wpl|.xspf", g_localizeStrings.Get(656),
+                                            ".m3u|.m3u8|.pls|.b4s|.wpl|.xspf", g_localizeStrings.Get(656),
                                             playlist))
     LoadPlaylist(playlist);
 }
@@ -371,16 +372,20 @@ void CGUIWindowMusicPlaylistEditor::OnSavePlaylist()
 {
   // saves playlist to the playlist folder
   std::string name = URIUtils::GetFileName(m_strLoadedPlaylist);
-  URIUtils::RemoveExtension(name);
+  std::string extension = URIUtils::GetExtension(m_strLoadedPlaylist);
+  if (extension.empty())
+    extension = ".m3u8";
+  else
+    URIUtils::RemoveExtension(name);
 
   if (CGUIKeyboardFactory::ShowAndGetInput(name, CVariant{g_localizeStrings.Get(16012)}, false))
-  { // save playlist as an .m3u
+  {
     PLAYLIST::CPlayListM3U playlist;
     playlist.Add(*m_playlist);
     std::string path = URIUtils::AddFileToFolder(
       CServiceBroker::GetSettingsComponent()->GetSettings()->GetString(CSettings::SETTING_SYSTEM_PLAYLISTSPATH),
       "music",
-      name + ".m3u");
+      name + extension);
 
     playlist.Save(path);
     m_strLoadedPlaylist = name;
@@ -400,6 +405,9 @@ void CGUIWindowMusicPlaylistEditor::AppendToPlaylist(CFileItemList &newItems)
 
 void CGUIWindowMusicPlaylistEditor::OnSourcesContext()
 {
+  static constexpr int CONTEXT_BUTTON_QUEUE_ITEM = 0;
+  static constexpr int CONTEXT_BUTTON_BROWSE_INTO = 1;
+
   CFileItemPtr item = GetCurrentListItem();
   CContextButtons buttons;
   if (item->IsFileFolder(EFILEFOLDER_MASK_ONBROWSE))
@@ -432,19 +440,4 @@ void CGUIWindowMusicPlaylistEditor::OnPlaylistContext()
     OnMovePlaylistItem(item, 1);
   else if (btnid == CONTEXT_BUTTON_DELETE)
     OnDeletePlaylistItem(item);
-}
-
-bool CGUIWindowMusicPlaylistEditor::OnContextButton(int itemNumber, CONTEXT_BUTTON button)
-{
-  switch (button)
-  {
-    case CONTEXT_BUTTON_QUEUE_ITEM:
-      OnQueueItem(itemNumber);
-      return true;
-
-    default:
-      break;
-  }
-
-  return CGUIWindowMusicBase::OnContextButton(itemNumber, button);
 }

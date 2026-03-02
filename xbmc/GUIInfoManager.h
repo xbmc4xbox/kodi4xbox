@@ -24,7 +24,6 @@ class CFileItem;
 class CVideoInfoTag;
 
 class CGUIListItem;
-typedef std::shared_ptr<CGUIListItem> CGUIListItemPtr;
 
 namespace KODI
 {
@@ -95,7 +94,7 @@ public:
    */
   bool EvaluateBool(const std::string& expression,
                     int context,
-                    const CGUIListItemPtr& item = nullptr);
+                    const std::shared_ptr<CGUIListItem>& item = nullptr);
 
   int TranslateString(const std::string &strCondition);
   int TranslateSingleString(const std::string &strCondition, bool &listItemDependent);

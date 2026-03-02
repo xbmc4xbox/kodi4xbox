@@ -20,9 +20,6 @@
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
-#if defined(TARGET_DARWIN_OSX)
-#include "platform/darwin/osx/smc.h"
-#endif
 #include "guilib/guiinfo/GUIInfo.h"
 #include "guilib/guiinfo/GUIInfoHelper.h"
 #include "guilib/guiinfo/GUIInfoLabels.h"
@@ -37,16 +34,18 @@
 #include "storage/discs/IDiscDriveHandler.h"
 #include "utils/AlarmClock.h"
 #include "utils/CPUInfo.h"
+#include "utils/GpuInfo.h"
 #include "utils/StringUtils.h"
 #include "utils/SystemInfo.h"
 #include "utils/TimeUtils.h"
+#include "windowing/WinSystem.h"
 #include "windows/GUIMediaWindow.h"
 
 using namespace KODI::GUILIB;
 using namespace KODI::GUILIB::GUIINFO;
 
 CSystemGUIInfo::CSystemGUIInfo()
-: m_lastSysHeatInfoTime(-SYSTEM_HEAT_UPDATE_INTERVAL)
+  : m_gpuInfo(CGPUInfo::GetGPUInfo()), m_lastSysHeatInfoTime(-SYSTEM_HEAT_UPDATE_INTERVAL)
 {
 }
 
@@ -55,10 +54,11 @@ std::string CSystemGUIInfo::GetSystemHeatInfo(int info) const
   if (CTimeUtils::GetFrameTime() - m_lastSysHeatInfoTime >= SYSTEM_HEAT_UPDATE_INTERVAL)
   {
     m_lastSysHeatInfoTime = CTimeUtils::GetFrameTime();
-#if defined(TARGET_POSIX)
     CServiceBroker::GetCPUInfo()->GetTemperature(m_cpuTemp);
-    m_gpuTemp = GetGPUTemperature();
-#endif
+    if (m_gpuInfo)
+    {
+      m_gpuInfo->GetTemperature(m_gpuTemp);
+    }
   }
 
   std::string text;
@@ -83,38 +83,6 @@ std::string CSystemGUIInfo::GetSystemHeatInfo(int info) const
       break;
   }
   return text;
-}
-
-CTemperature CSystemGUIInfo::GetGPUTemperature() const
-{
-  int value = 0;
-  char scale = 0;
-
-#if defined(TARGET_DARWIN_OSX)
-  value = SMCGetTemperature(SMC_KEY_GPU_TEMP);
-  return CTemperature::CreateFromCelsius(value);
-#elif defined(TARGET_WINDOWS_STORE) || defined(_XBOX)
-  return CTemperature::CreateFromCelsius(0);
-#else
-  std::string cmd = CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_gpuTempCmd;
-  int ret = 0;
-  FILE* p = NULL;
-
-  if (cmd.empty() || !(p = popen(cmd.c_str(), "r")))
-    return CTemperature();
-
-  ret = fscanf(p, "%d %c", &value, &scale);
-  pclose(p);
-
-  if (ret != 2)
-    return CTemperature();
-#endif
-
-  if (scale == 'C' || scale == 'c')
-    return CTemperature::CreateFromCelsius(value);
-  if (scale == 'F' || scale == 'f')
-    return CTemperature::CreateFromFahrenheit(value);
-  return CTemperature();
 }
 
 void CSystemGUIInfo::UpdateFPS()
@@ -167,7 +135,13 @@ bool CSystemGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
       value = GetSystemHeatInfo(info.m_info);
       return true;
     case SYSTEM_VIDEO_ENCODER_INFO:
+    case NETWORK_IP_ADDRESS:
     case NETWORK_MAC_ADDRESS:
+    case NETWORK_SUBNET_MASK:
+    case NETWORK_GATEWAY_ADDRESS:
+    case NETWORK_DNS1_ADDRESS:
+    case NETWORK_DNS2_ADDRESS:
+    case NETWORK_LINK_STATE:
     case SYSTEM_OS_VERSION_INFO:
     case SYSTEM_CPUFREQUENCY:
     case SYSTEM_INTERNET_STATE:
@@ -257,7 +231,7 @@ bool CSystemGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
     case SYSTEM_FPS:
       value = StringUtils::Format("{:02.2f}", m_fps);
       return true;
-#ifdef HAS_DVD_DRIVE
+#ifdef HAS_OPTICAL_DRIVE
     case SYSTEM_DVD_LABEL:
       value = CServiceBroker::GetMediaManager().GetDiskLabel();
       return true;
@@ -336,85 +310,36 @@ bool CSystemGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
 #endif
     case SYSTEM_SUPPORTED_HDR_TYPES:
     {
+      value = "Not Available";
       return true;
     }
 
-    ///////////////////////////////////////////////////////////////////////////////////////////////
-    // NETWORK_*
-    ///////////////////////////////////////////////////////////////////////////////////////////////
-#if 0
-    case NETWORK_IP_ADDRESS:
+    case SYSTEM_LOCALE_TIMEZONECOUNTRY:
     {
-      CNetworkInterface* iface = CServiceBroker::GetNetwork().GetFirstConnectedInterface();
-      if (iface)
-      {
-        value = iface->GetCurrentIPAddress();
-        return true;
-      }
-      break;
-    }
-    case NETWORK_SUBNET_MASK:
-    {
-      CNetworkInterface* iface = CServiceBroker::GetNetwork().GetFirstConnectedInterface();
-      if (iface)
-      {
-        value = iface->GetCurrentNetmask();
-        return true;
-      }
-      break;
-    }
-    case NETWORK_GATEWAY_ADDRESS:
-    {
-      CNetworkInterface* iface = CServiceBroker::GetNetwork().GetFirstConnectedInterface();
-      if (iface)
-      {
-        value = iface->GetCurrentDefaultGateway();
-        return true;
-      }
-      break;
-    }
-    case NETWORK_DNS1_ADDRESS:
-    {
-      const std::vector<std::string> nss = CServiceBroker::GetNetwork().GetNameServers();
-      if (nss.size() >= 1)
-      {
-        value = nss[0];
-        return true;
-      }
-      break;
-    }
-    case NETWORK_DNS2_ADDRESS:
-    {
-      const std::vector<std::string> nss = CServiceBroker::GetNetwork().GetNameServers();
-      if (nss.size() >= 2)
-      {
-        value = nss[1];
-        return true;
-      }
-      break;
-    }
-    case NETWORK_DHCP_ADDRESS:
-    {
-      // wtf?
-      std::string dhcpserver;
-      value = dhcpserver;
+      value = CServiceBroker::GetSettingsComponent()->GetSettings()->GetString(
+          CSettings::SETTING_LOCALE_TIMEZONECOUNTRY);
       return true;
     }
-    case NETWORK_LINK_STATE:
+
+    case SYSTEM_LOCALE_TIMEZONE:
     {
-      std::string linkStatus = g_localizeStrings.Get(151);
-      linkStatus += " ";
-      CNetworkInterface* iface = CServiceBroker::GetNetwork().GetFirstConnectedInterface();
-      if (iface && iface->IsConnected())
-        linkStatus += g_localizeStrings.Get(15207);
-      else
-        linkStatus += g_localizeStrings.Get(15208);
-      value = linkStatus;
+      value = CServiceBroker::GetSettingsComponent()->GetSettings()->GetString(
+          CSettings::SETTING_LOCALE_TIMEZONE);
       return true;
     }
-#endif
+
+    case SYSTEM_LOCALE_REGION:
+    {
+      value = g_langInfo.GetCurrentRegion();
+      return true;
+    }
+
+    case SYSTEM_LOCALE:
+    {
+      value = g_langInfo.GetRegionLocale();
+      return true;
+    }
   }
-
   return false;
 }
 
@@ -529,11 +454,18 @@ bool CSystemGUIInfo::GetBool(bool& value, const CGUIListItem *gitem, int context
       value = false;
 #endif
       return true;
+    case SYSTEM_PLATFORM_WEBOS:
+#if defined(TARGET_WEBOS)
+      value = true;
+#else
+      value = false;
+#endif
+      return true;
     case SYSTEM_MEDIA_DVD:
       value = CServiceBroker::GetMediaManager().IsDiscInDrive();
       return true;
     case SYSTEM_MEDIA_AUDIO_CD:
-    #ifdef HAS_DVD_DRIVE
+#ifdef HAS_OPTICAL_DRIVE
       if (CServiceBroker::GetMediaManager().IsDiscInDrive())
       {
         MEDIA_DETECT::CCdInfo* pCdInfo = CServiceBroker::GetMediaManager().GetCdInfo();
@@ -545,7 +477,7 @@ bool CSystemGUIInfo::GetBool(bool& value, const CGUIListItem *gitem, int context
         value = false;
       }
       return true;
-#ifdef HAS_DVD_DRIVE
+#ifdef HAS_OPTICAL_DRIVE
     case SYSTEM_DVDREADY:
       value = CServiceBroker::GetMediaManager().GetDriveStatus() != DriveState::NOT_READY;
       return true;

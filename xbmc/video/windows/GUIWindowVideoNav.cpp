@@ -22,7 +22,8 @@
 #include "guilib/GUIKeyboardFactory.h"
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
-#include "input/Key.h"
+#include "input/actions/Action.h"
+#include "input/actions/ActionIDs.h"
 #include "messaging/ApplicationMessenger.h"
 #include "messaging/helpers/DialogOKHelper.h"
 #include "music/MusicDatabase.h"
@@ -137,8 +138,7 @@ bool CGUIWindowVideoNav::OnMessage(CGUIMessage& message)
             i = -1;
             if (url.GetOption("showinfo") == "true")
             {
-              ADDON::ScraperPtr scrapper;
-              OnItemInfo(*pItem, scrapper);
+              OnItemInfo(*pItem);
             }
             break;
           }
@@ -158,8 +158,7 @@ bool CGUIWindowVideoNav::OnMessage(CGUIMessage& message)
               if (!item.GetVideoInfoTag()->IsEmpty())
               {
                 item.SetPath(item.GetVideoInfoTag()->m_strFileNameAndPath);
-                ADDON::ScraperPtr scrapper;
-                OnItemInfo(item, scrapper);
+                OnItemInfo(item);
               }
             }
           }
@@ -492,14 +491,16 @@ bool CGUIWindowVideoNav::GetDirectory(const std::string &strDirectory, CFileItem
     }
 
     CVideoDbUrl videoUrl;
-    if (videoUrl.FromString(items.GetPath()) && items.GetContent() == "tags" &&
-       !items.Contains("newtag://" + videoUrl.GetType()))
+    if (videoUrl.FromString(items.GetPath()))
     {
-      CFileItemPtr newTag(new CFileItem("newtag://" + videoUrl.GetType(), false));
-      newTag->SetLabel(g_localizeStrings.Get(20462));
-      newTag->SetLabelPreformatted(true);
-      newTag->SetSpecialSort(SortSpecialOnTop);
-      items.Add(newTag);
+      if (items.GetContent() == "tags" && !items.Contains("newtag://" + videoUrl.GetType()))
+      {
+        const auto newTag{std::make_shared<CFileItem>("newtag://" + videoUrl.GetType(), false)};
+        newTag->SetLabel(g_localizeStrings.Get(20462));
+        newTag->SetLabelPreformatted(true);
+        newTag->SetSpecialSort(SortSpecialOnTop);
+        items.Add(newTag);
+      }
     }
   }
   return bResult;
@@ -580,93 +581,89 @@ bool CGUIWindowVideoNav::GetFilteredItems(const std::string &filter, CFileItemLi
 void CGUIWindowVideoNav::DoSearch(const std::string& strSearch, CFileItemList& items)
 {
   CFileItemList tempItems;
-  const std::string& strGenre = g_localizeStrings.Get(515); // Genre
-  const std::string& strActor = g_localizeStrings.Get(20337); // Actor
-  const std::string& strDirector = g_localizeStrings.Get(20339); // Director
 
-  //get matching names
-  m_database.GetMoviesByName(strSearch, tempItems);
-  AppendAndClearSearchItems(tempItems, "[" + g_localizeStrings.Get(20338) + "] ", items);
-
-  m_database.GetEpisodesByName(strSearch, tempItems);
-  AppendAndClearSearchItems(tempItems, "[" + g_localizeStrings.Get(20359) + "] ", items);
-
-  m_database.GetTvShowsByName(strSearch, tempItems);
-  AppendAndClearSearchItems(tempItems, "[" + g_localizeStrings.Get(20364) + "] ", items);
-
-  m_database.GetMusicVideosByName(strSearch, tempItems);
-  AppendAndClearSearchItems(tempItems, "[" + g_localizeStrings.Get(20391) + "] ", items);
-
-  m_database.GetMusicVideosByAlbum(strSearch, tempItems);
-  AppendAndClearSearchItems(tempItems, "[" + g_localizeStrings.Get(558) + "] ", items);
-
-  // get matching genres
-  m_database.GetMovieGenresByName(strSearch, tempItems);
-  AppendAndClearSearchItems(tempItems, "[" + strGenre + " - " + g_localizeStrings.Get(20342) + "] ", items);
-
-  m_database.GetTvShowGenresByName(strSearch, tempItems);
-  AppendAndClearSearchItems(tempItems, "[" + strGenre + " - " + g_localizeStrings.Get(20343) + "] ", items);
-
-  m_database.GetMusicVideoGenresByName(strSearch, tempItems);
-  AppendAndClearSearchItems(tempItems, "[" + strGenre + " - " + g_localizeStrings.Get(20389) + "] ", items);
-
-  //get actors/artists
-  m_database.GetMovieActorsByName(strSearch, tempItems);
-  AppendAndClearSearchItems(tempItems, "[" + strActor + " - " + g_localizeStrings.Get(20342) + "] ", items);
-
-  m_database.GetTvShowsActorsByName(strSearch, tempItems);
-  AppendAndClearSearchItems(tempItems, "[" + strActor + " - " + g_localizeStrings.Get(20343) + "] ", items);
-
-  m_database.GetMusicVideoArtistsByName(strSearch, tempItems);
-  AppendAndClearSearchItems(tempItems, "[" + strActor + " - " + g_localizeStrings.Get(20389) + "] ", items);
-
-  //directors
-  m_database.GetMovieDirectorsByName(strSearch, tempItems);
-  AppendAndClearSearchItems(tempItems, "[" + strDirector + " - " + g_localizeStrings.Get(20342) + "] ", items);
-
-  m_database.GetTvShowsDirectorsByName(strSearch, tempItems);
-  AppendAndClearSearchItems(tempItems, "[" + strDirector + " - " + g_localizeStrings.Get(20343) + "] ", items);
-
-  m_database.GetMusicVideoDirectorsByName(strSearch, tempItems);
-  AppendAndClearSearchItems(tempItems, "[" + strDirector + " - " + g_localizeStrings.Get(20389) + "] ", items);
-
-  //plot
-  m_database.GetEpisodesByPlot(strSearch, tempItems);
-  AppendAndClearSearchItems(tempItems, "[" + g_localizeStrings.Get(20365) + "] ", items);
-
-  m_database.GetMoviesByPlot(strSearch, tempItems);
-  AppendAndClearSearchItems(tempItems, "[" + g_localizeStrings.Get(20323) + "] ", items);
-}
-
-void CGUIWindowVideoNav::PlayItem(int iItem)
-{
-  // unlike additemtoplaylist, we need to check the items here
-  // before calling it since the current playlist will be stopped
-  // and cleared!
-
-  // root is not allowed
-  if (m_vecItems->IsVirtualDirectoryRoot())
-    return;
-
-  CGUIWindowVideoBase::PlayItem(iItem);
-}
-
-bool CGUIWindowVideoNav::OnItemInfo(const CFileItem& fileItem, ADDON::ScraperPtr& scraper)
-{
-  if (!scraper || scraper->Content() == CONTENT_NONE)
+  struct Entry
   {
-    m_database.Open(); // since we can be called from the music library without being inited
-    if (fileItem.IsVideoDb())
-      scraper = m_database.GetScraperForPath(fileItem.GetVideoInfoTag()->m_strPath);
-    else
+    int id;
+    std::function<void()> func;
+    int prefix = 0;
+  };
+
+  const auto entries = std::array{
+      Entry{20338,
+            [&strSearch, &tempItems, this]() { m_database.GetMoviesByName(strSearch, tempItems); }},
+      Entry{20359, [&strSearch, &tempItems,
+                    this]() { m_database.GetEpisodesByName(strSearch, tempItems); }},
+      Entry{20364, [&strSearch, &tempItems,
+                    this]() { m_database.GetTvShowsByName(strSearch, tempItems); }},
+      Entry{20391, [&strSearch, &tempItems,
+                    this]() { m_database.GetMusicVideosByName(strSearch, tempItems); }},
+      Entry{558, [&strSearch, &tempItems,
+                  this]() { m_database.GetMusicVideosByAlbum(strSearch, tempItems); }},
+      Entry{20342,
+            [&strSearch, &tempItems, this]() {
+              m_database.GetMovieGenresByName(strSearch, tempItems);
+            },
+            515},
+      Entry{20343,
+            [&strSearch, &tempItems, this]() {
+              m_database.GetTvShowGenresByName(strSearch, tempItems);
+            },
+            515},
+      Entry{20389,
+            [&strSearch, &tempItems, this]() {
+              m_database.GetMusicVideoGenresByName(strSearch, tempItems);
+            },
+            515},
+      Entry{20342,
+            [&strSearch, &tempItems, this]() {
+              m_database.GetMovieActorsByName(strSearch, tempItems);
+            },
+            20337},
+      Entry{20343,
+            [&strSearch, &tempItems, this]() {
+              m_database.GetTvShowsActorsByName(strSearch, tempItems);
+            },
+            20337},
+      Entry{20389,
+            [&strSearch, &tempItems, this]() {
+              m_database.GetMusicVideoArtistsByName(strSearch, tempItems);
+            },
+            20337},
+      Entry{20342,
+            [&strSearch, &tempItems, this]() {
+              m_database.GetMovieDirectorsByName(strSearch, tempItems);
+            },
+            20339},
+      Entry{20343,
+            [&strSearch, &tempItems, this]() {
+              m_database.GetTvShowsDirectorsByName(strSearch, tempItems);
+            },
+            20339},
+      Entry{20389,
+            [&strSearch, &tempItems, this]() {
+              m_database.GetMusicVideoDirectorsByName(strSearch, tempItems);
+            },
+            20339},
+      Entry{20365, [&strSearch, &tempItems,
+                    this]() { m_database.GetEpisodesByPlot(strSearch, tempItems); }},
+      Entry{20323,
+            [&strSearch, &tempItems, this]() { m_database.GetMoviesByPlot(strSearch, tempItems); }},
+  };
+
+  std::for_each(entries.begin(), entries.end(), [this, &items, &tempItems](const auto& entry) {
+    entry.func();
+    std::string msg;
+    if (entry.prefix > 0)
     {
-      std::string strPath,strFile;
-      URIUtils::Split(fileItem.GetPath(),strPath,strFile);
-      scraper = m_database.GetScraperForPath(strPath);
+      msg = fmt::format("[{} - {}] ", g_localizeStrings.Get(entry.prefix),
+                        g_localizeStrings.Get(entry.id));
     }
-    m_database.Close();
-  }
-  return CGUIWindowVideoBase::OnItemInfo(fileItem, scraper);
+    else
+      msg = fmt::format("[{}] ", g_localizeStrings.Get(entry.id));
+
+    this->AppendAndClearSearchItems(tempItems, msg, items);
+  });
 }
 
 void CGUIWindowVideoNav::OnDeleteItem(const CFileItemPtr& pItem)
@@ -676,10 +673,8 @@ void CGUIWindowVideoNav::OnDeleteItem(const CFileItemPtr& pItem)
 
   if (!m_vecItems->IsVideoDb() && !pItem->IsVideoDb())
   {
-    if (!pItem->IsPath("newsmartplaylist://video") &&
-        !pItem->IsPath("special://videoplaylists/") &&
-        !pItem->IsPath("sources://video/") &&
-        !URIUtils::IsProtocol(pItem->GetPath(), "newtag"))
+    if (!pItem->IsPath("newsmartplaylist://video") && !pItem->IsPath("special://videoplaylists/") &&
+        !pItem->IsPath("sources://video/") && !URIUtils::IsProtocol(pItem->GetPath(), "newtag"))
       CGUIWindowVideoBase::OnDeleteItem(pItem);
   }
   else if (StringUtils::StartsWithNoCase(pItem->GetPath(), "videodb://movies/sets/") &&
@@ -691,7 +686,8 @@ void CGUIWindowVideoNav::OnDeleteItem(const CFileItemPtr& pItem)
       return;
 
     pDialog->SetHeading(CVariant{432});
-    std::string strLabel = StringUtils::Format(g_localizeStrings.Get(433), pItem->GetLabel());
+    std::string strLabel = StringUtils::Format(
+        g_localizeStrings.Get(pItem->HasVideoVersions() ? 40021 : 433), pItem->GetLabel());
     pDialog->SetLine(1, CVariant{std::move(strLabel)});
     pDialog->SetLine(2, CVariant{""});
     pDialog->Open();
@@ -818,13 +814,9 @@ void CGUIWindowVideoNav::GetContextButtons(int itemNumber, CContextButtons &butt
         {
           buttons.Add(CONTEXT_BUTTON_SCAN, 13349);
         }
-
         if (node == NODE_TYPE_ACTOR && !dir.IsAllItem(item->GetPath()) && item->m_bIsFolder)
         {
-          if (StringUtils::StartsWithNoCase(m_vecItems->GetPath(), "videodb://musicvideos")) // mvids
-            buttons.Add(CONTEXT_BUTTON_SET_ARTIST_THUMB, 13359);
-          else
-            buttons.Add(CONTEXT_BUTTON_SET_ACTOR_THUMB, 20403);
+          buttons.Add(CONTEXT_BUTTON_SET_ART, 13511); // Choose art
         }
       }
 
@@ -858,6 +850,17 @@ void CGUIWindowVideoNav::GetContextButtons(int itemNumber, CContextButtons &butt
   }
 }
 
+bool CGUIWindowVideoNav::OnPopupMenu(int iItem)
+{
+  if (iItem >= 0 && iItem < m_vecItems->Size())
+  {
+    const auto item = m_vecItems->Get(iItem);
+    item->SetProperty("CheckAutoPlayNextItem", true);
+  }
+
+  return CGUIWindowVideoBase::OnPopupMenu(iItem);
+}
+
 bool CGUIWindowVideoNav::OnContextButton(int itemNumber, CONTEXT_BUTTON button)
 {
   CFileItemPtr item;
@@ -879,7 +882,9 @@ bool CGUIWindowVideoNav::OnContextButton(int itemNumber, CONTEXT_BUTTON button)
   {
   case CONTEXT_BUTTON_EDIT:
     {
-      CONTEXT_BUTTON ret = (CONTEXT_BUTTON)CGUIDialogVideoInfo::ManageVideoItem(item);
+      const CONTEXT_BUTTON ret{
+          static_cast<CONTEXT_BUTTON>(CGUIDialogVideoInfo::ManageVideoItem(item))};
+
       if (ret != CONTEXT_BUTTON_CANCELLED)
       {
         Refresh(true);
@@ -891,19 +896,11 @@ bool CGUIWindowVideoNav::OnContextButton(int itemNumber, CONTEXT_BUTTON button)
       }
       return true;
     }
-
-  case CONTEXT_BUTTON_SET_ACTOR_THUMB:
-  case CONTEXT_BUTTON_SET_ARTIST_THUMB:
+    case CONTEXT_BUTTON_SET_ART:
     {
-      std::string type = MediaTypeSeason;
-      if (button == CONTEXT_BUTTON_SET_ACTOR_THUMB)
-        type = "actor";
-      else if (button == CONTEXT_BUTTON_SET_ARTIST_THUMB)
-        type = MediaTypeArtist;
-
-      bool result = CGUIDialogVideoInfo::ManageVideoItemArtwork(m_vecItems->Get(itemNumber), type);
+      const bool result{
+          CGUIDialogVideoInfo::ChooseAndManageVideoItemArtwork(m_vecItems->Get(itemNumber))};
       Refresh();
-
       return result;
     }
   case CONTEXT_BUTTON_GO_TO_ARTIST:
@@ -955,29 +952,7 @@ bool CGUIWindowVideoNav::OnAddMediaSource()
 bool CGUIWindowVideoNav::OnClick(int iItem, const std::string &player)
 {
   CFileItemPtr item = m_vecItems->Get(iItem);
-  if (!item->m_bIsFolder && item->IsVideoDb() && !item->Exists())
-  {
-    CLog::Log(LOGDEBUG, "{} called on '{}' but file doesn't exist", __FUNCTION__, item->GetPath());
-
-    const std::shared_ptr<CProfileManager> profileManager = CServiceBroker::GetSettingsComponent()->GetProfileManager();
-
-    if (profileManager->GetCurrentProfile().canWriteDatabases() || g_passwordManager.bMasterUser)
-    {
-      if (!CGUIDialogVideoInfo::DeleteVideoItemFromDatabase(item, true))
-        return true;
-
-      // update list
-      Refresh(true);
-      m_viewControl.SetSelectedItem(iItem);
-      return true;
-    }
-    else
-    {
-      HELPERS::ShowOKDialogText(CVariant{257}, CVariant{662});
-      return true;
-    }
-  }
-  else if (StringUtils::StartsWithNoCase(item->GetPath(), "newtag://"))
+  if (StringUtils::StartsWithNoCase(item->GetPath(), "newtag://"))
   {
     // dont allow update while scanning
     if (CVideoLibraryQueue::GetInstance().IsScanningLibrary())
@@ -997,7 +972,7 @@ bool CGUIWindowVideoNav::OnClick(int iItem, const std::string &player)
 
     // get the media type and convert from plural to singular (by removing the trailing "s")
     std::string mediaType = item->GetPath().substr(9);
-    mediaType = mediaType.substr(0, mediaType.size() - 1);
+    mediaType.pop_back();
     std::string localizedType = CGUIDialogVideoInfo::GetLocalizedVideoType(mediaType);
     if (localizedType.empty())
       return true;
@@ -1032,70 +1007,45 @@ bool CGUIWindowVideoNav::OnClick(int iItem, const std::string &player)
 
 std::string CGUIWindowVideoNav::GetStartFolder(const std::string &dir)
 {
-  std::string lower(dir); StringUtils::ToLower(lower);
-  if (lower == "moviegenres")
-    return "videodb://movies/genres/";
-  else if (lower == "movietitles")
-    return "videodb://movies/titles/";
-  else if (lower == "movieyears")
-    return "videodb://movies/years/";
-  else if (lower == "movieactors")
-    return "videodb://movies/actors/";
-  else if (lower == "moviedirectors")
-    return "videodb://movies/directors/";
-  else if (lower == "moviestudios")
-    return "videodb://movies/studios/";
-  else if (lower == "moviesets")
-    return "videodb://movies/sets/";
-  else if (lower == "moviecountries")
-    return "videodb://movies/countries/";
-  else if (lower == "movietags")
-    return "videodb://movies/tags/";
-  else if (lower == "movies")
-    return "videodb://movies/";
-  else if (lower == "tvshowgenres")
-    return "videodb://tvshows/genres/";
-  else if (lower == "tvshowtitles")
-    return "videodb://tvshows/titles/";
-  else if (lower == "tvshowyears")
-    return "videodb://tvshows/years/";
-  else if (lower == "tvshowactors")
-    return "videodb://tvshows/actors/";
-  else if (lower == "tvshowstudios")
-    return "videodb://tvshows/studios/";
-  else if (lower == "tvshowtags")
-    return "videodb://tvshows/tags/";
-  else if (lower == "tvshows")
-    return "videodb://tvshows/";
-  else if (lower == "musicvideogenres")
-    return "videodb://musicvideos/genres/";
-  else if (lower == "musicvideotitles")
-    return "videodb://musicvideos/titles/";
-  else if (lower == "musicvideoyears")
-    return "videodb://musicvideos/years/";
-  else if (lower == "musicvideoartists")
-    return "videodb://musicvideos/artists/";
-  else if (lower == "musicvideoalbums")
-    return "videodb://musicvideos/albums/";
-  else if (lower == "musicvideodirectors")
-    return "videodb://musicvideos/directors/";
-  else if (lower == "musicvideostudios")
-    return "videodb://musicvideos/studios/";
-  else if (lower == "musicvideotags")
-    return "videodb://musicvideos/tags/";
-  else if (lower == "musicvideos")
-    return "videodb://musicvideos/";
-  else if (lower == "recentlyaddedmovies")
-    return "videodb://recentlyaddedmovies/";
-  else if (lower == "recentlyaddedepisodes")
-    return "videodb://recentlyaddedepisodes/";
-  else if (lower == "recentlyaddedmusicvideos")
-    return "videodb://recentlyaddedmusicvideos/";
-  else if (lower == "inprogresstvshows")
-    return "videodb://inprogresstvshows/";
-  else if (lower == "files")
-    return "sources://video/";
-  return CGUIWindowVideoBase::GetStartFolder(dir);
+  static const auto map = std::map<std::string, std::string>{
+      {"files", "sources://video/"},
+      {"inprogresstvshows", "videodb://inprogresstvshows/"},
+      {"movieactors", "videodb://movies/actors/"},
+      {"moviecountries", "videodb://movies/countries/"},
+      {"moviedirectors", "videodb://movies/directors/"},
+      {"moviegenres", "videodb://movies/genres/"},
+      {"movies", "videodb://movies/"},
+      {"moviesets", "videodb://movies/sets/"},
+      {"moviestudios", "videodb://movies/studios/"},
+      {"movietags", "videodb://movies/tags/"},
+      {"movietitles", "videodb://movies/titles/"},
+      {"movieyears", "videodb://movies/years/"},
+      {"musicvideoalbums", "videodb://musicvideos/albums/"},
+      {"musicvideoartists", "videodb://musicvideos/artists/"},
+      {"musicvideodirectors", "videodb://musicvideos/directors/"},
+      {"musicvideogenres", "videodb://musicvideos/genres/"},
+      {"musicvideos", "videodb://musicvideos/"},
+      {"musicvideostudios", "videodb://musicvideos/studios/"},
+      {"musicvideotags", "videodb://musicvideos/tags/"},
+      {"musicvideotitles", "videodb://musicvideos/titles/"},
+      {"musicvideoyears", "videodb://musicvideos/years/"},
+      {"recentlyaddedepisodes", "videodb://recentlyaddedepisodes/"},
+      {"recentlyaddedmovies", "videodb://recentlyaddedmovies/"},
+      {"recentlyaddedmusicvideos", "videodb://recentlyaddedmusicvideos/"},
+      {"tvshowactors", "videodb://tvshows/actors/"},
+      {"tvshowgenres", "videodb://tvshows/genres/"},
+      {"tvshows", "videodb://tvshows/"},
+      {"tvshowstudios", "videodb://tvshows/studios/"},
+      {"tvshowtags", "videodb://tvshows/tags/"},
+      {"tvshowtitles", "videodb://tvshows/titles/"},
+      {"tvshowyears", "videodb://tvshows/years/"},
+  };
+
+  const auto it = map.find(StringUtils::ToLower(dir));
+  if (it == map.end())
+    return CGUIWindowVideoBase::GetStartFolder(dir);
+  else
+    return it->second;
 }
 
 bool CGUIWindowVideoNav::ApplyWatchedFilter(CFileItemList &items)

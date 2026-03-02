@@ -19,7 +19,8 @@
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIMessage.h"
 #include "guilib/GUIWindowManager.h"
-#include "input/Key.h"
+#include "input/actions/Action.h"
+#include "input/actions/ActionIDs.h"
 #include "interfaces/AnnouncementManager.h"
 #include "interfaces/generic/ScriptInvocationManager.h"
 #include "messaging/ApplicationMessenger.h"
@@ -62,12 +63,6 @@ void CApplicationPowerHandling::ResetNavigationTimer()
 
 void CApplicationPowerHandling::SetRenderGUI(bool renderGUI)
 {
-  if (renderGUI && !m_renderGUI)
-  {
-    CGUIComponent* gui = CServiceBroker::GetGUI();
-    if (gui)
-      CServiceBroker::GetGUI()->GetWindowManager().MarkDirty();
-  }
   m_renderGUI = renderGUI;
 }
 
@@ -233,13 +228,10 @@ void CApplicationPowerHandling::CheckScreenSaverAndDPMS()
   if (appPlayer && appPlayer->IsPlayingVideo() && !appPlayer->IsPaused())
     haveIdleActivity = true;
 
-  // Are we playing some music in fullscreen vis?
+  // Are we playing audio and screensaver is disabled globally for audio?
   else if (appPlayer && appPlayer->IsPlayingAudio() &&
-           CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindow() == WINDOW_VISUALISATION &&
-           !CServiceBroker::GetSettingsComponent()
-                ->GetSettings()
-                ->GetString(CSettings::SETTING_MUSICPLAYER_VISUALISATION)
-                .empty())
+           CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(
+               CSettings::SETTING_SCREENSAVER_DISABLEFORAUDIO))
   {
     haveIdleActivity = true;
   }
@@ -295,13 +287,6 @@ void CApplicationPowerHandling::ActivateScreenSaver(bool forceType /*= false */)
   const std::shared_ptr<CSettings> settings = CServiceBroker::GetSettingsComponent()->GetSettings();
   const auto& components = CServiceBroker::GetAppComponents();
   const auto appPlayer = components.GetComponent<CApplicationPlayer>();
-  if (appPlayer && appPlayer->IsPlayingAudio() &&
-      settings->GetBool(CSettings::SETTING_SCREENSAVER_USEMUSICVISINSTEAD) &&
-      !settings->GetString(CSettings::SETTING_MUSICPLAYER_VISUALISATION).empty())
-  { // just activate the visualisation if user toggled the usemusicvisinstead option
-    CServiceBroker::GetGUI()->GetWindowManager().ActivateWindow(WINDOW_VISUALISATION);
-    return;
-  }
 
   m_screensaverActive = true;
   CServiceBroker::GetAnnouncementManager()->Announce(ANNOUNCEMENT::GUI, "OnScreensaverActivated");
@@ -322,10 +307,8 @@ void CApplicationPowerHandling::ActivateScreenSaver(bool forceType /*= false */)
 
     // Enforce Dim for special cases.
     bool bUseDim = false;
-    if (CServiceBroker::GetGUI()->GetWindowManager().HasModalDialog(true))
-      bUseDim = true;
-    else if (appPlayer && appPlayer->IsPlayingVideo() &&
-             settings->GetBool(CSettings::SETTING_SCREENSAVER_USEDIMONPAUSE))
+    if (appPlayer && appPlayer->IsPlayingVideo() &&
+        settings->GetBool(CSettings::SETTING_SCREENSAVER_USEDIMONPAUSE))
       bUseDim = true;
 
     if (bUseDim)
@@ -463,6 +446,9 @@ void CApplicationPowerHandling::CheckShutdown()
     m_shutdownTimer.Stop();
 
     // Sleep the box
+    CLog::LogF(LOGDEBUG, "Timer is over (shutdown function: {})",
+               CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(
+                   CSettings::SETTING_POWERMANAGEMENT_SHUTDOWNSTATE));
     CServiceBroker::GetAppMessenger()->PostMsg(TMSG_SHUTDOWN);
   }
 }

@@ -15,7 +15,6 @@
 #include "TextureManager.h"
 #include "WindowIDs.h"
 #include "filesystem/Directory.h"
-#include "input/Key.h"
 #include "utils/FileExtensionProvider.h"
 #include "utils/JobManager.h"
 #include "utils/Random.h"
@@ -168,6 +167,11 @@ bool CGUIMultiImage::OnMessage(CGUIMessage &message)
       FreeResources();
     return true;
   }
+  if (message.GetMessage() == GUI_MSG_RESET_MULTI_IMAGE)
+  {
+    ResetMultiImage();
+    return true;
+  }
   return CGUIControl::OnMessage(message);
 }
 
@@ -252,9 +256,7 @@ void CGUIMultiImage::OnDirectoryLoaded()
 
   // flag as loaded - no point in constantly reloading them
   m_directoryStatus = READY;
-  m_imageTimer.StartZero();
-  m_currentImage = 0;
-  m_image.SetFileName(m_files.empty() ? "" : m_files[0]);
+  ResetMultiImage();
 }
 
 void CGUIMultiImage::CancelLoading()
@@ -263,6 +265,13 @@ void CGUIMultiImage::CancelLoading()
   if (m_directoryStatus == LOADING)
     CServiceBroker::GetJobManager()->CancelJob(m_jobID);
   m_directoryStatus = UNLOADED;
+}
+
+void CGUIMultiImage::ResetMultiImage()
+{
+  m_imageTimer.StartZero();
+  m_currentImage = 0;
+  m_image.SetFileName(m_files.empty() ? "" : m_files[0]);
 }
 
 void CGUIMultiImage::OnJobComplete(unsigned int jobID, bool success, CJob *job)

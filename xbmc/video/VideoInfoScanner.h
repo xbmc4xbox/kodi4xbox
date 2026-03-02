@@ -144,14 +144,17 @@ namespace VIDEO
     /*! \brief Retrieve detailed information for an item from an online source, optionally supplemented with local data
      @todo sort out some better return codes.
      \param pItem item to retrieve online details for.
+     \param uniqueIDs Unique IDs for additional information for scrapers.
      \param url URL to use to retrieve online details.
      \param scraper Scraper that handles parsing the online data.
      \param nfoFile if set, we override the online data with the locally supplied data. Defaults to NULL.
      \param pDialog progress dialog to update and check for cancellation during processing. Defaults to NULL.
      \return true if information is found, false if an error occurred, the lookup was cancelled, or no information was found.
      */
-    bool GetDetails(CFileItem *pItem, CScraperUrl &url,
-                    const ADDON::ScraperPtr &scraper,
+    bool GetDetails(CFileItem* pItem,
+                    const std::unordered_map<std::string, std::string>& uniqueIDs,
+                    CScraperUrl& url,
+                    const ADDON::ScraperPtr& scraper,
                     VIDEO::IVideoInfoTagLoader* nfoFile = nullptr,
                     CGUIDialogProgress* pDialog = nullptr);
 
@@ -236,8 +239,13 @@ namespace VIDEO
     bool EnumerateSeriesFolder(CFileItem* item, EPISODELIST& episodeList);
     bool ProcessItemByVideoInfoTag(const CFileItem *item, EPISODELIST &episodeList);
 
+    bool AddVideoExtras(CFileItemList& items, const CONTENT_TYPE& content, const std::string& path);
+    bool ProcessVideoVersion(VideoDbContentType itemType, int dbId);
+
     bool m_bStop;
     bool m_scanAll;
+    bool m_ignoreVideoVersions{false};
+    bool m_ignoreVideoExtras{false};
     std::string m_strStartDir;
     CVideoDatabase m_database;
     std::set<std::string> m_pathsToCount;
@@ -255,6 +263,9 @@ namespace VIDEO
              is at least 1:4, "thumb" otherwise.
      */
     static std::string GetArtTypeFromSize(unsigned int width, unsigned int height);
+
+    static std::pair<CInfoScanner::INFO_TYPE, std::unique_ptr<IVideoInfoTagLoader>> ReadInfoTag(
+        CFileItem& item, const ADDON::ScraperPtr& scraper, bool lookInFolder, bool resetTag);
   };
 }
 

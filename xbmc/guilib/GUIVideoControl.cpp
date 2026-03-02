@@ -14,8 +14,10 @@
 #include "application/ApplicationComponents.h"
 #include "application/ApplicationPlayer.h"
 #include "application/ApplicationPowerHandling.h"
-#include "input/Key.h"
+#include "input/actions/ActionIDs.h"
 #include "utils/ColorUtils.h"
+
+using namespace KODI;
 
 CGUIVideoControl::CGUIVideoControl(int parentID, int controlID, float posX, float posY, float width, float height)
     : CGUIControl(parentID, controlID, posX, posY, width, height)
@@ -38,7 +40,6 @@ void CGUIVideoControl::Process(unsigned int currentTime, CDirtyRegionList &dirty
 
 void CGUIVideoControl::Render()
 {
-  // TODO: revisit this method and compare it with XBMC4Xbox!
   auto& components = CServiceBroker::GetAppComponents();
   const auto appPlayer = components.GetComponent<CApplicationPlayer>();
   if (appPlayer->IsRenderingVideo())
@@ -83,18 +84,8 @@ void CGUIVideoControl::RenderEx()
   CGUIControl::RenderEx();
 }
 
-EVENT_RESULT CGUIVideoControl::OnMouseEvent(const CPoint &point, const CMouseEvent &event)
+EVENT_RESULT CGUIVideoControl::OnMouseEvent(const CPoint& point, const MOUSE::CMouseEvent& event)
 {
-  const auto& components = CServiceBroker::GetAppComponents();
-  const auto appPlayer = components.GetComponent<CApplicationPlayer>();
-  if (!appPlayer->IsPlayingVideo())
-    return EVENT_RESULT_UNHANDLED;
-  if (event.m_id == ACTION_MOUSE_LEFT_CLICK)
-  { // switch to fullscreen
-    CGUIMessage message(GUI_MSG_FULLSCREEN, GetID(), GetParentID());
-    CServiceBroker::GetGUI()->GetWindowManager().SendMessage(message);
-    return EVENT_RESULT_HANDLED;
-  }
   return EVENT_RESULT_UNHANDLED;
 }
 

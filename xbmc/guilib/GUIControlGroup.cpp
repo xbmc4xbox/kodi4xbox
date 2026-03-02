@@ -13,6 +13,8 @@
 #include <cassert>
 #include <utility>
 
+using namespace KODI;
+
 CGUIControlGroup::CGUIControlGroup()
 {
   m_defaultControl = 0;
@@ -127,7 +129,6 @@ void CGUIControlGroup::RenderEx()
 
 bool CGUIControlGroup::OnAction(const CAction &action)
 {
-  assert(false);  // unimplemented
   return false;
 }
 
@@ -352,31 +353,8 @@ bool CGUIControlGroup::HasAnimation(ANIMATION_TYPE animType)
   return false;
 }
 
-EVENT_RESULT CGUIControlGroup::SendMouseEvent(const CPoint &point, const CMouseEvent &event)
+EVENT_RESULT CGUIControlGroup::SendMouseEvent(const CPoint& point, const MOUSE::CMouseEvent& event)
 {
-  // transform our position into child coordinates
-  CPoint childPoint(point);
-  m_transform.InverseTransformPosition(childPoint.x, childPoint.y);
-
-  if (CGUIControl::CanFocus())
-  {
-    CPoint pos(GetPosition());
-    // run through our controls in reverse order (so that last rendered is checked first)
-    for (rControls i = m_children.rbegin(); i != m_children.rend(); ++i)
-    {
-      CGUIControl *child = *i;
-      EVENT_RESULT ret = child->SendMouseEvent(childPoint - pos, event);
-      if (ret)
-      { // we've handled the action, and/or have focused an item
-        return ret;
-      }
-    }
-    // none of our children want the event, but we may want it.
-    EVENT_RESULT ret;
-    if (HitTest(childPoint) && (ret = OnMouseEvent(childPoint, event)))
-      return ret;
-  }
-  m_focusedControl = 0;
   return EVENT_RESULT_UNHANDLED;
 }
 

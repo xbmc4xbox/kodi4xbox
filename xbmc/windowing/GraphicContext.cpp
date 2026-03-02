@@ -37,7 +37,7 @@ void CGraphicContext::SetOrigin(float x, float y)
   if (!m_origins.empty())
     m_origins.push(CPoint(x,y) + m_origins.top());
   else
-    m_origins.push(CPoint(x,y));
+    m_origins.emplace(x, y);
 
   AddTransform(TransformMatrix::CreateTranslation(x, y));
 }
@@ -623,6 +623,7 @@ void CGraphicContext::SetResInfo(RESOLUTION res, const RESOLUTION_INFO& info)
   curr.Overscan   = info.Overscan;
   curr.iSubtitles = info.iSubtitles;
   curr.fPixelRatio = info.fPixelRatio;
+  curr.guiInsets = info.guiInsets;
 
   if(info.dwFlags & D3DPRESENTFLAG_MODE3DSBS)
   {
@@ -700,10 +701,10 @@ void CGraphicContext::SetScalingResolution(const RESOLUTION_INFO &res, bool need
   // reset our origin and camera
   while (!m_origins.empty())
     m_origins.pop();
-  m_origins.push(CPoint(0, 0));
+  m_origins.emplace(.0f, .0f);
   while (!m_cameras.empty())
     m_cameras.pop();
-  m_cameras.push(CPoint(0.5f*m_iScreenWidth, 0.5f*m_iScreenHeight));
+  m_cameras.emplace(0.5f * m_iScreenWidth, 0.5f * m_iScreenHeight);
   while (!m_stereoFactors.empty())
     m_stereoFactors.pop();
   m_stereoFactors.push(0.0f);

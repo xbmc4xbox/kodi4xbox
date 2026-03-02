@@ -22,8 +22,6 @@
 #define LEGAL_WIN32_COMPAT    1
 #define LEGAL_FATX            2
 
-#define ARRAY_SIZE(X)         (sizeof(X)/sizeof((X)[0]))
-
 class CFileItem;
 class CFileItemList;
 class CURL;
@@ -38,8 +36,29 @@ public:
                           std::string& strYear,
                           bool bRemoveExtension = false,
                           bool bCleanChars = true);
+  static bool GetFilenameIdentifier(const std::string& fileName,
+                                    std::string& identifierType,
+                                    std::string& identifier);
+  static bool GetFilenameIdentifier(const std::string& fileName,
+                                    std::string& identifierType,
+                                    std::string& identifier,
+                                    std::string& match);
+  static bool HasFilenameIdentifier(const std::string& fileName);
   static std::string GetTitleFromPath(const CURL& url, bool bIsFolder = false);
   static std::string GetTitleFromPath(const std::string& strFileNameAndPath, bool bIsFolder = false);
+
+  /*! \brief Return the disc number in case the last segment of given path ends with 'Disc n'.
+   Will look for 'Disc', 'Disk' and the locale specific spelling.
+   \return the disc number as string if found, empty string otherwise.
+   */
+  static std::string GetDiscNumberFromPath(const std::string& path);
+
+  /*! \brief Remove last segment of the given path if it matches 'Disc n'.
+   Will look for 'Disc', 'Disk' and the locale specific spelling.
+   \return the given path with last segment removed if it matches 'Disc n', unchanged path otherwise.
+   */
+  static std::string RemoveTrailingDiscNumberSegmentFromPath(std::string path);
+
   static void GetQualifiedFilename(const std::string &strBasePath, std::string &strFilename);
   static bool ExcludeFileOrFolder(const std::string& strFileOrFolder, const std::vector<std::string>& regexps);
 
@@ -55,17 +74,19 @@ public:
   static void GetDVDDriveIcon(const std::string& strPath, std::string& strIcon);
   static void RemoveTempFiles();
 
-  static std::string ValidatePath(const std::string &path, bool bFixDoubleSlashes = false); ///< return a validated path, with correct directory separators.
-
   static std::string GetNextFilename(const std::string &fn_template, int max);
 
 #if defined(TARGET_WINDOWS) || defined(_XBOX)
-  static std::string MakeLegalFileName(const std::string &strFile, int LegalType=LEGAL_WIN32_COMPAT);
-  static std::string MakeLegalPath(const std::string &strPath, int LegalType=LEGAL_WIN32_COMPAT);
+  static std::string MakeLegalFileName(std::string strFile, int LegalType = LEGAL_WIN32_COMPAT);
+  static std::string MakeLegalPath(std::string strPath, int LegalType = LEGAL_WIN32_COMPAT);
 #else
-  static std::string MakeLegalFileName(const std::string &strFile, int LegalType=LEGAL_NONE);
-  static std::string MakeLegalPath(const std::string &strPath, int LegalType=LEGAL_NONE);
+  static std::string MakeLegalFileName(std::string strFile, int LegalType = LEGAL_NONE);
+  static std::string MakeLegalPath(std::string strPath, int LegalType = LEGAL_NONE);
 #endif
+  static std::string ValidatePath(
+      std::string path,
+      bool bFixDoubleSlashes =
+          false); ///< return a validated path, with correct directory separators.
 
   /*! \brief Split a comma separated parameter list into separate parameters.
    Takes care of the case where we may have a quoted string containing commas, or we may
@@ -82,7 +103,7 @@ public:
    \param paramString the string to break up
    \param parameters the returned parameters
    */
-  static void SplitParams(const std::string &paramString, std::vector<std::string> &parameters);
+  static void SplitParams(const std::string& paramString, std::vector<std::string>& parameters);
   static int GetMatchingSource(const std::string& strPath, VECSOURCES& VECSOURCES, bool& bIsSourceName);
   static std::string TranslateSpecialSource(const std::string &strSpecial);
   static void DeleteDirectoryCache(const std::string &prefix = "");
@@ -122,6 +143,8 @@ public:
   // Translate a string of roman numerals to decimal a decimal integer
   // return -1 on error, valid range is 1-3999
   static int TranslateRomanNumeral(const char* roman_numeral);
+
+  static std::string GetFrameworksPath(bool forPython = false);
 
   /*!
    * \brief Thread-safe random number generation

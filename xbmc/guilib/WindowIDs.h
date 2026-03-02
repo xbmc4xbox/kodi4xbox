@@ -72,7 +72,6 @@
 #define WINDOW_DIALOG_LOCK_SETTINGS       10131
 #define WINDOW_DIALOG_CONTENT_SETTINGS    10132
 #define WINDOW_DIALOG_LIBEXPORT_SETTINGS  10133
-#define WINDOW_DIALOG_FAVOURITES          10134
 #define WINDOW_DIALOG_SONG_INFO           10135
 #define WINDOW_DIALOG_SMART_PLAYLIST_EDITOR 10136
 #define WINDOW_DIALOG_SMART_PLAYLIST_RULE   10137
@@ -83,7 +82,7 @@
 #define WINDOW_DIALOG_SLIDER              10145
 #define WINDOW_DIALOG_ADDON_INFO          10146
 #define WINDOW_DIALOG_TEXT_VIEWER         10147
-#ifdef HAS_DVD_DRIVE
+#ifdef HAS_OPTICAL_DRIVE
 #define WINDOW_DIALOG_PLAY_EJECT          10148
 #endif
 #define WINDOW_DIALOG_PERIPHERALS         10149
@@ -156,6 +155,7 @@
 #define WINDOW_DIALOG_GAME_PORTS 10828
 #define WINDOW_DIALOG_IN_GAME_SAVES 10829
 #define WINDOW_DIALOG_GAME_SAVES 10830
+#define WINDOW_DIALOG_GAME_AGENTS 10831
 
 //#define WINDOW_VIRTUAL_KEYBOARD           11000
 // WINDOW_ID's from 11100 to 11199 reserved for Skins
@@ -164,10 +164,20 @@
 #define WINDOW_DIALOG_MUSIC_INFO          12001
 #define WINDOW_DIALOG_OK                  12002
 #define WINDOW_DIALOG_VIDEO_INFO          12003
+#define WINDOW_DIALOG_MANAGE_VIDEO_VERSIONS 12004
 #define WINDOW_FULLSCREEN_VIDEO           12005
 #define WINDOW_VISUALISATION              12006
 #define WINDOW_SLIDESHOW                  12007
 #define WINDOW_DIALOG_COLOR_PICKER 12008
+
+//! @todo Numbers given here must match the ids given in strings.po for a translatable string for
+//! the window. 12009 to 12014 are already taken for something else in strings.po (accidentally).
+//! So, do not define windows with ids 12009 to 12014, unless strings.po got fixed.
+
+#define WINDOW_DIALOG_SELECT_VIDEO_VERSION 12015
+#define WINDOW_DIALOG_SELECT_VIDEO_EXTRA 12016
+#define WINDOW_DIALOG_MANAGE_VIDEO_EXTRAS 12017
+
 #define WINDOW_WEATHER                    12600
 #define WINDOW_SCREENSAVER                12900
 #define WINDOW_DIALOG_VIDEO_OSD           12901

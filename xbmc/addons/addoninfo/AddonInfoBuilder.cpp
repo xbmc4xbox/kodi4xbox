@@ -229,6 +229,9 @@ AddonInfoPtr CAddonInfoBuilder::Generate(const std::string& addonPath, bool plat
   if (!platformCheck || PlatformSupportsAddon(addon))
     return addon;
 
+  CLog::Log(LOGERROR, "CAddonInfoBuilder::{}: No platform for add-on {} (supported platforms: {})",
+            __FUNCTION__, addon->ID(), StringUtils::Join(addon->m_platforms, ", "));
+
   return nullptr;
 }
 
@@ -340,10 +343,11 @@ bool CAddonInfoBuilder::ParseXML(const AddonInfoPtr& addon,
    *   <import addon="???" minversion="???" version="???" optional="???"/>
    * </requires>
    */
-  const TiXmlElement* requires = element->FirstChildElement("requires");
-  if (requires)
+  const TiXmlElement* _requires = element->FirstChildElement("requires");
+  if (_requires)
   {
-    for (const TiXmlElement* child = requires->FirstChildElement("import"); child != nullptr; child = child->NextSiblingElement("import"))
+    for (const TiXmlElement* child = _requires->FirstChildElement("import"); child != nullptr;
+         child = child->NextSiblingElement("import"))
     {
       if (child->Attribute("addon"))
       {

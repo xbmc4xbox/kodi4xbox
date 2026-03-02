@@ -429,7 +429,7 @@ void CResolutionUtils::PrintWhitelist()
 #endif
 }
 
-void CResolutionUtils::GetMaxAllowedResolution(unsigned int& width, unsigned int& height)
+void CResolutionUtils::GetMaxAllowedScreenResolution(unsigned int& width, unsigned int& height)
 {
 #if 0
   if (!CServiceBroker::GetWinSystem()->GetGfxContext().IsFullScreenRoot())

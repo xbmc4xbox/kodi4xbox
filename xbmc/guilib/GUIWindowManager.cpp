@@ -21,7 +21,6 @@
 #include "application/Application.h"
 #include "application/ApplicationComponents.h"
 #include "application/ApplicationPlayer.h"
-#include "favourites/GUIDialogFavourites.h"
 #include "favourites/GUIWindowFavourites.h"
 #include "input/actions/Action.h"
 #include "input/actions/ActionIDs.h"
@@ -98,7 +97,7 @@
 #include "video/dialogs/GUIDialogVideoSettings.h"
 
 #include "dialogs/GUIDialogSlider.h"
-#ifdef HAS_DVD_DRIVE
+#ifdef HAS_OPTICAL_DRIVE
 #include "dialogs/GUIDialogPlayEject.h"
 #endif
 #include "dialogs/GUIDialogMediaFilter.h"
@@ -163,7 +162,6 @@ void CGUIWindowManager::CreateWindows()
   // Don't add the filebrowser dialog - it's created and added when it's needed
   Add(new CGUIDialogMediaSource);
   Add(new CGUIDialogProfileSettings);
-  Add(new CGUIDialogFavourites);
   Add(new CGUIDialogSongInfo);
   Add(new CGUIDialogSmartPlaylistEditor);
   Add(new CGUIDialogSmartPlaylistRule);
@@ -181,7 +179,7 @@ void CGUIWindowManager::CreateWindows()
 
   Add(new CGUIDialogInfoProviderSettings);
 
-#ifdef HAS_DVD_DRIVE
+#ifdef HAS_OPTICAL_DRIVE
   Add(new CGUIDialogPlayEject);
 #endif
 
@@ -197,6 +195,10 @@ void CGUIWindowManager::CreateWindows()
   Add(new CGUIDialogMusicInfo);
   Add(new CGUIDialogOK);
   Add(new CGUIDialogVideoInfo);
+  Add(new CGUIDialogSelect(WINDOW_DIALOG_SELECT_VIDEO_VERSION));
+  Add(new CGUIDialogSelect(WINDOW_DIALOG_SELECT_VIDEO_EXTRA));
+
+  Add(new CGUIDialogTextViewer);
   Add(new CGUIWindowVisualisation);
   Add(new CGUIWindowSlideShow);
 
@@ -218,6 +220,10 @@ bool CGUIWindowManager::DestroyWindows()
     DestroyWindow(WINDOW_MUSIC_NAV);
     DestroyWindow(WINDOW_DIALOG_MUSIC_INFO);
     DestroyWindow(WINDOW_DIALOG_VIDEO_INFO);
+    DestroyWindow(WINDOW_DIALOG_SELECT_VIDEO_EXTRA);
+    DestroyWindow(WINDOW_DIALOG_SELECT_VIDEO_VERSION);
+    DestroyWindow(WINDOW_DIALOG_MANAGE_VIDEO_EXTRAS);
+    DestroyWindow(WINDOW_DIALOG_MANAGE_VIDEO_VERSIONS);
     DestroyWindow(WINDOW_VIDEO_PLAYLIST);
     DestroyWindow(WINDOW_VIDEO_NAV);
     DestroyWindow(WINDOW_FILES);
@@ -249,7 +255,6 @@ bool CGUIWindowManager::DestroyWindows()
     DestroyWindow(WINDOW_DIALOG_CONTENT_SETTINGS);
     DestroyWindow(WINDOW_DIALOG_INFOPROVIDER_SETTINGS);
     DestroyWindow(WINDOW_DIALOG_LIBEXPORT_SETTINGS);
-    DestroyWindow(WINDOW_DIALOG_FAVOURITES);
     DestroyWindow(WINDOW_DIALOG_SONG_INFO);
     DestroyWindow(WINDOW_DIALOG_SMART_PLAYLIST_EDITOR);
     DestroyWindow(WINDOW_DIALOG_SMART_PLAYLIST_RULE);
@@ -293,7 +298,7 @@ bool CGUIWindowManager::DestroyWindows()
     DestroyWindow(WINDOW_DIALOG_PVR_GUIDE_CONTROLS);
 
     DestroyWindow(WINDOW_DIALOG_TEXT_VIEWER);
-#ifdef HAS_DVD_DRIVE
+#ifdef HAS_OPTICAL_DRIVE
     DestroyWindow(WINDOW_DIALOG_PLAY_EJECT);
 #endif
     DestroyWindow(WINDOW_STARTUP_ANIM);
@@ -324,6 +329,7 @@ bool CGUIWindowManager::DestroyWindows()
     DestroyWindow(WINDOW_DIALOG_GAME_ADVANCED_SETTINGS);
     DestroyWindow(WINDOW_DIALOG_GAME_VIDEO_ROTATION);
     DestroyWindow(WINDOW_DIALOG_IN_GAME_SAVES);
+    DestroyWindow(WINDOW_DIALOG_GAME_AGENTS);
     DestroyWindow(WINDOW_FULLSCREEN_GAME);
 
     Remove(WINDOW_SETTINGS_SERVICE);
@@ -1297,7 +1303,10 @@ bool CGUIWindowManager::ProcessRenderLoop(bool renderOnly)
     m_iNested++;
     if (!renderOnly)
       m_pCallback->Process();
-    m_pCallback->FrameMove(!renderOnly);
+    {
+      CSingleExit leaveIt(CServiceBroker::GetWinSystem()->GetGfxContext());
+      m_pCallback->FrameMove(!renderOnly);
+    }
     m_pCallback->Render();
     m_iNested--;
   }
@@ -1407,7 +1416,7 @@ void CGUIWindowManager::SendThreadMessage(CGUIMessage& message, int window /*= 0
   std::unique_lock<CCriticalSection> lock(m_critSection);
 
   CGUIMessage* msg = new CGUIMessage(message);
-  m_vecThreadMessages.emplace_back(std::pair<CGUIMessage*, int>(msg,window));
+  m_vecThreadMessages.emplace_back(msg, window);
 }
 
 void CGUIWindowManager::DispatchThreadMessages()
@@ -1483,6 +1492,12 @@ int CGUIWindowManager::RemoveThreadMessageByMessageIds(int *pMessageIDList)
 void CGUIWindowManager::AddMsgTarget(IMsgTargetCallback* pMsgTarget)
 {
   m_vecMsgTargets.emplace_back(pMsgTarget);
+}
+
+void CGUIWindowManager::RemoveMsgTarget(IMsgTargetCallback* pMsgTarget)
+{
+  m_vecMsgTargets.erase(std::remove(m_vecMsgTargets.begin(), m_vecMsgTargets.end(), pMsgTarget),
+                        m_vecMsgTargets.end());
 }
 
 int CGUIWindowManager::GetActiveWindow() const

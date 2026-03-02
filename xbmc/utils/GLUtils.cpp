@@ -23,6 +23,7 @@
 namespace
 {
 
+// clang-format off
 #define X(VAL) std::make_pair(VAL, #VAL)
 std::map<GLenum, const char*> glErrors =
 {
@@ -74,6 +75,7 @@ std::map<GLenum, const char*> glErrorSeverity = {
 #endif
 };
 #undef X
+// clang-format on
 
 } // namespace
 
@@ -203,7 +205,7 @@ void LogGraphicsInfo()
     CLog::Log(LOGINFO, "GL_GPU_MEMORY_INFO_DEDICATED_VIDMEM_NVX = {}", mem);
   }
 
-  std::string extensions;
+  std::string extensions = "";
 #if defined(HAS_GL)
   unsigned int renderVersionMajor, renderVersionMinor;
   CServiceBroker::GetRenderSystem()->GetRenderVersion(renderVersionMajor, renderVersionMinor);
@@ -217,15 +219,21 @@ void LogGraphicsInfo()
       GLint i;
       for (i = 0; i < n; i++)
       {
-        extensions += (const char*)glGetStringi(GL_EXTENSIONS, i);
-        extensions += " ";
+        const char* extension = reinterpret_cast<const char*>(glGetStringi(GL_EXTENSIONS, i));
+        if (extension)
+        {
+          extensions += extension;
+          extensions += " ";
+        }
       }
     }
   }
   else
 #endif
   {
-    extensions += (const char*) glGetString(GL_EXTENSIONS);
+    const char* extension = reinterpret_cast<const char*>(glGetString(GL_EXTENSIONS));
+    if (s)
+      extensions += extension;
   }
 
   if (!extensions.empty())
@@ -273,6 +281,7 @@ int KODI::UTILS::GL::glFormatElementByteCount(GLenum format)
 }
 #endif
 
+#if 0
 uint8_t KODI::UTILS::GL::GetChannelFromARGB(const KODI::UTILS::GL::ColorChannel colorChannel,
                                             const uint32_t argb)
 {
@@ -290,3 +299,4 @@ uint8_t KODI::UTILS::GL::GetChannelFromARGB(const KODI::UTILS::GL::ColorChannel 
       throw std::runtime_error("KODI::UTILS::GL::GetChannelFromARGB: ColorChannel not handled");
   };
 }
+#endif

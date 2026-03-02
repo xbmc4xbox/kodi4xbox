@@ -67,7 +67,7 @@
 #include "filesystem/SpecialProtocol.h"
 #include "guilib/GUIAudioManager.h"
 #include "guilib/LocalizeStrings.h"
-#include "input/KeyboardLayoutManager.h"
+#include "input/keyboard/KeyboardLayoutManager.h"
 #include "input/actions/ActionTranslator.h"
 #include "messaging/ApplicationMessenger.h"
 #include "messaging/ThreadMessage.h"
@@ -187,15 +187,12 @@ using namespace std::chrono_literals;
 
 #define MAX_FFWD_SPEED 5
 
-#ifdef _XBOX
-extern "C" void __stdcall init_emu_environ();
-extern "C" void __stdcall update_emu_environ();
-#endif
-
 CApplication::CApplication(void)
-#ifdef HAS_DVD_DRIVE
+  :
+#ifdef HAS_OPTICAL_DRIVE
     m_Autorun(new CAutorun()),
 #endif
+    m_itemCurrentFile(std::make_shared<CFileItem>())
 {
   TiXmlBase::SetCondenseWhiteSpace(false);
 
@@ -227,6 +224,10 @@ void CApplication::HandlePortEvents()
 
 }
 
+extern "C" void __stdcall init_emu_environ();
+extern "C" void __stdcall update_emu_environ();
+extern "C" void __stdcall cleanup_emu_environ();
+
 bool CApplication::Create()
 {
   m_bStop = false;
@@ -246,10 +247,10 @@ bool CApplication::Create()
   const auto appMessenger = std::make_shared<CApplicationMessenger>();
   CServiceBroker::RegisterAppMessenger(appMessenger);
 
-  const auto keyboardLayoutManager = std::make_shared<CKeyboardLayoutManager>();
+  const auto keyboardLayoutManager = std::make_shared<KEYBOARD::CKeyboardLayoutManager>();
   CServiceBroker::RegisterKeyboardLayoutManager(keyboardLayoutManager);
 
-  m_ServiceManager.reset(new CServiceManager());
+  m_ServiceManager = std::make_unique<CServiceManager>();
 
   if (!m_ServiceManager->InitStageOne())
   {
@@ -424,7 +425,7 @@ bool CApplication::CreateGUI()
   if (sav_res)
     CDisplaySettings::GetInstance().SetCurrentResolution(RES_DESKTOP, true);
 
-  m_pGUI.reset(new CGUIComponent());
+  m_pGUI = std::make_unique<CGUIComponent>();
   m_pGUI->Init();
 
   // Splash requires gui component!!
@@ -466,7 +467,8 @@ bool CApplication::InitWindow(RESOLUTION res)
 
 bool CApplication::Initialize()
 {
-#if defined(HAS_DVD_DRIVE) && !defined(TARGET_WINDOWS) // somehow this throws an "unresolved external symbol" on win32
+#if defined(HAS_OPTICAL_DRIVE) && \
+    !defined(TARGET_WINDOWS) // somehow this throws an "unresolved external symbol" on win32
   // turn off cdio logging
   cdio_loglevel_default = CDIO_LOG_ERROR;
 #endif
@@ -976,10 +978,16 @@ bool CApplication::PlayStack(CFileItem& item, bool bRestart)
   if (!stackHelper->InitializeStack(item))
     return false;
 
-  int startoffset = stackHelper->InitializeStackStartPartAndOffset(item);
+  std::optional<int> startoffset = stackHelper->InitializeStackStartPartAndOffset(item);
+  if (!startoffset)
+  {
+    CLog::LogF(LOGERROR, "Failed to obtain start offset for stack {}. Aborting playback.",
+               item.GetDynPath());
+    return false;
+  }
 
   CFileItem selectedStackPart = stackHelper->GetCurrentStackPartFileItem();
-  selectedStackPart.SetStartOffset(startoffset);
+  selectedStackPart.SetStartOffset(startoffset.value());
 
   if (item.HasProperty("savedplayerstate"))
   {
@@ -1159,7 +1167,8 @@ bool CApplication::OnMessage(CGUIMessage& message)
   return false;
 }
 
-bool CApplication::ExecuteXBMCAction(std::string actionStr, const CGUIListItemPtr &item /* = NULL */)
+bool CApplication::ExecuteXBMCAction(std::string actionStr,
+                                     const std::shared_ptr<CGUIListItem>& item /* = NULL */)
 {
   // see if it is a user set string
 
@@ -1181,7 +1190,7 @@ bool CApplication::ExecuteXBMCAction(std::string actionStr, const CGUIListItemPt
   {
     // try translating the action from our ButtonTranslator
     unsigned int actionID;
-    if (CActionTranslator::TranslateString(actionStr, actionID))
+    if (ACTION::CActionTranslator::TranslateString(actionStr, actionID))
     {
       OnAction(CAction(actionID));
       return true;
@@ -1242,9 +1251,6 @@ void CApplication::Process()
   CServiceBroker::GetAppMessenger()->ProcessMessages();
   if (m_bStop) return; //we're done, everything has been unloaded
 
-  // update sound
-  GetComponent<CApplicationPlayer>()->DoAudioWork();
-
   // do any processing that isn't needed on each run
   if( m_slowTimer.GetElapsedMilliseconds() > 500 )
   {
@@ -1260,16 +1266,6 @@ void CApplication::ProcessSlow()
   GetComponent<CApplicationSkinHandling>()->ProcessSkin();
 
   CServiceBroker::GetPowerManager().ProcessEvents();
-
-#if defined(TARGET_DARWIN_OSX) && defined(SDL_FOUND)
-  // There is an issue on OS X that several system services ask the cursor to become visible
-  // during their startup routines.  Given that we can't control this, we hack it in by
-  // forcing the
-  if (CServiceBroker::GetWinSystem()->IsFullScreen())
-  { // SDL thinks it's hidden
-    Cocoa_HideMouse();
-  }
-#endif
 
   // Temporarily pause pausable jobs when viewing video/picture
   int currentWindow = CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindow();
@@ -1328,7 +1324,7 @@ void CApplication::ProcessSlow()
 
   CServiceBroker::GetGUI()->GetTextureManager().FreeUnusedTextures(5000);
 
-#ifdef HAS_DVD_DRIVE
+#ifdef HAS_OPTICAL_DRIVE
   // checks whats in the DVD drive and tries to autostart the content (xbox games, dvd, cdda, avi files...)
   if (!appPlayer->IsPlayingVideo())
     m_Autorun->HandleAutorun();

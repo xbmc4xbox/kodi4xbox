@@ -6,10 +6,10 @@
  *  See LICENSES/README.md for more information.
  */
 
-#include <vector>
-
 #include "VideoLibraryMarkWatchedJob.h"
+
 #include "FileItem.h"
+#include "ServiceBroker.h"
 #include "Util.h"
 #include "filesystem/Directory.h"
 #ifdef HAS_UPNP
@@ -17,9 +17,11 @@
 #endif
 #include "profiles/ProfileManager.h"
 #include "settings/SettingsComponent.h"
-#include "ServiceBroker.h"
 #include "utils/URIUtils.h"
 #include "video/VideoDatabase.h"
+
+#include <memory>
+#include <vector>
 
 CVideoLibraryMarkWatchedJob::CVideoLibraryMarkWatchedJob(const std::shared_ptr<CFileItem>& item,
                                                          bool mark)
@@ -48,7 +50,7 @@ bool CVideoLibraryMarkWatchedJob::Work(CVideoDatabase &db)
     return false;
 
   CFileItemList items;
-  items.Add(CFileItemPtr(new CFileItem(*m_item)));
+  items.Add(std::make_shared<CFileItem>(*m_item));
 
   if (m_item->m_bIsFolder)
     CUtil::GetRecursiveListing(m_item->GetPath(), items, "", XFILE::DIR_FLAG_NO_FILE_INFO);

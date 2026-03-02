@@ -30,7 +30,8 @@
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
-#include "input/Key.h"
+#include "input/actions/Action.h"
+#include "input/actions/ActionIDs.h"
 #include "interfaces/builtins/Builtins.h"
 #include "messaging/helpers/DialogOKHelper.h"
 #include "pictures/GUIWindowSlideShow.h"
@@ -43,6 +44,7 @@
 #include "utils/log.h"
 
 #include <functional>
+#include <memory>
 #include <sstream>
 #include <utility>
 
@@ -63,9 +65,9 @@ using namespace XFILE;
 using namespace KODI::MESSAGING;
 
 CGUIDialogAddonInfo::CGUIDialogAddonInfo(void)
-  : CGUIDialog(WINDOW_DIALOG_ADDON_INFO, "DialogAddonInfo.xml")
+  : CGUIDialog(WINDOW_DIALOG_ADDON_INFO, "DialogAddonInfo.xml"),
+    m_item(std::make_shared<CFileItem>())
 {
-  m_item = CFileItemPtr(new CFileItem);
   m_loadType = KEEP_IN_MEMORY;
 }
 

@@ -9,6 +9,7 @@
 #include "PlayListFactory.h"
 
 #include "FileItem.h"
+#include "URL.h"
 #include "playlists/PlayListB4S.h"
 #include "playlists/PlayListM3U.h"
 #include "playlists/PlayListPLS.h"
@@ -20,6 +21,19 @@
 #include "utils/URIUtils.h"
 
 using namespace PLAYLIST;
+
+CPlayList* CPlayListFactory::Create(const CURL& url)
+{
+  CFileItem item{url.Get(), false};
+
+  if (url.HasOption("mimetype"))
+  {
+    item.SetContentLookup(false);
+    item.SetMimeType(url.GetOption("mimetype"));
+  }
+
+  return Create(item);
+}
 
 CPlayList* CPlayListFactory::Create(const std::string& filename)
 {
@@ -71,7 +85,7 @@ CPlayList* CPlayListFactory::Create(const CFileItem& item)
   std::string extension = URIUtils::GetExtension(path);
   StringUtils::ToLower(extension);
 
-  if (extension == ".m3u" || extension == ".strm")
+  if (extension == ".m3u" || (extension == ".m3u8" && !item.IsInternetStream()) || extension == ".strm")
     return new CPlayListM3U();
 
   if (extension == ".pls")
@@ -134,12 +148,12 @@ bool CPlayListFactory::IsPlaylist(const CFileItem& item)
 bool CPlayListFactory::IsPlaylist(const CURL& url)
 {
   return URIUtils::HasExtension(url,
-                                ".m3u|.b4s|.pls|.strm|.wpl|.asx|.ram|.url|.pxml|.xspf");
+                                ".m3u|.m3u8|.b4s|.pls|.strm|.wpl|.asx|.ram|.url|.pxml|.xspf");
 }
 
 bool CPlayListFactory::IsPlaylist(const std::string& filename)
 {
   return URIUtils::HasExtension(filename,
-                     ".m3u|.b4s|.pls|.strm|.wpl|.asx|.ram|.url|.pxml|.xspf");
+                     ".m3u|.m3u8|.b4s|.pls|.strm|.wpl|.asx|.ram|.url|.pxml|.xspf");
 }
 
