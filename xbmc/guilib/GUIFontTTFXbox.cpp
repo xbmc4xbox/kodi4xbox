@@ -34,12 +34,14 @@
 
 #if defined(_XBOX) && defined(HAS_GL)
 
-CGUIFontTTFXbox::CGUIFontTTFXbox(const std::string& strFileName)
-: CGUIFontTTFBase(strFileName)
+CGUIFontTTF* CGUIFontTTF::CreateGUIFontTTF(const std::string& fontIdent)
 {
-  m_updateY1 = 0;
-  m_updateY2 = 0;
-  m_textureStatus = TEXTURE_VOID;
+  return new CGUIFontTTFXbox(fontIdent);
+}
+
+CGUIFontTTFXbox::CGUIFontTTFXbox(const std::string& strFileName)
+: CGUIFontTTF(strFileName)
+{
 }
 
 CGUIFontTTFXbox::~CGUIFontTTFXbox(void)

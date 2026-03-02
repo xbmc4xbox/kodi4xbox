@@ -40,7 +40,7 @@
  \ingroup textures
  \brief
  */
-class CGUIFontTTFXbox : public CGUIFontTTFBase
+class CGUIFontTTFXbox : public CGUIFontTTF
 {
 public:
   CGUIFontTTFXbox(const std::string& strFileName);
@@ -55,8 +55,8 @@ protected:
   virtual void DeleteHardwareTexture();
 
 private:
-  unsigned int m_updateY1;
-  unsigned int m_updateY2;
+  unsigned int m_updateY1{0};
+  unsigned int m_updateY2{0};
 
   enum TextureStatus
   {
@@ -66,7 +66,7 @@ private:
     TEXTURE_UPDATED,
   };
 
-  TextureStatus m_textureStatus;
+  TextureStatus m_textureStatus{TEXTURE_VOID};
 };
 
 #endif

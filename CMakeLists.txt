@@ -318,7 +318,6 @@ add_executable(xbmc
   xbmc/guilib/GUIFontCache.cpp
   xbmc/guilib/GUIFontManager.cpp
   xbmc/guilib/GUIFontTTF.cpp
-  xbmc/guilib/GUIFontTTFGL.cpp
   xbmc/guilib/GUIFontTTFXbox.cpp
   xbmc/guilib/GUIImage.cpp
   xbmc/guilib/GUIIncludes.cpp
@@ -581,6 +580,7 @@ add_executable(xbmc
   xbmc/utils/FileExtensionProvider.cpp
   xbmc/utils/FileOperationJob.cpp
   xbmc/utils/FileUtils.cpp
+  xbmc/utils/FontUtils.cpp
   xbmc/utils/GLUtils.cpp
   xbmc/utils/GpuInfo.cpp
   xbmc/utils/GroupUtils.cpp
@@ -843,6 +843,20 @@ set(ZLIB_INCLUDE_DIR ${NXDK_DIR}/lib/zlib/zlib CACHE STRING "" FORCE)
 add_definitions(-DZ_SOLO)
 FetchContent_MakeAvailable(freetype)
 target_link_libraries(xbmc PRIVATE freetype)
+
+# Bring in harfbuzz
+message(STATUS "Downloading harfbuzz")
+FetchContent_Declare(
+  harfbuzz
+  GIT_REPOSITORY https://github.com/harfbuzz/harfbuzz.git
+  GIT_TAG        12.3.2
+  GIT_PROGRESS TRUE
+)
+set(HB_HAVE_FREETYPE ON CACHE BOOL "" FORCE)
+set(HB_BUILD_SUBSET OFF CACHE BOOL "" FORCE)
+add_definitions(-DHB_NO_MMAP=0)
+FetchContent_MakeAvailable(harfbuzz)
+target_link_libraries(xbmc PRIVATE harfbuzz)
 
 #Pre-build commands
 
