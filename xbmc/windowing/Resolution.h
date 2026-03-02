@@ -18,6 +18,16 @@ typedef int DisplayMode;
 enum RESOLUTION
 {
   RES_INVALID        = -1,
+  RES_HDTV_1080i     =  0,
+  RES_HDTV_720p      =  5,
+  RES_HDTV_480p_4x3  =  6,
+  RES_HDTV_480p_16x9 =  7,
+  RES_NTSC_4x3       =  8,
+  RES_NTSC_16x9      =  9,
+  RES_PAL_4x3        = 10,
+  RES_PAL_16x9       = 11,
+  RES_PAL60_4x3      = 12,
+  RES_PAL60_16x9     = 13,
   RES_WINDOW         = 15,
   RES_DESKTOP        = 16,          // Desktop resolution
   RES_CUSTOM         = 16 + 1,      // First additional resolution
@@ -110,8 +120,11 @@ struct RESOLUTION_INFO
   //!< Resolution ID
   std::string strId;
 
+  //!< Not used!
+  int iScreen;
+
 public:
-  RESOLUTION_INFO(int width = 1280, int height = 720, float aspect = 0, const std::string &mode = "");
+  RESOLUTION_INFO(int width = 720, int height = 480, float aspect = 0, const std::string &mode = "");
   float DisplayRatio() const;
   RESOLUTION_INFO(const RESOLUTION_INFO& res);
   RESOLUTION_INFO& operator=(const RESOLUTION_INFO&) = default;

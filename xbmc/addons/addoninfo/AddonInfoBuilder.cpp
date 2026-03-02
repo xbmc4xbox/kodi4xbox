@@ -22,6 +22,9 @@
 #include "utils/Variant.h"
 #include "utils/XBMCTinyXML.h"
 #include "utils/log.h"
+#ifdef NXDK
+#include "utils/RegExp.h" // std::regex is broken in NXDK
+#endif
 
 #include <algorithm>
 #include <memory>
@@ -638,6 +641,7 @@ bool CAddonInfoBuilder::ParseXMLTypes(CAddonType& addonType,
     {
       addonType.m_libname = library;
 
+#ifndef NXDK
       try
       {
         // linux is different and has the version number after the suffix
@@ -656,6 +660,19 @@ bool CAddonInfoBuilder::ParseXMLTypes(CAddonType& addonType,
         CLog::Log(LOGERROR, "CAddonInfoBuilder::{}: Regex error caught: {}", __func__,
                   e.what());
       }
+#else
+      // linux is different and has the version number after the suffix
+      const std::string libRegex("^.*" +
+                                      CCompileInfo::CCompileInfo::GetSharedLibrarySuffix() +
+                                      "\\.?[0-9]*\\.?[0-9]*\\.?[0-9]*$");
+      CRegExp re(true, CRegExp::autoUtf8);
+      if (re.RegComp(libRegex) && re.RegFind(library))
+      {
+        info->SetBinary(true);
+        CLog::Log(LOGDEBUG, "CAddonInfoBuilder::{}: Binary addon found: {}", __func__,
+                  info->ID());
+      }
+#endif
     }
 
     if (!ParseXMLExtension(addonType, child))

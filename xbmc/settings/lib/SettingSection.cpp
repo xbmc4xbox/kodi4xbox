@@ -57,14 +57,10 @@ void addISetting(const TiXmlNode* node, const T& item, std::vector<T>& items, bo
     items.insert(items.begin(), item);
 }
 
-Logger CSettingGroup::s_logger;
-
 CSettingGroup::CSettingGroup(const std::string& id,
                              CSettingsManager* settingsManager /* = nullptr */)
   : ISetting(id, settingsManager)
 {
-  if (s_logger == nullptr)
-    s_logger = CServiceBroker::GetLogging().GetLogger("CSettingGroup");
 }
 
 bool CSettingGroup::Deserialize(const TiXmlNode *node, bool update /* = false */)
@@ -79,20 +75,20 @@ bool CSettingGroup::Deserialize(const TiXmlNode *node, bool update /* = false */
     auto controlType = controlElement->Attribute(SETTING_XML_ATTR_TYPE);
     if (controlType == nullptr || strlen(controlType) <= 0)
     {
-      s_logger->error("unable to read control type");
+      CLog::Log(LOGERROR, "unable to read control type");
       return false;
     }
 
     m_control = m_settingsManager->CreateControl(controlType);
     if (m_control == nullptr)
     {
-      s_logger->error("unable to create new control \"{}\"", controlType);
+      CLog::Log(LOGERROR, "unable to create new control \"{}\"", controlType);
       return false;
     }
 
     if (!m_control->Deserialize(controlElement))
     {
-      s_logger->warn("unable to read control \"{}\"", controlType);
+      CLog::Log(LOGWARNING, "unable to read control \"{}\"", controlType);
       m_control.reset();
     }
   }
@@ -120,21 +116,21 @@ bool CSettingGroup::Deserialize(const TiXmlNode *node, bool update /* = false */
         auto settingType = settingElement->Attribute(SETTING_XML_ATTR_TYPE);
         if (settingType == nullptr || strlen(settingType) <= 0)
         {
-          s_logger->error("unable to read setting type of \"{}\"", settingId);
+          CLog::Log(LOGERROR, "unable to read setting type of \"{}\"", settingId);
           return false;
         }
 
         setting = m_settingsManager->CreateSetting(settingType, settingId, m_settingsManager);
         if (setting == nullptr)
-          s_logger->error("unknown setting type \"{}\" of \"{}\"", settingType, settingId);
+          CLog::Log(LOGERROR, "unknown setting type \"{}\" of \"{}\"", settingType, settingId);
       }
 
       if (setting == nullptr)
-        s_logger->error("unable to create new setting \"{}\"", settingId);
+        CLog::Log(LOGERROR, "unable to create new setting \"{}\"", settingId);
       else
       {
         if (!setting->Deserialize(settingElement, update))
-          s_logger->warn("unable to read setting \"{}\"", settingId);
+          CLog::Log(LOGWARNING, "unable to read setting \"{}\"", settingId);
         else
         {
           // if the setting is a reference turn it into one
@@ -202,15 +198,11 @@ bool CSettingGroup::ReplaceSetting(const std::shared_ptr<const CSetting>& curren
   return false;
 }
 
-Logger CSettingCategory::s_logger;
-
 CSettingCategory::CSettingCategory(const std::string& id,
                                    CSettingsManager* settingsManager /* = nullptr */)
   : ISetting(id, settingsManager),
     m_accessCondition(settingsManager)
 {
-  if (s_logger == nullptr)
-    s_logger = CServiceBroker::GetLogging().GetLogger("CSettingCategory");
 }
 
 bool CSettingCategory::Deserialize(const TiXmlNode *node, bool update /* = false */)
@@ -249,7 +241,7 @@ bool CSettingCategory::Deserialize(const TiXmlNode *node, bool update /* = false
           addISetting(groupNode, group, m_groups);
       }
       else
-        s_logger->warn("unable to read group \"{}\"", groupId);
+        CLog::Log(LOGWARNING, "unable to read group \"{}\"", groupId);
     }
 
     groupNode = groupNode->NextSibling(SETTING_XML_ELM_GROUP);
@@ -291,14 +283,10 @@ void CSettingCategory::AddGroups(const SettingGroupList &groups)
     addISetting(nullptr, group, m_groups);
 }
 
-Logger CSettingSection::s_logger;
-
 CSettingSection::CSettingSection(const std::string& id,
                                  CSettingsManager* settingsManager /* = nullptr */)
   : ISetting(id, settingsManager)
 {
-  if (s_logger == nullptr)
-    s_logger = CServiceBroker::GetLogging().GetLogger("CSettingSection");
 }
 
 bool CSettingSection::Deserialize(const TiXmlNode *node, bool update /* = false */)
@@ -333,7 +321,7 @@ bool CSettingSection::Deserialize(const TiXmlNode *node, bool update /* = false 
           addISetting(categoryNode, category, m_categories);
       }
       else
-        s_logger->warn("unable to read category \"{}\"", categoryId);
+        CLog::Log(LOGWARNING, "unable to read category \"{}\"", categoryId);
     }
 
     categoryNode = categoryNode->NextSibling(SETTING_XML_ELM_CATEGORY);

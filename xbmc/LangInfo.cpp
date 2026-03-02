@@ -18,7 +18,6 @@
 #include "addons/addoninfo/AddonType.h"
 #include "guilib/LocalizeStrings.h"
 #include "messaging/ApplicationMessenger.h"
-#include "pvr/PVRManager.h"
 #include "settings/AdvancedSettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
@@ -45,8 +44,6 @@ std::string GetDateStringWithFormat(const CDateTime& date, const std::string& fo
   return date.GetAsLocalizedDate(format) + " (" + format + ")";
 }
 } // namespace
-
-using namespace PVR;
 
 static std::string shortDateFormats[] = {
     // clang-format off
@@ -264,6 +261,8 @@ void CLangInfo::CRegion::SetGlobalLocale()
   // on FreeBSD, darwin and uClibc-based systems libstdc++ is compiled with
   // "generic" locale support
   std::locale current_locale = std::locale::classic(); // C-Locale
+#ifndef NXDK
+  // DISABLED: This crashes Xbox because of incomplete WIP C++ exceptions
   try
   {
     std::locale lcl = std::locale(strLocale.c_str());
@@ -279,6 +278,9 @@ void CLangInfo::CRegion::SetGlobalLocale()
     current_locale = std::locale::classic();
     strLocale = "C";
   }
+#else
+  strLocale = "C";
+#endif
 
   g_langInfo.m_systemLocale = current_locale; //! @todo move to CLangInfo class
   g_langInfo.m_collationtype = 0;
@@ -790,7 +792,6 @@ bool CLangInfo::SetLanguage(std::string language /* = "" */, bool reloadServices
   {
     // also tell our weather and skin to reload as these are localized
     CServiceBroker::GetWeatherManager().Refresh();
-    CServiceBroker::GetPVRManager().LocalizationChanged();
     CServiceBroker::GetDatabaseManager().LocalizationChanged();
     CServiceBroker::GetAppMessenger()->PostMsg(TMSG_EXECUTE_BUILT_IN, -1, -1, nullptr,
                                                "ReloadSkin");

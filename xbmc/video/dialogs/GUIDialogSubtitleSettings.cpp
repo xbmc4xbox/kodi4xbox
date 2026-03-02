@@ -14,7 +14,6 @@
 #include "ServiceBroker.h"
 #include "URL.h"
 #include "addons/Skin.h"
-#include "addons/VFSEntry.h"
 #include "application/Application.h"
 #include "application/ApplicationComponents.h"
 #include "application/ApplicationPlayer.h"
@@ -121,11 +120,13 @@ void CGUIDialogSubtitleSettings::OnSettingChanged(const std::shared_ptr<const CS
 std::string CGUIDialogSubtitleSettings::BrowseForSubtitle()
 {
   std::string extras;
+#if 0
   for (const auto& vfsAddon : CServiceBroker::GetVFSAddonCache().GetAddonInstances())
   {
     if (vfsAddon->ID() == "vfs.rar" || vfsAddon->ID() == "vfs.libarchive")
       extras += '|' + vfsAddon->GetExtensions();
   }
+#endif
 
   std::string strPath;
   const std::string dynPath{g_application.CurrentFileItem().GetDynPath()};

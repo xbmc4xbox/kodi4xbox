@@ -12,13 +12,11 @@
 #include "ServiceBroker.h"
 #include "TextureCache.h"
 #include "URL.h"
-#include "cores/VideoPlayer/DVDFileInfo.h"
 #include "cores/VideoSettings.h"
 #include "filesystem/Directory.h"
 #include "filesystem/File.h"
 #include "filesystem/StackDirectory.h"
 #include "guilib/GUIComponent.h"
-#include "guilib/StereoscopicsManager.h"
 #include "music/MusicDatabase.h"
 #include "music/tags/MusicInfoTag.h"
 #include "settings/AdvancedSettings.h"
@@ -292,6 +290,7 @@ bool CVideoThumbLoader::LoadItemLookup(CFileItem* pItem)
     if (!pItem->HasArt("thumb"))
     {
       std::string thumbURL = GetEmbeddedThumbURL(*pItem);
+#if 0
       if (CDVDFileInfo::CanExtract(*pItem) &&
           settings->GetBool(CSettings::SETTING_MYVIDEOS_EXTRACTTHUMB) &&
           settings->GetInt(CSettings::SETTING_VIDEOLIBRARY_ARTWORK_LEVEL) !=
@@ -306,10 +305,12 @@ bool CVideoThumbLoader::LoadItemLookup(CFileItem* pItem)
             m_videoDatabase->SetArtForItem(info->m_iDbId, info->m_type, "thumb", thumbURL);
         }
       }
+#endif
     }
 
     // flag extraction mostly for non-library items - should end up somewhere else,
     // like a VideoInfoLoader if it existed
+#if 0
     if (settings->GetBool(CSettings::SETTING_MYVIDEOS_EXTRACTFLAGS) &&
         CDVDFileInfo::CanExtract(*pItem) &&
         (!pItem->HasVideoInfoTag() || !pItem->GetVideoInfoTag()->HasStreamDetails()))
@@ -341,6 +342,7 @@ bool CVideoThumbLoader::LoadItemLookup(CFileItem* pItem)
         m_videoDatabase->CommitTransaction();
       }
     }
+#endif
   }
   DetectAndAddMissingItemData(*pItem);
 
@@ -583,38 +585,6 @@ void CVideoThumbLoader::DetectAndAddMissingItemData(CFileItem &item)
       item.SetProperty("SubtitleLanguage." + index, details.GetSubtitleLanguage(i).c_str());
     }
   }
-
-  const CStereoscopicsManager &stereoscopicsManager = CServiceBroker::GetGUI()->GetStereoscopicsManager();
-
-  std::string stereoMode;
-
-  // detect stereomode for videos
-  if (item.HasVideoInfoTag())
-    stereoMode = item.GetVideoInfoTag()->m_streamDetails.GetStereoMode();
-
-  if (stereoMode.empty())
-  {
-    std::string path = item.GetPath();
-    if (item.IsVideoDb() && item.HasVideoInfoTag())
-      path = item.GetVideoInfoTag()->GetPath();
-
-    // check for custom stereomode setting in video settings
-    CVideoSettings itemVideoSettings;
-    m_videoDatabase->Open();
-    if (m_videoDatabase->GetVideoSettings(item, itemVideoSettings) && itemVideoSettings.m_StereoMode != RENDER_STEREO_MODE_OFF)
-    {
-      stereoMode = CStereoscopicsManager::ConvertGuiStereoModeToString(static_cast<RENDER_STEREO_MODE>(itemVideoSettings.m_StereoMode));
-    }
-    m_videoDatabase->Close();
-
-    // still empty, try grabbing from filename
-    //! @todo in case of too many false positives due to using the full path, extract the filename only using string utils
-    if (stereoMode.empty())
-      stereoMode = stereoscopicsManager.DetectStereoModeByString(path);
-  }
-
-  if (!stereoMode.empty())
-    item.SetProperty("stereomode", CStereoscopicsManager::NormalizeStereoMode(stereoMode));
 }
 
 const ArtMap& CVideoThumbLoader::GetArtFromCache(const std::string &mediaType, const int id)

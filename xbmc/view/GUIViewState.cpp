@@ -21,9 +21,7 @@
 #include "addons/addoninfo/AddonType.h"
 #include "addons/gui/GUIViewStateAddonBrowser.h"
 #include "dialogs/GUIDialogSelect.h"
-#include "events/windows/GUIViewStateEventLog.h"
 #include "favourites/GUIViewStateFavourites.h"
-#include "games/windows/GUIViewStateWindowGames.h"
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
@@ -32,7 +30,6 @@
 #include "pictures/GUIViewStatePictures.h"
 #include "profiles/ProfileManager.h"
 #include "programs/GUIViewStatePrograms.h"
-#include "pvr/windows/GUIViewStatePVR.h"
 #include "settings/MediaSourceSettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
@@ -47,10 +44,15 @@
 
 using namespace KODI;
 using namespace ADDON;
-using namespace PVR;
 
 std::string CGUIViewState::m_strPlaylistDirectory;
 VECSOURCES CGUIViewState::m_sources;
+
+static const int SETTING_AUTOPLAYNEXT_MUSICVIDEOS = 0;
+static const int SETTING_AUTOPLAYNEXT_TVSHOWS = 1;
+static const int SETTING_AUTOPLAYNEXT_EPISODES = 2;
+static const int SETTING_AUTOPLAYNEXT_MOVIES = 3;
+static const int SETTING_AUTOPLAYNEXT_UNCATEGORIZED = 4;
 
 CGUIViewState* CGUIViewState::GetViewState(int windowId, const CFileItemList& items)
 {
@@ -109,9 +111,6 @@ CGUIViewState* CGUIViewState::GetViewState(int windowId, const CFileItemList& it
   if (url.IsProtocol("androidapp"))
     return new CGUIViewStateWindowPrograms(items);
 
-  if (url.IsProtocol("activities"))
-    return new CGUIViewStateEventLog(items);
-
   if (windowId == WINDOW_MUSIC_NAV)
     return new CGUIViewStateWindowMusicNav(items);
 
@@ -127,56 +126,14 @@ CGUIViewState* CGUIViewState::GetViewState(int windowId, const CFileItemList& it
   if (windowId == WINDOW_VIDEO_PLAYLIST)
     return new CGUIViewStateWindowVideoPlaylist(items);
 
-  if (windowId == WINDOW_TV_CHANNELS)
-    return new CGUIViewStateWindowPVRChannels(windowId, items);
-
-  if (windowId == WINDOW_TV_RECORDINGS)
-    return new CGUIViewStateWindowPVRRecordings(windowId, items);
-
-  if (windowId == WINDOW_TV_GUIDE)
-    return new CGUIViewStateWindowPVRGuide(windowId, items);
-
-  if (windowId == WINDOW_TV_TIMERS)
-    return new CGUIViewStateWindowPVRTimers(windowId, items);
-
-  if (windowId == WINDOW_TV_TIMER_RULES)
-    return new CGUIViewStateWindowPVRTimers(windowId, items);
-
-  if (windowId == WINDOW_TV_SEARCH)
-    return new CGUIViewStateWindowPVRSearch(windowId, items);
-
-  if (windowId == WINDOW_RADIO_CHANNELS)
-      return new CGUIViewStateWindowPVRChannels(windowId, items);
-
-  if (windowId == WINDOW_RADIO_RECORDINGS)
-    return new CGUIViewStateWindowPVRRecordings(windowId, items);
-
-  if (windowId == WINDOW_RADIO_GUIDE)
-    return new CGUIViewStateWindowPVRGuide(windowId, items);
-
-  if (windowId == WINDOW_RADIO_TIMERS)
-    return new CGUIViewStateWindowPVRTimers(windowId, items);
-
-  if (windowId == WINDOW_RADIO_TIMER_RULES)
-    return new CGUIViewStateWindowPVRTimers(windowId, items);
-
-  if (windowId == WINDOW_RADIO_SEARCH)
-    return new CGUIViewStateWindowPVRSearch(windowId, items);
-
   if (windowId == WINDOW_PICTURES)
     return new CGUIViewStateWindowPictures(items);
 
   if (windowId == WINDOW_PROGRAMS)
     return new CGUIViewStateWindowPrograms(items);
 
-  if (windowId == WINDOW_GAMES)
-    return new GAME::CGUIViewStateWindowGames(items);
-
   if (windowId == WINDOW_ADDON_BROWSER)
     return new CGUIViewStateAddonBrowser(items);
-
-  if (windowId == WINDOW_EVENT_LOG)
-    return new CGUIViewStateEventLog(items);
 
   if (windowId == WINDOW_FAVOURITES)
     return new CGUIViewStateFavourites(items);

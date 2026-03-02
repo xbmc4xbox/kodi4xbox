@@ -10,7 +10,9 @@
 
 #include "SystemInfo.h"
 #ifndef TARGET_POSIX
+#ifndef _XBOX
 #include <conio.h>
+#endif
 #else
 #include <sys/utsname.h>
 #endif
@@ -20,8 +22,10 @@
 #include "filesystem/File.h"
 #include "guilib/LocalizeStrings.h"
 #include "guilib/guiinfo/GUIInfoLabels.h"
+#ifndef _XBOX
 #include "network/Network.h"
 #include "platform/Filesystem.h"
+#endif
 #include "rendering/RenderSystem.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
@@ -312,40 +316,27 @@ CSysData::INTERNET_STATE CSysInfoJob::GetInternetState()
 
 std::string CSysInfoJob::GetMACAddress()
 {
+#if 0
   CNetworkInterface* iface = CServiceBroker::GetNetwork().GetFirstConnectedInterface();
   if (iface)
     return iface->GetMacAddress();
+#endif
 
   return "";
 }
 
 std::string CSysInfoJob::GetIPAddress()
 {
-  CNetworkInterface* iface = CServiceBroker::GetNetwork().GetFirstConnectedInterface();
-  if (iface)
-  {
-    return iface->GetCurrentIPAddress();
-  }
   return {};
 }
 
 std::string CSysInfoJob::GetNetMask()
 {
-  CNetworkInterface* iface = CServiceBroker::GetNetwork().GetFirstConnectedInterface();
-  if (iface)
-  {
-    return iface->GetCurrentNetmask();
-  }
   return {};
 }
 
 std::string CSysInfoJob::GetGatewayAddress()
 {
-  CNetworkInterface* iface = CServiceBroker::GetNetwork().GetFirstConnectedInterface();
-  if (iface)
-  {
-    return iface->GetCurrentDefaultGateway();
-  }
   return {};
 }
 
@@ -353,12 +344,6 @@ std::string CSysInfoJob::GetNetworkLinkState()
 {
   std::string linkStatus = g_localizeStrings.Get(151);
   linkStatus += " ";
-  CNetworkInterface* iface = CServiceBroker::GetNetwork().GetFirstConnectedInterface();
-  if (iface && iface->IsConnected())
-  {
-    linkStatus += g_localizeStrings.Get(15207);
-  }
-  else
   {
     linkStatus += g_localizeStrings.Get(15208);
   }
@@ -367,12 +352,16 @@ std::string CSysInfoJob::GetNetworkLinkState()
 
 std::vector<std::string> CSysInfoJob::GetDNSServers()
 {
-  return CServiceBroker::GetNetwork().GetNameServers();
+  return std::vector<std::string>({"0.0.0.0"});
 }
 
 std::string CSysInfoJob::GetVideoEncoder()
 {
+#ifdef _XBOX
+  return "GPU: Custom NV2A";
+#else
   return "GPU: " + CServiceBroker::GetRenderSystem()->GetRenderRenderer();
+#endif
 }
 
 std::string CSysInfoJob::GetBatteryLevel()
@@ -528,6 +517,7 @@ const std::string& CSysInfo::GetAppName(void)
 
 bool CSysInfo::GetDiskSpace(std::string drive,int& iTotal, int& iTotalFree, int& iTotalUsed, int& iPercentFree, int& iPercentUsed)
 {
+#if 0
   using namespace KODI::PLATFORM::FILESYSTEM;
 
   space_info total = {};
@@ -569,6 +559,9 @@ bool CSysInfo::GetDiskSpace(std::string drive,int& iTotal, int& iTotalFree, int&
   iPercentFree = 100 - iPercentUsed;
 
   return true;
+#else
+  return false;
+#endif
 }
 
 std::string CSysInfo::GetKernelName(bool emptyIfUnknown /*= false*/)
@@ -826,6 +819,8 @@ std::string CSysInfo::GetOsPrettyNameWithVersion(void)
 
   if (osNameVer.find(GetOsVersion()) == std::string::npos)
     osNameVer += " " + GetOsVersion();
+#elif defined(_XBOX)
+  osNameVer += "Xbox OS";
 #endif // defined(TARGET_LINUX)
 
   if (osNameVer.empty())
@@ -1099,6 +1094,8 @@ const std::string& CSysInfo::GetKernelCpuFamily(void)
       else if (machine.compare(0, 5, "riscv", 5) == 0)
         kernelCpuFamily = "RISC-V";
     }
+#elif defined(_XBOX)
+    kernelCpuFamily = "x86";
 #endif
     if (kernelCpuFamily.empty())
       kernelCpuFamily = "unknown CPU family";
@@ -1327,12 +1324,14 @@ std::string CSysInfo::GetUserAgent()
 std::string CSysInfo::GetDeviceName()
 {
   std::string friendlyName = CServiceBroker::GetSettingsComponent()->GetSettings()->GetString(CSettings::SETTING_SERVICES_DEVICENAME);
+#if 0
   if (StringUtils::EqualsNoCase(friendlyName, CCompileInfo::GetAppName()))
   {
     std::string hostname("[unknown]");
     CServiceBroker::GetNetwork().GetHostName(hostname);
     return StringUtils::Format("{} ({})", friendlyName, hostname);
   }
+#endif
 
   return friendlyName;
 }

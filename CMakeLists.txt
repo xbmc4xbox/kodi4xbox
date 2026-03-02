@@ -213,7 +213,6 @@ add_executable(xbmc
   xbmc/favourites/FavouritesService.cpp
   xbmc/favourites/FavouritesURL.cpp
   xbmc/favourites/FavouritesUtils.cpp
-  xbmc/favourites/GUIDialogFavourites.cpp
   xbmc/favourites/GUIViewStateFavourites.cpp
   xbmc/favourites/GUIWindowFavourites.cpp
   xbmc/filesystem/AddonsDirectory.cpp
@@ -293,6 +292,7 @@ add_executable(xbmc
   xbmc/filesystem/VirtualDirectory.cpp
   xbmc/filesystem/ZipDirectory.cpp
   xbmc/filesystem/ZipFile.cpp
+  xbmc/imagefiles/SpecialImageLoaderFactory.cpp
   xbmc/guilib/cximage.cpp
   xbmc/guilib/DirtyRegionSolvers.cpp
   xbmc/guilib/DirtyRegionTracker.cpp
@@ -361,6 +361,7 @@ add_executable(xbmc
   xbmc/guilib/TextureGL.cpp
   xbmc/guilib/TextureManager.cpp
   xbmc/guilib/VisibleEffect.cpp
+  xbmc/guilib/imagefactory.cpp
   xbmc/guilib/guiinfo/AddonsGUIInfo.cpp
   xbmc/guilib/guiinfo/GUIControlsGUIInfo.cpp
   xbmc/guilib/guiinfo/GUIInfo.cpp
@@ -378,19 +379,22 @@ add_executable(xbmc
   xbmc/guilib/guiinfo/VideoGUIInfo.cpp
   xbmc/guilib/guiinfo/VisualisationGUIInfo.cpp
   xbmc/guilib/guiinfo/WeatherGUIInfo.cpp
-  xbmc/guilib/imagefactory.cpp
-  xbmc/input/AppTranslator.cpp
-  xbmc/input/ButtonTranslator.cpp
-  xbmc/input/GamepadTranslator.cpp
+  xbmc/guilib/listproviders/DirectoryProvider.cpp
+  xbmc/guilib/listproviders/IListProvider.cpp
+  xbmc/guilib/listproviders/MultiProvider.cpp
+  xbmc/guilib/listproviders/StaticProvider.cpp
   xbmc/input/InputCodingTableBasePY.cpp
   xbmc/input/InputCodingTableFactory.cpp
   xbmc/input/InputCodingTableKorean.cpp
   xbmc/input/InputManager.cpp
-  xbmc/input/Key.cpp
-  xbmc/input/KeyboardLayout.cpp
-  xbmc/input/KeyboardLayoutManager.cpp
   xbmc/input/WindowTranslator.cpp
-  xbmc/input/XBMC_keytable.cpp
+  xbmc/input/keyboard/Key.cpp
+  xbmc/input/keyboard/KeyboardLayout.cpp
+  xbmc/input/keyboard/KeyboardLayoutManager.cpp
+  xbmc/input/keyboard/XBMC_keytable.cpp
+  xbmc/input/keymaps/ButtonTranslator.cpp
+  xbmc/input/keymaps/AppTranslator.cpp
+  xbmc/input/keymaps/joysticks/GamepadTranslator.cpp
   xbmc/input/actions/Action.cpp
   xbmc/input/actions/ActionTranslator.cpp
   xbmc/interfaces/AnnouncementManager.cpp
@@ -417,10 +421,6 @@ add_executable(xbmc
   xbmc/interfaces/info/InfoBool.cpp
   xbmc/interfaces/info/InfoExpression.cpp
   xbmc/interfaces/info/SkinVariable.cpp
-  xbmc/listproviders/DirectoryProvider.cpp
-  xbmc/listproviders/IListProvider.cpp
-  xbmc/listproviders/MultiProvider.cpp
-  xbmc/listproviders/StaticProvider.cpp
   xbmc/media/MediaType.cpp
   xbmc/messaging/ApplicationMessenger.cpp
   xbmc/messaging/helpers/DialogHelper.cpp
@@ -477,7 +477,9 @@ add_executable(xbmc
   xbmc/pictures/PictureInfoLoader.cpp
   xbmc/pictures/PictureInfoTag.cpp
   xbmc/pictures/PictureThumbLoader.cpp
+  xbmc/pictures/SlideShowDelegator.cpp
   xbmc/pictures/SlideShowPicture.cpp
+  xbmc/pictures/SlideShowPictureGL.cpp
   xbmc/pictures/libexif.cpp
   xbmc/platform/win32/CharsetConverter.cpp
   xbmc/platform/win32/XTimeUtils.cpp
@@ -486,6 +488,7 @@ add_executable(xbmc
   xbmc/platform/xbmc.cpp
   xbmc/platform/xbox/AudioContext.cpp
   xbmc/platform/xbox/CPUInfoXbox.cpp
+  xbmc/platform/xbox/GPUInfoXbox.cpp
   xbmc/platform/xbox/main.cpp
   xbmc/platform/xbox/MessagePrinter.cpp
   xbmc/platform/xbox/XBOXUtil.cpp
@@ -577,6 +580,7 @@ add_executable(xbmc
   xbmc/utils/FileOperationJob.cpp
   xbmc/utils/FileUtils.cpp
   xbmc/utils/GLUtils.cpp
+  xbmc/utils/GpuInfo.cpp
   xbmc/utils/GroupUtils.cpp
   xbmc/utils/HTMLUtil.cpp
   xbmc/utils/HttpHeader.cpp
@@ -622,6 +626,7 @@ add_executable(xbmc
   xbmc/utils/auto_buffer.cpp
   xbmc/utils/log.cpp
   xbmc/utils/md5.cpp
+  xbmc/utils/guilib/GUIContentUtils.cpp
   xbmc/video/Bookmark.cpp
   xbmc/video/ContextMenus.cpp
   xbmc/video/GUIViewStateVideo.cpp
@@ -631,6 +636,7 @@ add_executable(xbmc
   xbmc/video/VideoInfoDownloader.cpp
   xbmc/video/VideoInfoScanner.cpp
   xbmc/video/VideoInfoTag.cpp
+  xbmc/video/VideoItemArtworkHandler.cpp
   xbmc/video/VideoLibraryQueue.cpp
   xbmc/video/VideoThumbLoader.cpp
   xbmc/video/VideoUtils.cpp
@@ -641,8 +647,14 @@ add_executable(xbmc
   xbmc/video/dialogs/GUIDialogSubtitles.cpp
   xbmc/video/dialogs/GUIDialogVideoBookmarks.cpp
   xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+  xbmc/video/dialogs/GUIDialogVideoManager.cpp
+  xbmc/video/dialogs/GUIDialogVideoManagerExtras.cpp
+  xbmc/video/dialogs/GUIDialogVideoManagerVersions.cpp
   xbmc/video/dialogs/GUIDialogVideoOSD.cpp
   xbmc/video/dialogs/GUIDialogVideoSettings.cpp
+  xbmc/video/guilib/VideoPlayActionProcessor.cpp
+  xbmc/video/guilib/VideoSelectActionProcessor.cpp
+  xbmc/video/guilib/VideoVersionHelper.cpp
   xbmc/video/jobs/VideoLibraryCleaningJob.cpp
   xbmc/video/jobs/VideoLibraryJob.cpp
   xbmc/video/jobs/VideoLibraryMarkWatchedJob.cpp
@@ -651,6 +663,7 @@ add_executable(xbmc
   xbmc/video/jobs/VideoLibraryResetResumePointJob.cpp
   xbmc/video/jobs/VideoLibraryScanningJob.cpp
   xbmc/video/tags/VideoInfoTagLoaderFactory.cpp
+  xbmc/video/tags/VideoTagExtractionHelper.cpp
   xbmc/video/tags/VideoTagLoaderNFO.cpp
   xbmc/video/tags/VideoTagLoaderPlugin.cpp
   xbmc/video/windows/GUIWindowVideoBase.cpp

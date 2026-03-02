@@ -19,7 +19,6 @@
 #include "input/actions/Action.h"
 #include "input/actions/ActionIDs.h"
 #include "input/keyboard/KeyIDs.h"
-#include "input/mouse/MouseEvent.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 #include "utils/CharsetConverter.h"
@@ -778,91 +777,6 @@ bool CGUIBaseContainer::OnMouseOver(const CPoint &point)
 
 EVENT_RESULT CGUIBaseContainer::OnMouseEvent(const CPoint& point, const MOUSE::CMouseEvent& event)
 {
-  if (event.m_id == ACTION_MOUSE_LEFT_CLICK ||
-      event.m_id == ACTION_MOUSE_DOUBLE_CLICK ||
-      event.m_id == ACTION_MOUSE_RIGHT_CLICK)
-  {
-    // Cancel touch
-    m_waitForScrollEnd = false;
-    int select = GetSelectedItem();
-    if (SelectItemFromPoint(point - CPoint(m_posX, m_posY)))
-    {
-      if (event.m_id != ACTION_MOUSE_RIGHT_CLICK || select == GetSelectedItem())
-        OnClick(event.m_id);
-      return EVENT_RESULT_HANDLED;
-    }
-  }
-  else if (event.m_id == ACTION_MOUSE_WHEEL_UP)
-  {
-    Scroll(-1);
-    return EVENT_RESULT_HANDLED;
-  }
-  else if (event.m_id == ACTION_MOUSE_WHEEL_DOWN)
-  {
-    Scroll(1);
-    return EVENT_RESULT_HANDLED;
-  }
-  else if (event.m_id == ACTION_GESTURE_NOTIFY)
-  {
-    m_waitForScrollEnd = true;
-    m_lastScrollValue = m_scroller.GetValue();
-    return (m_orientation == HORIZONTAL) ? EVENT_RESULT_PAN_HORIZONTAL : EVENT_RESULT_PAN_VERTICAL;
-  }
-  else if (event.m_id == ACTION_GESTURE_BEGIN)
-  { // grab exclusive access
-    m_gestureActive = true;
-    CGUIMessage msg(GUI_MSG_EXCLUSIVE_MOUSE, GetID(), GetParentID());
-    SendWindowMessage(msg);
-    return EVENT_RESULT_HANDLED;
-  }
-  else if (event.m_id == ACTION_GESTURE_PAN)
-  { // do the drag and validate our offset (corrects for end of scroll)
-    m_scroller.SetValue(m_scroller.GetValue() - ((m_orientation == HORIZONTAL) ? event.m_offsetX : event.m_offsetY));
-    float size = (m_layout) ? m_layout->Size(m_orientation) : 10.0f;
-    int offset = MathUtils::round_int(static_cast<double>(m_scroller.GetValue() / size));
-    m_lastScrollStartTimer.Stop();
-    m_scrollTimer.Start();
-    const int absCursor = CorrectOffset(GetOffset(), GetCursor());
-    SetOffset(offset);
-    ValidateOffset();
-    // Notify Application if Inertial scrolling reaches lists end
-    if (m_waitForScrollEnd)
-    {
-      if (fabs(m_scroller.GetValue() - m_lastScrollValue) < 0.001f)
-      {
-        m_waitForScrollEnd = false;
-        return EVENT_RESULT_UNHANDLED;
-      }
-      else
-        m_lastScrollValue = m_scroller.GetValue();
-    }
-    else
-    {
-      CGUIBaseContainer::SetCursor(absCursor - CorrectOffset(GetOffset(), 0));
-    }
-    return EVENT_RESULT_HANDLED;
-  }
-  else if (event.m_id == ACTION_GESTURE_END || event.m_id == ACTION_GESTURE_ABORT)
-  { // release exclusive access
-    CGUIMessage msg(GUI_MSG_EXCLUSIVE_MOUSE, 0, GetParentID());
-    SendWindowMessage(msg);
-    m_scrollTimer.Stop();
-    // and compute the nearest offset from this and scroll there
-    float size = (m_layout) ? m_layout->Size(m_orientation) : 10.0f;
-    float offset = m_scroller.GetValue() / size;
-    int toOffset = MathUtils::round_int(static_cast<double>(offset));
-    if (toOffset < offset)
-      SetOffset(toOffset+1);
-    else
-      SetOffset(toOffset-1);
-    ScrollToOffset(toOffset);
-    ValidateOffset();
-    SetCursor(GetCursor());
-    SetFocus(true);
-    m_waitForScrollEnd = false;
-    m_gestureActive = false;
-    return EVENT_RESULT_HANDLED;
-  }
   return EVENT_RESULT_UNHANDLED;
 }
 

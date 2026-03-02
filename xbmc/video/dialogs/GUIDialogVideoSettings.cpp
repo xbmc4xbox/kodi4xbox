@@ -438,7 +438,7 @@ void CGUIDialogVideoSettings::InitializeSettings()
   // tone mapping
   if (appPlayer->Supports(RENDERFEATURE_TONEMAP))
   {
-    const bool visible = !CServiceBroker::GetWinSystem()->IsHDRDisplaySettingEnabled();
+    bool visible = false;
     entries.clear();
     entries.emplace_back(36554, VS_TONEMAPMETHOD_OFF);
     entries.emplace_back(36555, VS_TONEMAPMETHOD_REINHARD);

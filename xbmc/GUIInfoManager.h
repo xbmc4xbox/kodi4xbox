@@ -27,10 +27,6 @@ class CGUIListItem;
 
 namespace KODI
 {
-namespace GAME
-{
-class CGameInfoTag;
-}
 namespace GUILIB
 {
 namespace GUIINFO
@@ -133,9 +129,6 @@ public:
 
   // Current video stuff
   const CVideoInfoTag* GetCurrentMovieTag() const;
-
-  // Current game stuff
-  const KODI::GAME::CGameInfoTag* GetCurrentGameTag() const;
 
   void UpdateAVInfo();
 

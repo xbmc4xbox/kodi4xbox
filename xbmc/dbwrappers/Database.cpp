@@ -28,6 +28,9 @@
 #endif
 
 #include <memory>
+#ifdef NXDK
+#include <windows.h> // GetLastError()
+#endif
 
 using namespace dbiplus;
 

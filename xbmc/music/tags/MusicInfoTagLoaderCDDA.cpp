@@ -10,7 +10,6 @@
 
 #include "MusicInfoTag.h"
 #include "ServiceBroker.h"
-#include "network/cddb.h"
 #include "profiles/ProfileManager.h"
 #include "settings/SettingsComponent.h"
 #include "storage/MediaManager.h"

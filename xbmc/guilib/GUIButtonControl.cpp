@@ -11,7 +11,6 @@
 #include "GUIFontManager.h"
 #include "input/actions/Action.h"
 #include "input/actions/ActionIDs.h"
-#include "input/mouse/MouseEvent.h"
 
 using namespace KODI;
 
@@ -341,11 +340,6 @@ CRect CGUIButtonControl::CalcRenderRegion() const
 
 EVENT_RESULT CGUIButtonControl::OnMouseEvent(const CPoint& point, const MOUSE::CMouseEvent& event)
 {
-  if (event.m_id == ACTION_MOUSE_LEFT_CLICK)
-  {
-    OnAction(CAction(ACTION_SELECT_ITEM));
-    return EVENT_RESULT_HANDLED;
-  }
   return EVENT_RESULT_UNHANDLED;
 }
 

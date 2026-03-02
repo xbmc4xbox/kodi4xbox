@@ -12,8 +12,6 @@
 #include "TextureDatabase.h"
 #include "addons/AddonDatabase.h"
 #include "music/MusicDatabase.h"
-#include "pvr/PVRDatabase.h"
-#include "pvr/epg/EpgDatabase.h"
 #include "settings/AdvancedSettings.h"
 #include "settings/SettingsComponent.h"
 #include "utils/log.h"
@@ -21,8 +19,6 @@
 #include "view/ViewDatabase.h"
 
 #include <mutex>
-
-using namespace PVR;
 
 CDatabaseManager::CDatabaseManager() :
   m_bIsUpgrading(false)
@@ -54,8 +50,6 @@ void CDatabaseManager::Initialize()
   { CTextureDatabase db; UpdateDatabase(db); }
   { CMusicDatabase db; UpdateDatabase(db, &advancedSettings->m_databaseMusic); }
   { CVideoDatabase db; UpdateDatabase(db, &advancedSettings->m_databaseVideo); }
-  { CPVRDatabase db; UpdateDatabase(db, &advancedSettings->m_databaseTV); }
-  { CPVREpgDatabase db; UpdateDatabase(db, &advancedSettings->m_databaseEpg); }
 
   CLog::Log(LOGDEBUG, "{}, updating databases... DONE", __FUNCTION__);
 

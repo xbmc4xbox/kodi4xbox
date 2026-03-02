@@ -9,7 +9,9 @@
 #pragma once
 
 #include "GUIComponent.h"
+#if 0
 #include "TextureBundle.h"
+#endif
 #include "threads/CriticalSection.h"
 
 #include <chrono>
@@ -99,6 +101,14 @@ public:
   CGUITextureManager(void);
   virtual ~CGUITextureManager(void);
 
+#if 0
+#ifdef HAS_XBOX_D3D
+  void StartPreLoad();
+  void PreLoad(const std::string& strTextureName);
+  void EndPreLoad();
+  void FlushPreLoad();
+#endif
+#endif
   bool HasTexture(const std::string &textureName, std::string *path = NULL, int *bundle = NULL, int *size = NULL);
   static bool CanLoad(const std::string &texturePath); ///< Returns true if the texture manager can load this texture
   const CTextureArray& Load(const std::string& strTextureName, bool checkBundleOnly = false);
@@ -122,8 +132,14 @@ protected:
       m_unusedTextures;
   std::vector<unsigned int> m_unusedHwTextures;
   typedef std::vector<CTextureMap*>::iterator ivecTextures;
+#if 0
   // we have 2 texture bundles (one for the base textures, one for the theme)
   CTextureBundle m_TexBundle[2];
+#ifdef HAS_XBOX_D3D
+  std::list<std::string> m_PreLoadNames[2];
+  std::list<std::string>::iterator m_iNextPreload[2];
+#endif
+#endif
 
   std::vector<std::string> m_texturePaths;
   CCriticalSection m_section;

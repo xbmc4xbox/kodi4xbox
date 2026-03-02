@@ -18,7 +18,6 @@
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
-#include "guilib/StereoscopicsManager.h"
 #include "input/WindowTranslator.h"
 #include "input/actions/Action.h"
 #include "input/actions/ActionIDs.h"
@@ -27,8 +26,6 @@
 #include "settings/AdvancedSettings.h"
 #include "settings/SettingsComponent.h"
 #include "utils/AlarmClock.h"
-#include "utils/RssManager.h"
-#include "utils/Screenshot.h"
 #include "utils/StringUtils.h"
 #include "utils/URIUtils.h"
 #include "utils/log.h"
@@ -297,7 +294,9 @@ static int Notification(const std::vector<std::string>& params)
  */
 static int RefreshRSS(const std::vector<std::string>& params)
 {
+#if 0
   CRssManager::GetInstance().Reload();
+#endif
 
   return 0;
 }
@@ -309,6 +308,7 @@ static int RefreshRSS(const std::vector<std::string>& params)
  */
 static int Screenshot(const std::vector<std::string>& params)
 {
+#if 0
   if (!params.empty())
   {
     // get the parameters
@@ -339,6 +339,7 @@ static int Screenshot(const std::vector<std::string>& params)
   }
   else
     CScreenShot::TakeScreenshot();
+#endif
 
   return 0;
 }
@@ -375,6 +376,7 @@ static int SetProperty(const std::vector<std::string>& params)
  */
 static int SetStereoMode(const std::vector<std::string>& params)
 {
+#if 0
   CAction action = CStereoscopicsManager::ConvertActionCommandToAction("SetStereoMode", params[0]);
   if (action.GetID() != ACTION_NONE)
     CServiceBroker::GetAppMessenger()->SendMsg(TMSG_GUI_ACTION, WINDOW_INVALID, -1,
@@ -384,6 +386,7 @@ static int SetStereoMode(const std::vector<std::string>& params)
     CLog::Log(LOGERROR, "Builtin 'SetStereoMode' called with unknown parameter: {}", params[0]);
     return -2;
   }
+#endif
 
   return 0;
 }

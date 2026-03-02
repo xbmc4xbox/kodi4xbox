@@ -18,8 +18,6 @@
 
 #ifdef HAVE_NEW_CROSSGUID
 #include <crossguid/guid.hpp>
-#else
-#include <guid.h>
 #endif
 
 #if defined(TARGET_ANDROID)
@@ -44,7 +42,7 @@
 #include <time.h>
 
 #include <fstrcmp.h>
-#include <memory.h>
+#include <memory>
 
 // don't move or std functions end up in PCRE namespace
 // clang-format off
@@ -296,51 +294,6 @@ std::string StringUtils::FormatV(const char *fmt, va_list args)
   }
 
   return ""; // unreachable
-}
-
-std::wstring StringUtils::FormatV(const wchar_t *fmt, va_list args)
-{
-  if (!fmt || !fmt[0])
-    return L"";
-
-  int size = FORMAT_BLOCK_SIZE;
-  va_list argCopy;
-
-  while (true)
-  {
-    wchar_t *cstr = reinterpret_cast<wchar_t*>(malloc(sizeof(wchar_t) * size));
-    if (!cstr)
-      return L"";
-
-    va_copy(argCopy, args);
-    int nActual = vswprintf(cstr, size, fmt, argCopy);
-    va_end(argCopy);
-
-    if (nActual > -1 && nActual < size) // We got a valid result
-    {
-      std::wstring str(cstr, nActual);
-      free(cstr);
-      return str;
-    }
-    free(cstr);
-
-#ifndef TARGET_WINDOWS
-    if (nActual > -1)                   // Exactly what we will need (glibc 2.1)
-      size = nActual + 1;
-    else                                // Let's try to double the size (glibc 2.0)
-      size *= 2;
-#else  // TARGET_WINDOWS
-    va_copy(argCopy, args);
-    size = _vscwprintf(fmt, argCopy);
-    va_end(argCopy);
-    if (size < 0)
-      return L"";
-    else
-      size++; // increment for null-termination
-#endif // TARGET_WINDOWS
-  }
-
-  return L"";
 }
 
 int compareWchar (const void* a, const void* b)
@@ -1774,11 +1727,48 @@ std::string StringUtils::CreateUUID()
   return xg::newGuid().str();
 #endif /* TARGET_ANDROID */
 #else
-  static GuidGenerator guidGenerator;
-  auto guid = guidGenerator.newGuid();
+  /* This function generate a DCE 1.1, ISO/IEC 11578:1996 and IETF RFC-4122
+  * Version 4 conform local unique UUID based upon random number generation.
+  */
+  char UuidStrTmp[40];
+  char *pUuidStr = UuidStrTmp;
+  int i;
 
-  std::stringstream strGuid; strGuid << guid;
-  return strGuid.str();
+  static bool m_uuidInitialized = false;
+  if (!m_uuidInitialized)
+  {
+    /* use current time as the seed for rand()*/
+    srand(time(NULL));
+    m_uuidInitialized = true;
+  }
+
+  /*Data1 - 8 characters.*/
+  for(i = 0; i < 8; i++, pUuidStr++)
+    ((*pUuidStr = (rand() % 16)) < 10) ? *pUuidStr += 48 : *pUuidStr += 55;
+
+  /*Data2 - 4 characters.*/
+  *pUuidStr++ = '-';
+  for(i = 0; i < 4; i++, pUuidStr++)
+    ((*pUuidStr = (rand() % 16)) < 10) ? *pUuidStr += 48 : *pUuidStr += 55;
+
+  /*Data3 - 4 characters.*/
+  *pUuidStr++ = '-';
+  for(i = 0; i < 4; i++, pUuidStr++)
+    ((*pUuidStr = (rand() % 16)) < 10) ? *pUuidStr += 48 : *pUuidStr += 55;
+
+  /*Data4 - 4 characters.*/
+  *pUuidStr++ = '-';
+  for(i = 0; i < 4; i++, pUuidStr++)
+    ((*pUuidStr = (rand() % 16)) < 10) ? *pUuidStr += 48 : *pUuidStr += 55;
+
+  /*Data5 - 12 characters.*/
+  *pUuidStr++ = '-';
+  for(i = 0; i < 12; i++, pUuidStr++)
+    ((*pUuidStr = (rand() % 16)) < 10) ? *pUuidStr += 48 : *pUuidStr += 55;
+
+  *pUuidStr = '\0';
+
+  return UuidStrTmp;
 #endif
 }
 

@@ -18,7 +18,7 @@
 
 #include <mutex>
 
-#if !defined(TARGET_WINDOWS)
+#if !defined(TARGET_WINDOWS) && !defined(_XBOX)
 #include "platform/posix/ConvUtils.h"
 #endif
 

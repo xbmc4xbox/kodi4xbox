@@ -18,7 +18,6 @@
 #include "guilib/GUIWindowManager.h"
 #include "input/actions/Action.h"
 #include "input/actions/ActionIDs.h"
-#include "input/mouse/MouseEvent.h"
 #include "settings/AdvancedSettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
@@ -187,23 +186,6 @@ bool CGUIWindowVisualisation::OnMessage(CGUIMessage& message)
 EVENT_RESULT CGUIWindowVisualisation::OnMouseEvent(const CPoint& point,
                                                    const MOUSE::CMouseEvent& event)
 {
-  if (event.m_id == ACTION_MOUSE_RIGHT_CLICK)
-  { // no control found to absorb this click - go back to GUI
-    OnAction(CAction(ACTION_SHOW_GUI));
-    return EVENT_RESULT_HANDLED;
-  }
-  if (event.m_id == ACTION_GESTURE_NOTIFY)
-    return EVENT_RESULT_UNHANDLED;
-  if (event.m_id != ACTION_MOUSE_MOVE || event.m_offsetX || event.m_offsetY)
-  { // some other mouse action has occurred - bring up the OSD
-    CGUIDialog *pOSD = CServiceBroker::GetGUI()->GetWindowManager().GetDialog(WINDOW_DIALOG_MUSIC_OSD);
-    if (pOSD)
-    {
-      pOSD->SetAutoClose(3000);
-      pOSD->Open();
-    }
-    return EVENT_RESULT_HANDLED;
-  }
   return EVENT_RESULT_UNHANDLED;
 }
 

@@ -9,38 +9,15 @@
 #include "Digest.h"
 
 #include "StringUtils.h"
+#include "log.h"
 
 #include <array>
 #include <stdexcept>
-
-#include <openssl/evp.h>
 
 namespace KODI
 {
 namespace UTILITY
 {
-
-namespace
-{
-
-EVP_MD const * TypeToEVPMD(CDigest::Type type)
-{
-  switch (type)
-  {
-    case CDigest::Type::MD5:
-      return EVP_md5();
-    case CDigest::Type::SHA1:
-      return EVP_sha1();
-    case CDigest::Type::SHA256:
-      return EVP_sha256();
-    case CDigest::Type::SHA512:
-      return EVP_sha512();
-    default:
-      throw std::invalid_argument("Unknown digest type");
-  }
-}
-
-}
 
 std::ostream& operator<<(std::ostream& os, TypedDigest const& digest)
 {
@@ -92,18 +69,12 @@ CDigest::Type CDigest::TypeFromString(std::string const& type)
   }
 }
 
-void CDigest::MdCtxDeleter::operator()(EVP_MD_CTX* context)
-{
-  EVP_MD_CTX_destroy(context);
-}
-
 CDigest::CDigest(Type type)
-: m_context{EVP_MD_CTX_create()}, m_md(TypeToEVPMD(type))
 {
-  if (1 != EVP_DigestInit_ex(m_context.get(), m_md, nullptr))
-  {
-    throw std::runtime_error("EVP_DigestInit_ex failed");
-  }
+  if (type != Type::MD5)
+    CLog::Log(LOGWARNING, "Digest of type {} is not supported. Falling back to MD5", TypeToString(type));
+
+  MD5Init(&m_context);
 }
 
 void CDigest::Update(std::string const& data)
@@ -118,10 +89,7 @@ void CDigest::Update(void const* data, std::size_t size)
     throw std::logic_error("Finalized digest cannot be updated any more");
   }
 
-  if (1 != EVP_DigestUpdate(m_context.get(), data, size))
-  {
-    throw std::runtime_error("EVP_DigestUpdate failed");
-  }
+  MD5Update(&m_context, (md5byte*)data, size);
 }
 
 std::string CDigest::FinalizeRaw()
@@ -133,17 +101,14 @@ std::string CDigest::FinalizeRaw()
 
   m_finalized = true;
 
-  std::array<unsigned char, 64> digest;
-  std::size_t size = EVP_MD_size(m_md);
-  if (size > digest.size())
-  {
-    throw std::runtime_error("Digest unexpectedly long");
-  }
-  if (1 != EVP_DigestFinal_ex(m_context.get(), digest.data(), nullptr))
-  {
-    throw std::runtime_error("EVP_DigestFinal_ex failed");
-  }
-  return {reinterpret_cast<char*> (digest.data()), size};
+  unsigned char digest[16] = {'\0'};
+  MD5Final(digest, &m_context);
+  return StringUtils::Format("%02X%02X%02X%02X%02X%02X%02X%02X"\
+                             "%02X%02X%02X%02X%02X%02X%02X%02X",
+                             digest[0], digest[1], digest[2],
+                             digest[3], digest[4], digest[5], digest[6], digest[7], digest[8],
+                             digest[9], digest[10], digest[11], digest[12], digest[13], digest[14],
+                             digest[15]);
 }
 
 std::string CDigest::Finalize()

@@ -6,14 +6,12 @@
  *  See LICENSES/README.md for more information.
  */
 
-#include "network/Network.h"
 #include "URIUtils.h"
 #include "FileItem.h"
 #include "filesystem/MultiPathDirectory.h"
 #include "filesystem/SpecialProtocol.h"
 #include "filesystem/StackDirectory.h"
 #include "network/DNSNameCache.h"
-#include "pvr/channels/PVRChannelsPath.h"
 #include "settings/AdvancedSettings.h"
 #include "URL.h"
 #include "utils/FileExtensionProvider.h"
@@ -27,10 +25,13 @@
 
 #include <algorithm>
 #include <cassert>
+#ifdef NXDK
+#include <lwip/netdb.h>
+#else
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#endif
 
-using namespace PVR;
 using namespace XFILE;
 
 const CAdvancedSettings* URIUtils::m_advancedSettings = nullptr;
@@ -720,11 +721,13 @@ bool URIUtils::IsHostOnLAN(const std::string& host, LanCheckMode lanCheckMode)
         return true;
     }
     // check if we are on the local subnet
+#if 0
     if (!CServiceBroker::GetNetwork().GetFirstConnectedInterface())
       return false;
 
     if (CServiceBroker::GetNetwork().HasInterfaceForIP(address))
       return true;
+#endif
   }
 
   return false;
@@ -993,7 +996,7 @@ bool URIUtils::IsPVRChannel(const std::string& strFile)
   if (IsStack(strFile))
     return IsPVRChannel(CStackDirectory::GetFirstStackedFile(strFile));
 
-  return IsProtocol(strFile, "pvr") && CPVRChannelsPath(strFile).IsChannel();
+  return IsProtocol(strFile, "pvr")/* && CPVRChannelsPath(strFile).IsChannel()*/;
 }
 
 bool URIUtils::IsPVRChannelGroup(const std::string& strFile)
@@ -1001,7 +1004,7 @@ bool URIUtils::IsPVRChannelGroup(const std::string& strFile)
   if (IsStack(strFile))
     return IsPVRChannelGroup(CStackDirectory::GetFirstStackedFile(strFile));
 
-  return IsProtocol(strFile, "pvr") && CPVRChannelsPath(strFile).IsChannelGroup();
+  return IsProtocol(strFile, "pvr")/* && CPVRChannelsPath(strFile).IsChannelGroup()*/;
 }
 
 bool URIUtils::IsPVRGuideItem(const std::string& strFile)

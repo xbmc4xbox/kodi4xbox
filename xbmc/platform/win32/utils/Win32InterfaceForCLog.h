@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2020 Team Kodi
+ *  Copyright (C) 2014-2018 Team Kodi
  *  This file is part of Kodi - https://kodi.tv
  *
  *  SPDX-License-Identifier: GPL-2.0-or-later
@@ -8,19 +8,20 @@
 
 #pragma once
 
-#if !defined(TARGET_WINDOWS) && !defined(TARGET_WIN10)
-#error This file is for win32 platforms only
-#endif // !defined(TARGET_WINDOWS) && !defined(TARGET_WIN10)
+#include <string>
 
-#include "utils/IPlatformLog.h"
+typedef void* HANDLE; // forward declaration, to avoid inclusion of whole Windows.h
 
-class CWin32InterfaceForCLog : public IPlatformLog
+class CWin32InterfaceForCLog
 {
 public:
-  CWin32InterfaceForCLog() = default;
-  ~CWin32InterfaceForCLog() override = default;
-
-  spdlog_filename_t GetLogFilename(const std::string& filename) const override;
-  void AddSinks(
-      std::shared_ptr<spdlog::sinks::dist_sink<std::mutex>> distributionSink) const override;
+  CWin32InterfaceForCLog();
+  ~CWin32InterfaceForCLog();
+  bool OpenLogFile(const std::string& logFilename, const std::string& backupOldLogToFilename);
+  void CloseLogFile(void);
+  bool WriteStringToLog(const std::string& logString);
+  void PrintDebugString(const std::string& debugString);
+  static void GetCurrentLocalTime(int& year, int& month, int& day, int& hour, int& minute, int& second, double& millisecond);
+private:
+  HANDLE m_hFile;
 };

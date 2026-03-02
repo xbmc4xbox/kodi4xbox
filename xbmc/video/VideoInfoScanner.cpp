@@ -16,11 +16,8 @@
 #include "URL.h"
 #include "Util.h"
 #include "VideoInfoDownloader.h"
-#include "cores/VideoPlayer/DVDFileInfo.h"
 #include "dialogs/GUIDialogExtendedProgressBar.h"
 #include "dialogs/GUIDialogProgress.h"
-#include "events/EventLog.h"
-#include "events/MediaLibraryEvent.h"
 #include "filesystem/Directory.h"
 #include "filesystem/File.h"
 #include "filesystem/MultiPathDirectory.h"
@@ -532,19 +529,6 @@ namespace VIDEO
           mediaType = MediaTypeTvShow;
         else if (info2->Content() == CONTENT_MUSICVIDEOS)
           mediaType = MediaTypeMusicVideo;
-
-        auto eventLog = CServiceBroker::GetEventLog();
-        if (eventLog)
-        {
-          const std::string itemlogpath = (info2->Content() == CONTENT_TVSHOWS)
-                                              ? CURL::GetRedacted(pItem->GetPath())
-                                              : URIUtils::GetFileName(pItem->GetPath());
-
-          eventLog->Add(EventPtr(new CMediaLibraryEvent(
-              mediaType, pItem->GetPath(), 24145,
-              StringUtils::Format(g_localizeStrings.Get(24147), mediaType, itemlogpath),
-              EventLevel::Warning)));
-        }
       }
 
       pURL = NULL;
@@ -1498,6 +1482,7 @@ namespace VIDEO
     if (CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(
             CSettings::SETTING_MYVIDEOS_EXTRACTFLAGS))
     {
+#if 0
       const auto& strmdetails = movieDetails.m_streamDetails;
       if (strmdetails.GetVideoCodec(1).empty() || strmdetails.GetVideoHeight(1) == 0 ||
           strmdetails.GetVideoWidth(1) == 0 || strmdetails.GetVideoDuration(1) == 0)
@@ -1507,6 +1492,7 @@ namespace VIDEO
         CLog::Log(LOGDEBUG, "VideoInfoScanner: Extracted filestream details from video file {}",
                   CURL::GetRedacted(pItem->GetPath()));
       }
+#endif
     }
 
     CLog::Log(LOGDEBUG, "VideoInfoScanner: Adding new item to {}:{}", TranslateContent(content), CURL::GetRedacted(pItem->GetPath()));
@@ -1875,6 +1861,7 @@ namespace VIDEO
       }
     }
 
+#if 0
     if (art.find("thumb") == art.end() &&
         CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(
             CSettings::SETTING_MYVIDEOS_EXTRACTTHUMB) &&
@@ -1882,6 +1869,7 @@ namespace VIDEO
     {
       art["thumb"] = CVideoThumbLoader::GetEmbeddedThumbURL(*pItem);
     }
+#endif
 
     for (const auto& artType : artTypes)
     {
@@ -2497,9 +2485,11 @@ namespace VIDEO
           if (CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(
                   CSettings::SETTING_MYVIDEOS_EXTRACTFLAGS))
           {
+#if 0
             CDVDFileInfo::GetFileStreamDetails(item.get());
             CLog::Log(LOGDEBUG, "VideoInfoScanner: Extracted filestream details from video file {}",
                       CURL::GetRedacted(item->GetPath()));
+#endif
           }
 
           const std::string typeVideoVersion =

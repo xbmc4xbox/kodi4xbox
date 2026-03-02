@@ -30,9 +30,7 @@
 #endif
 #endif
 #include "Autorun.h"
-#include "AutorunMediaJob.h"
 #include "GUIUserMessages.h"
-#include "addons/VFSEntry.h"
 #include "dialogs/GUIDialogKaiToast.h"
 #include "dialogs/GUIDialogPlayEject.h"
 #include "messaging/helpers/DialogOKHelper.h"
@@ -201,6 +199,7 @@ void CMediaManager::GetNetworkLocations(VECSOURCES &locations, bool autolocation
 
     if (CServiceBroker::IsAddonInterfaceUp())
     {
+#if 0
       for (const auto& addon : CServiceBroker::GetVFSAddonCache().GetAddonInstances())
       {
         const auto& info = addon->GetProtocolInfo();
@@ -213,6 +212,7 @@ void CMediaManager::GetNetworkLocations(VECSOURCES &locations, bool autolocation
           locations.push_back(share);
         }
       }
+#endif
     }
   }
 }

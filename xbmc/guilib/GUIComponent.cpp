@@ -14,7 +14,6 @@
 #include "GUILargeTextureManager.h"
 #include "GUIWindowManager.h"
 #include "ServiceBroker.h"
-#include "StereoscopicsManager.h"
 #include "TextureManager.h"
 #include "URL.h"
 #include "dialogs/GUIDialogYesNo.h"
@@ -25,7 +24,6 @@ CGUIComponent::CGUIComponent()
   : m_pWindowManager(std::make_unique<CGUIWindowManager>()),
     m_pTextureManager(std::make_unique<CGUITextureManager>()),
     m_pLargeTextureManager(std::make_unique<CGUILargeTextureManager>()),
-    m_stereoscopicsManager(std::make_unique<CStereoscopicsManager>()),
     m_guiInfoManager(std::make_unique<CGUIInfoManager>()),
     m_guiColorManager(std::make_unique<CGUIColorManager>()),
     m_guiAudioManager(std::make_unique<CGUIAudioManager>())
@@ -40,7 +38,6 @@ CGUIComponent::~CGUIComponent()
 void CGUIComponent::Init()
 {
   m_pWindowManager->Initialize();
-  m_stereoscopicsManager->Initialize();
   m_guiInfoManager->Initialize();
 
   CServiceBroker::RegisterGUI(this);
@@ -66,11 +63,6 @@ CGUITextureManager& CGUIComponent::GetTextureManager()
 CGUILargeTextureManager& CGUIComponent::GetLargeTextureManager()
 {
   return *m_pLargeTextureManager;
-}
-
-CStereoscopicsManager &CGUIComponent::GetStereoscopicsManager()
-{
-  return *m_stereoscopicsManager;
 }
 
 CGUIInfoManager &CGUIComponent::GetInfoManager()

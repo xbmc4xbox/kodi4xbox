@@ -17,12 +17,10 @@
 #include "input/InputManager.h"
 #include "input/actions/Action.h"
 #include "input/actions/ActionIDs.h"
-#include "input/mouse/MouseEvent.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 
 using namespace KODI;
-using namespace PVR;
 
 CGUIDialogVideoOSD::CGUIDialogVideoOSD(void)
     : CGUIDialog(WINDOW_DIALOG_VIDEO_OSD, "VideoOSD.xml")
@@ -65,15 +63,6 @@ bool CGUIDialogVideoOSD::OnAction(const CAction &action)
 
 EVENT_RESULT CGUIDialogVideoOSD::OnMouseEvent(const CPoint& point, const MOUSE::CMouseEvent& event)
 {
-  if (event.m_id == ACTION_MOUSE_WHEEL_UP)
-  {
-    return g_application.OnAction(CAction(ACTION_ANALOG_SEEK_FORWARD, 0.5f)) ? EVENT_RESULT_HANDLED : EVENT_RESULT_UNHANDLED;
-  }
-  if (event.m_id == ACTION_MOUSE_WHEEL_DOWN)
-  {
-    return g_application.OnAction(CAction(ACTION_ANALOG_SEEK_BACK, 0.5f)) ? EVENT_RESULT_HANDLED : EVENT_RESULT_UNHANDLED;
-  }
-
   return CGUIDialog::OnMouseEvent(point, event);
 }
 

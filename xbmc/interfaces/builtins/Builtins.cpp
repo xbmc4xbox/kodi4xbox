@@ -15,7 +15,6 @@
 #include "GUIControlBuiltins.h"
 #include "LibraryBuiltins.h"
 #include "OpticalBuiltins.h"
-#include "PVRBuiltins.h"
 #include "PictureBuiltins.h"
 #include "PlayerBuiltins.h"
 #include "ProfileBuiltins.h"
@@ -51,7 +50,6 @@ CBuiltins::CBuiltins()
   RegisterCommands<CPictureBuiltins>();
   RegisterCommands<CPlayerBuiltins>();
   RegisterCommands<CProfileBuiltins>();
-  RegisterCommands<CPVRBuiltins>();
   RegisterCommands<CSkinBuiltins>();
   RegisterCommands<CSystemBuiltins>();
   RegisterCommands<CWeatherBuiltins>();

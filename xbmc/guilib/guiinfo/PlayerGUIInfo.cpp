@@ -17,7 +17,6 @@
 #include "application/ApplicationComponents.h"
 #include "application/ApplicationPlayer.h"
 #include "application/ApplicationVolumeHandling.h"
-#include "cores/AudioEngine/Utils/AEUtil.h"
 #include "cores/DataCacheCore.h"
 #include "cores/EdlEdit.h"
 #include "guilib/GUIComponent.h"
@@ -183,7 +182,11 @@ bool CPlayerGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
       return true;
     case PLAYER_VOLUME:
       value =
+#if 0
           StringUtils::Format("{:2.1f} dB", CAEUtil::PercentToGain(m_appVolume->GetVolumeRatio()));
+#else
+          "";
+#endif
       return true;
     case PLAYER_SUBTITLE_DELAY:
       value = StringUtils::Format("{:2.3f} s", m_appPlayer->GetVideoSettings().m_SubtitleDelay);
@@ -363,7 +366,11 @@ bool CPlayerGUIInfo::GetInt(int& value, const CGUIListItem *gitem, int contextWi
     // PLAYER_*
     ///////////////////////////////////////////////////////////////////////////////////////////////
     case PLAYER_VOLUME:
+#if 0
       value = static_cast<int>(m_appVolume->GetVolumePercent());
+#else
+      value = 0;
+#endif
       return true;
     case PLAYER_PROGRESS:
       value = std::lrintf(g_application.GetPercentage());

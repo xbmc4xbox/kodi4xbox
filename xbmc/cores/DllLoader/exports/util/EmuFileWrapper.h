@@ -1,25 +1,32 @@
-/*
- *  Copyright (C) 2005-2018 Team Kodi
- *  This file is part of Kodi - https://kodi.tv
- *
- *  SPDX-License-Identifier: GPL-2.0-or-later
- *  See LICENSES/README.md for more information.
- */
-
 #pragma once
 
-#include "threads/CriticalSection.h"
+/*
+ *      Copyright (C) 2005-2013 Team XBMC
+ *      http://xbmc.org
+ *
+ *  This Program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2, or (at your option)
+ *  any later version.
+ *
+ *  This Program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with XBMC; see the file COPYING.  If not, see
+ *  <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #include <stdio.h>
 
-#if defined(TARGET_POSIX) && !defined(TARGET_DARWIN) && !defined(TARGET_FREEBSD) && !defined(TARGET_ANDROID) && !defined(__UCLIBC__)
-#define _file _fileno
-#elif defined(__UCLIBC__)
-#define _file __filedes
-#endif
+#include "system.h"
+#include "threads/CriticalSection.h"
 
 #define MAX_EMULATED_FILES    50
-#define FILE_WRAPPER_OFFSET   0x00000200
+#define FILE_WRAPPER_OFFSET   0x00000100
 
 namespace XFILE
 {
@@ -28,12 +35,9 @@ namespace XFILE
 
 typedef struct stEmuFileObject
 {
-  XFILE::CFile*  file_xbmc;
-  CCriticalSection *file_lock;
-  int mode;
-  //Stick this last to avoid 3-7 bytes of padding
   bool    used;
-  int     fd;
+  FILE    file_emu;
+  XFILE::CFile*  file_xbmc;
 } EmuFileObject;
 
 class CEmuFileWrapper
@@ -50,23 +54,18 @@ public:
   EmuFileObject* RegisterFileObject(XFILE::CFile* pFile);
   void UnRegisterFileObjectByDescriptor(int fd);
   void UnRegisterFileObjectByStream(FILE* stream);
-  void LockFileObjectByDescriptor(int fd);
-  bool TryLockFileObjectByDescriptor(int fd);
-  void UnlockFileObjectByDescriptor(int fd);
   EmuFileObject* GetFileObjectByDescriptor(int fd);
   EmuFileObject* GetFileObjectByStream(FILE* stream);
   XFILE::CFile* GetFileXbmcByDescriptor(int fd);
   XFILE::CFile* GetFileXbmcByStream(FILE* stream);
-  static int GetDescriptorByStream(FILE* stream);
+  int GetDescriptorByStream(FILE* stream);
   FILE* GetStreamByDescriptor(int fd);
-  static constexpr bool DescriptorIsEmulatedFile(int fd)
-  {
-    return fd >= FILE_WRAPPER_OFFSET && fd < FILE_WRAPPER_OFFSET + MAX_EMULATED_FILES;
-  }
-  static bool StreamIsEmulatedFile(FILE* stream);
+  bool DescriptorIsEmulatedFile(int fd);
+  bool StreamIsEmulatedFile(FILE* stream);
 private:
   EmuFileObject m_files[MAX_EMULATED_FILES];
   CCriticalSection m_criticalSection;
+  bool m_initialized;
 };
 
 extern CEmuFileWrapper g_emuFileWrapper;

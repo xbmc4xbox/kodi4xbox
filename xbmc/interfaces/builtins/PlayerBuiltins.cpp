@@ -25,10 +25,6 @@
 #include "input/actions/ActionIDs.h"
 #include "music/MusicUtils.h"
 #include "playlists/PlayList.h"
-#include "pvr/PVRManager.h"
-#include "pvr/channels/PVRChannel.h"
-#include "pvr/guilib/PVRGUIActionsChannels.h"
-#include "pvr/recordings/PVRRecording.h"
 #include "settings/MediaSettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
@@ -373,28 +369,7 @@ static int PlayerControl(const std::vector<std::string>& params)
   }
   else if (StringUtils::StartsWithNoCase(params[0], "resumelivetv"))
   {
-    CFileItem& fileItem(g_application.CurrentFileItem());
-    std::shared_ptr<PVR::CPVRChannel> channel = fileItem.HasPVRRecordingInfoTag() ? fileItem.GetPVRRecordingInfoTag()->Channel() : std::shared_ptr<PVR::CPVRChannel>();
-
-    if (channel)
-    {
-      const std::shared_ptr<PVR::CPVRChannelGroupMember> groupMember =
-          CServiceBroker::GetPVRManager().Get<PVR::GUI::Channels>().GetChannelGroupMember(channel);
-      if (!groupMember)
-      {
-        CLog::Log(LOGERROR, "ResumeLiveTv could not obtain channel group member for channel: {}",
-                  channel->ChannelName());
-        return false;
-      }
-
-      CFileItem playItem(groupMember);
-      if (!g_application.PlayMedia(
-              playItem, "", channel->IsRadio() ? PLAYLIST::TYPE_MUSIC : PLAYLIST::TYPE_VIDEO))
-      {
-        CLog::Log(LOGERROR, "ResumeLiveTv could not play channel: {}", channel->ChannelName());
-        return false;
-      }
-    }
+    return 0;
   }
   else if (paramlow == "reset")
   {

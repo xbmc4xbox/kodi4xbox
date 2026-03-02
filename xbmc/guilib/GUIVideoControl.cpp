@@ -15,7 +15,6 @@
 #include "application/ApplicationPlayer.h"
 #include "application/ApplicationPowerHandling.h"
 #include "input/actions/ActionIDs.h"
-#include "input/mouse/MouseEvent.h"
 #include "utils/ColorUtils.h"
 
 using namespace KODI;
@@ -87,16 +86,6 @@ void CGUIVideoControl::RenderEx()
 
 EVENT_RESULT CGUIVideoControl::OnMouseEvent(const CPoint& point, const MOUSE::CMouseEvent& event)
 {
-  const auto& components = CServiceBroker::GetAppComponents();
-  const auto appPlayer = components.GetComponent<CApplicationPlayer>();
-  if (!appPlayer->IsPlayingVideo())
-    return EVENT_RESULT_UNHANDLED;
-  if (event.m_id == ACTION_MOUSE_LEFT_CLICK)
-  { // switch to fullscreen
-    CGUIMessage message(GUI_MSG_FULLSCREEN, GetID(), GetParentID());
-    CServiceBroker::GetGUI()->GetWindowManager().SendMessage(message);
-    return EVENT_RESULT_HANDLED;
-  }
   return EVENT_RESULT_UNHANDLED;
 }
 

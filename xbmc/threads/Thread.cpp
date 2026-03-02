@@ -22,30 +22,6 @@
 #include <mutex>
 #include <stdlib.h>
 
-#include <fmt/format.h>
-#if FMT_VERSION >= 90000
-#include <fmt/ostream.h>
-#endif
-
-#if FMT_VERSION >= 90000
-template<>
-struct fmt::formatter<std::thread::id> : ostream_formatter
-{
-};
-#else
-template<>
-struct fmt::formatter<std::thread::id> : fmt::formatter<std::string>
-{
-  template<class FormatContext>
-  auto format(const std::thread::id& e, FormatContext& ctx)
-  {
-    std::ostringstream str;
-    str << e;
-    return fmt::formatter<std::string>::format(str.str(), ctx);
-  }
-};
-#endif
-
 static thread_local CThread* currentThread;
 
 //////////////////////////////////////////////////////////////////////
@@ -134,6 +110,9 @@ void CThread::Create(bool bAutoDelete)
         // to be set before anything else is done.
         currentThread = pThread;
 
+        std::string name;
+        bool autodelete;
+
         if (pThread == nullptr)
         {
           CLog::Log(LOGERROR, "{}, sanity failed. thread is NULL.", __FUNCTION__);
@@ -141,26 +120,31 @@ void CThread::Create(bool bAutoDelete)
           return;
         }
 
-        pThread->m_impl = IThreadImpl::CreateThreadImpl(pThread->m_thread->native_handle());
-        pThread->m_impl->SetThreadInfo(pThread->m_ThreadName);
+        name = pThread->m_ThreadName;
 
-        CLog::Log(LOGDEBUG, "Thread {} start, auto delete: {}", pThread->m_ThreadName,
-                  (pThread->m_bAutoDelete ? "true" : "false"));
+        std::stringstream ss;
+        ss << std::this_thread::get_id();
+        std::string id = ss.str();
+        autodelete = pThread->m_bAutoDelete;
+
+        pThread->m_impl = IThreadImpl::CreateThreadImpl(pThread->m_thread->native_handle());
+        pThread->m_impl->SetThreadInfo(name);
+
+        CLog::Log(LOGDEBUG, "Thread {} start, auto delete: {}", name,
+                  (autodelete ? "true" : "false"));
 
         pThread->m_StartEvent.Set();
 
         pThread->Action();
 
-        if (pThread->m_bAutoDelete)
+        if (autodelete)
         {
-          CLog::Log(LOGDEBUG, "Thread {} {} terminating (autodelete)", pThread->m_ThreadName,
-                    std::this_thread::get_id());
+          CLog::Log(LOGDEBUG, "Thread {} {} terminating (autodelete)", name, id);
           delete pThread;
           pThread = NULL;
         }
         else
-          CLog::Log(LOGDEBUG, "Thread {} {} terminating", pThread->m_ThreadName,
-                    std::this_thread::get_id());
+          CLog::Log(LOGDEBUG, "Thread {} {} terminating", name, id);
       }
       catch (const std::exception& e)
       {

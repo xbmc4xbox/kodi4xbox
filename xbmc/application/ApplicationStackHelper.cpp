@@ -11,7 +11,6 @@
 #include "FileItem.h"
 #include "URL.h"
 #include "Util.h"
-#include "cores/VideoPlayer/DVDFileInfo.h"
 #include "filesystem/StackDirectory.h"
 #include "utils/URIUtils.h"
 #include "utils/log.h"
@@ -158,6 +157,7 @@ std::optional<int> CApplicationStackHelper::InitializeStackStartPartAndOffset(co
       }
       else
       {
+#if 0
         int duration;
         if (!CDVDFileInfo::GetFileDuration(GetStackPartFileItem(i).GetPath(), duration))
         {
@@ -168,6 +168,9 @@ std::optional<int> CApplicationStackHelper::InitializeStackStartPartAndOffset(co
         // set end time in every part
         GetStackPartFileItem(i).SetEndOffset(totalTimeMs);
         times.push_back(totalTimeMs);
+#else
+        return false;
+#endif
       }
       // set start time in every part
       SetRegisteredStackPartStartTimeMs(GetStackPartFileItem(i), GetStackPartStartTimeMs(i));

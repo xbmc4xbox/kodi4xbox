@@ -24,6 +24,8 @@
 #include "ServiceBroker.h"
 #include "WinSystem.h"
 
+#include "guilib/gui3d.h"
+
 #define D3DPRESENTFLAG_INTERLACED   1
 #define D3DPRESENTFLAG_WIDESCREEN   2
 #define D3DPRESENTFLAG_PROGRESSIVE  4
@@ -66,15 +68,12 @@ public:
   // methods related to windowing
   float GetFPS() const;
   void SetFPS(float fps);
-  float GetDisplayLatency() const;
   bool IsFullScreenRoot() const;
   void ToggleFullScreen();
   void SetFullScreenVideo(bool bOnOff);
   bool IsFullScreenVideo() const;
   bool IsValidResolution(RESOLUTION res);
   void SetVideoResolution(RESOLUTION res, bool forceUpdate);
-  void ApplyModeChange(RESOLUTION res);
-  void ApplyWindowResize(int newWidth, int newHeight);
   RESOLUTION GetVideoResolution() const;
   const RESOLUTION_INFO GetResInfo() const;
   const RESOLUTION_INFO GetResInfo(RESOLUTION res) const;
@@ -179,9 +178,6 @@ public:
   const std::string& GetMediaDir() const;
   void SetMediaDir(const std::string& strMediaDir);
 
-  void SetTransferPQ(bool PQ) { m_isTransferPQ = PQ; }
-  bool IsTransferPQ() const { return m_isTransferPQ; }
-
 protected:
 
   void UpdateCameraPosition(const CPoint &camera, const float &factor);
@@ -232,6 +228,4 @@ protected:
   RENDER_STEREO_VIEW m_stereoView = RENDER_STEREO_VIEW_OFF;
   RENDER_STEREO_MODE m_stereoMode = RENDER_STEREO_MODE_OFF;
   RENDER_STEREO_MODE m_nextStereoMode = RENDER_STEREO_MODE_OFF;
-
-  bool m_isTransferPQ{false};
 };

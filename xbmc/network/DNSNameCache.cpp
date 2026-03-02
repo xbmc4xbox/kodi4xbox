@@ -8,7 +8,6 @@
 
 #include "DNSNameCache.h"
 
-#include "network/Network.h"
 #include "threads/CriticalSection.h"
 #include "utils/log.h"
 
@@ -20,12 +19,16 @@
 #include "platform/posix/filesystem/SMBWSDiscovery.h"
 #endif
 
+#ifdef NXDK
+#include <lwip/netdb.h>
+#else
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/in.h>
 
 #if defined(TARGET_FREEBSD)
 #include <sys/socket.h>
+#endif
 #endif
 
 CDNSNameCache g_DNSCache;
@@ -67,7 +70,11 @@ bool CDNSNameCache::Lookup(const std::string& strHostName, std::string& strIpAdd
 
   if (getaddrinfo(strHostName.c_str(), nullptr, &hints, &res) == 0)
   {
+#if 0
     strIpAddress = CNetworkBase::GetIpStr(res->ai_addr);
+#else
+    strIpAddress = "0.0.0.0";
+#endif
     freeaddrinfo(res);
     g_DNSCache.Add(strHostName, strIpAddress);
     return true;

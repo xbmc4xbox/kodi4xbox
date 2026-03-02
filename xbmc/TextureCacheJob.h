@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include "pictures/PictureScalingAlgorithm.h"
 #include "utils/Job.h"
 
 #include <cstddef>
@@ -86,7 +85,7 @@ private:
    \param additional_info additional information, such as "flipped" to flip horizontally
    \return URL of the underlying image file.
    */
-  static std::string DecodeImageURL(const std::string &url, unsigned int &width, unsigned int &height, CPictureScalingAlgorithm::Algorithm& scalingAlgorithm, std::string &additional_info);
+  static std::string DecodeImageURL(const std::string &url, unsigned int &width, unsigned int &height, std::string &additional_info);
 
   /*! \brief Load an image at a given target size and orientation.
 

@@ -28,7 +28,6 @@
 #include "favourites/FavouritesService.h"
 #include "filesystem/Directory.h"
 #include "filesystem/FileDirectoryFactory.h"
-#include "filesystem/ZipManager.h"
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIKeyboardFactory.h"
 #include "guilib/GUIWindowManager.h"
@@ -39,7 +38,6 @@
 #include "interfaces/generic/ScriptInvocationManager.h"
 #include "messaging/ApplicationMessenger.h"
 #include "messaging/helpers/DialogOKHelper.h"
-#include "network/Network.h"
 #include "pictures/SlideShowDelegator.h"
 #include "platform/Filesystem.h"
 #include "playlists/PlayList.h"
@@ -354,6 +352,7 @@ void CGUIWindowFileManager::OnSort(int iList)
     // Set free space on disc
     if (pItem->m_bIsShareOrDrive)
     {
+#if 0
       if (pItem->IsHD())
       {
         std::error_code ec;
@@ -374,6 +373,7 @@ void CGUIWindowFileManager::OnSort(int iList)
           pItem->SetFileSizeLabel();
         }
       }
+#endif
     } // if (pItem->m_bIsShareOrDrive)
 
   }
@@ -707,12 +707,7 @@ bool CGUIWindowFileManager::HaveDiscOrConnection( std::string& strPath, int iDri
   }
   else if ( iDriveType == CMediaSource::SOURCE_TYPE_REMOTE )
   {
-    //! @todo Handle not connected to a remote share
-    if (!CServiceBroker::GetNetwork().IsConnected())
-    {
-      HELPERS::ShowOKDialogText(CVariant{220}, CVariant{221});
-      return false;
-    }
+    return false;
   }
   else
     return true;
@@ -873,10 +868,12 @@ void CGUIWindowFileManager::GoParentFolder(int iList)
   CURL url(m_Directory[iList]->GetPath());
   if (url.IsProtocol("rar") || url.IsProtocol("zip"))
   {
+#if 0
     // check for step-below, if, unmount rar
     if (url.GetFileName().empty())
       if (url.IsProtocol("zip"))
         g_ZipManager.release(m_Directory[iList]->GetPath()); // release resources
+#endif
   }
 
   std::string strPath(m_strParentPath[iList]), strOldPath(m_Directory[iList]->GetPath());

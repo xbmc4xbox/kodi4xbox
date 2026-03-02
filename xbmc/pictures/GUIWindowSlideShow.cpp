@@ -27,7 +27,6 @@
 #include "guilib/Texture.h"
 #include "input/actions/Action.h"
 #include "input/actions/ActionIDs.h"
-#include "input/mouse/MouseEvent.h"
 #include "interfaces/AnnouncementManager.h"
 #include "pictures/GUIViewStatePictures.h"
 #include "pictures/PictureThumbLoader.h"
@@ -749,77 +748,6 @@ int CGUIWindowSlideShow::GetNextSlide()
 
 EVENT_RESULT CGUIWindowSlideShow::OnMouseEvent(const CPoint& point, const MOUSE::CMouseEvent& event)
 {
-  if (event.m_id == ACTION_GESTURE_NOTIFY)
-  {
-    int result = EVENT_RESULT_ROTATE | EVENT_RESULT_ZOOM;
-    if (m_iZoomFactor == 1 || !m_Image[m_iCurrentPic]->m_bCanMoveHorizontally)
-      result |= EVENT_RESULT_SWIPE;
-    else
-      result |= EVENT_RESULT_PAN_HORIZONTAL;
-
-    if (m_Image[m_iCurrentPic]->m_bCanMoveVertically)
-      result |= EVENT_RESULT_PAN_VERTICAL;
-
-    return (EVENT_RESULT)result;
-  }
-  else if (event.m_id == ACTION_GESTURE_BEGIN)
-  {
-    m_firstGesturePoint = point;
-    m_fInitialZoom = m_fZoom;
-    m_fInitialRotate = m_fRotate;
-    return EVENT_RESULT_HANDLED;
-  }
-  else if (event.m_id == ACTION_GESTURE_PAN)
-  {
-    // zoomed in - free move mode
-    if (m_iZoomFactor != 1 && (m_Image[m_iCurrentPic]->m_bCanMoveHorizontally ||
-                               m_Image[m_iCurrentPic]->m_bCanMoveVertically))
-    {
-      Move(PICTURE_MOVE_AMOUNT_TOUCH / m_iZoomFactor * (m_firstGesturePoint.x - point.x), PICTURE_MOVE_AMOUNT_TOUCH / m_iZoomFactor * (m_firstGesturePoint.y - point.y));
-      m_firstGesturePoint = point;
-    }
-    return EVENT_RESULT_HANDLED;
-  }
-  else if (event.m_id == ACTION_GESTURE_SWIPE_LEFT || event.m_id == ACTION_GESTURE_SWIPE_RIGHT)
-  {
-    if (m_iZoomFactor == 1 || !m_Image[m_iCurrentPic]->m_bCanMoveHorizontally)
-    {
-      // on zoomlevel 1 just detect swipe left and right
-      if (event.m_id == ACTION_GESTURE_SWIPE_LEFT)
-        OnAction(CAction(ACTION_NEXT_PICTURE));
-      else
-        OnAction(CAction(ACTION_PREV_PICTURE));
-    }
-  }
-  else if (event.m_id == ACTION_GESTURE_END || event.m_id == ACTION_GESTURE_ABORT)
-  {
-    if (m_fRotate != 0.0f)
-    {
-      // "snap" to nearest of 0, 90, 180 and 270 if the
-      // difference in angle is +/-10 degrees
-      float reminder = fmodf(m_fRotate, 90.0f);
-      if (fabs(reminder) < ROTATION_SNAP_RANGE)
-        Rotate(-reminder);
-      else if (reminder > 90.0f - ROTATION_SNAP_RANGE)
-        Rotate(90.0f - reminder);
-      else if (-reminder > 90.0f - ROTATION_SNAP_RANGE)
-        Rotate(-90.0f - reminder);
-    }
-
-    m_fInitialZoom = 0.0f;
-    m_fInitialRotate = 0.0f;
-    return EVENT_RESULT_HANDLED;
-  }
-  else if (event.m_id == ACTION_GESTURE_ZOOM)
-  {
-    ZoomRelative(m_fInitialZoom * event.m_offsetX, true);
-    return EVENT_RESULT_HANDLED;
-  }
-  else if (event.m_id == ACTION_GESTURE_ROTATE)
-  {
-    Rotate(m_fInitialRotate + event.m_offsetX - m_fRotate, true);
-    return EVENT_RESULT_HANDLED;
-  }
   return EVENT_RESULT_UNHANDLED;
 }
 

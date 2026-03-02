@@ -12,7 +12,6 @@
 #include "GUIComponent.h"
 #include "GUIControlFactory.h"
 #include "GUIControlGroup.h"
-#include "GUIControlProfiler.h"
 #include "GUIInfoManager.h"
 #include "GUIWindowManager.h"
 #include "ServiceBroker.h"
@@ -20,7 +19,6 @@
 #include "input/WindowTranslator.h"
 #include "input/actions/Action.h"
 #include "input/actions/ActionIDs.h"
-#include "input/mouse/MouseEvent.h"
 #include "messaging/ApplicationMessenger.h"
 #include "settings/AdvancedSettings.h"
 #include "settings/SettingsComponent.h"
@@ -354,8 +352,6 @@ void CGUIWindow::DoRender()
   CServiceBroker::GetWinSystem()->GetGfxContext().AddGUITransform();
   CGUIControlGroup::DoRender();
   CServiceBroker::GetWinSystem()->GetGfxContext().RemoveTransform();
-
-  if (CGUIControlProfiler::IsRunning()) CGUIControlProfiler::Instance().EndFrame();
 }
 
 void CGUIWindow::AfterRender()
@@ -495,34 +491,11 @@ CPoint CGUIWindow::GetPosition() const
 // OnMouseAction - called by OnAction()
 EVENT_RESULT CGUIWindow::OnMouseAction(const CAction &action)
 {
-  CServiceBroker::GetWinSystem()->GetGfxContext().SetScalingResolution(m_coordsRes, m_needsScaling);
-  CPoint mousePoint(action.GetAmount(0), action.GetAmount(1));
-  CServiceBroker::GetWinSystem()->GetGfxContext().InvertFinalCoords(mousePoint.x, mousePoint.y);
-
-  // create the mouse event
-  MOUSE::CMouseEvent event(action.GetID(), action.GetHoldTime(), action.GetAmount(2),
-                           action.GetAmount(3));
-  if (m_exclusiveMouseControl)
-  {
-    CGUIControl *child = GetControl(m_exclusiveMouseControl);
-    if (child)
-    {
-      CPoint renderPos = child->GetRenderPosition() - CPoint(child->GetXPosition(), child->GetYPosition());
-      return child->OnMouseEvent(mousePoint - renderPos, event);
-    }
-  }
-
-  UnfocusFromPoint(mousePoint);
-
-  return SendMouseEvent(mousePoint, event);
+  return EVENT_RESULT_UNHANDLED;
 }
 
 EVENT_RESULT CGUIWindow::OnMouseEvent(const CPoint& point, const MOUSE::CMouseEvent& event)
 {
-  if (event.m_id == ACTION_MOUSE_RIGHT_CLICK)
-  { // no control found to absorb this click - go to previous menu
-    return OnAction(CAction(ACTION_PREVIOUS_MENU)) ? EVENT_RESULT_HANDLED : EVENT_RESULT_UNHANDLED;
-  }
   return EVENT_RESULT_UNHANDLED;
 }
 

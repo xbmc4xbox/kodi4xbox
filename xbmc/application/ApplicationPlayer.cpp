@@ -11,7 +11,7 @@
 #include "ServiceBroker.h"
 #include "cores/DataCacheCore.h"
 #include "cores/IPlayer.h"
-#include "cores/VideoPlayer/VideoPlayer.h"
+#include "FileItem.h"
 #include "cores/playercorefactory/PlayerCoreFactory.h"
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIWindowManager.h"
@@ -1030,10 +1030,12 @@ const CSeekHandler& CApplicationPlayer::GetSeekHandler() const
 
 void CApplicationPlayer::SetUpdateStreamDetails()
 {
+#if 0
   std::shared_ptr<IPlayer> player = GetInternal();
   CVideoPlayer* vp = dynamic_cast<CVideoPlayer*>(player.get());
   if (vp)
     vp->SetUpdateStreamDetails();
+#endif
 }
 
 bool CApplicationPlayer::HasGameAgent() const

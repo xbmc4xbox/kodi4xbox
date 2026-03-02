@@ -71,7 +71,6 @@ using namespace VIDEODATABASEDIRECTORY;
 using namespace VIDEO;
 using namespace VIDEO::GUILIB;
 using namespace ADDON;
-using namespace PVR;
 using namespace KODI::MESSAGING;
 
 #define CONTROL_BTNVIEWASICONS     2

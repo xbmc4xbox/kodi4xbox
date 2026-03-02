@@ -21,6 +21,7 @@
 #include "utils/URIUtils.h"
 #include "utils/XBMCTinyXML2.h"
 #include "utils/log.h"
+#include "utils/Variant.h"
 
 #include <mutex>
 

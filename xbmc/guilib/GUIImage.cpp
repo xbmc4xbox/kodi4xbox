@@ -62,7 +62,8 @@ void CGUIImage::UpdateVisibility(const CGUIListItem *item)
 
 void CGUIImage::UpdateDiffuseColor(const CGUIListItem* item)
 {
-  if (m_texture->SetDiffuseColor(m_diffuseColor, item))
+  // https://github.com/xbmc/xbmc/pull/22840
+  if (m_texture->SetDiffuseColor(m_diffuseColor/*, item*/))
   {
     MarkDirtyRegion();
   }

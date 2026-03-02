@@ -14,8 +14,6 @@
 #include "application/ApplicationComponents.h"
 #include "application/ApplicationPlayer.h"
 #include "guilib/WindowIDs.h"
-#include "pvr/PVRManager.h"
-#include "pvr/guilib/PVRGUIActionsChannels.h"
 #include "utils/StringUtils.h"
 #include "utils/log.h"
 
@@ -297,23 +295,6 @@ int CWindowTranslator::GetVirtualWindow(int windowId)
 {
   if (windowId == WINDOW_FULLSCREEN_VIDEO)
   {
-    if (g_application.CurrentFileItem().HasPVRChannelInfoTag())
-    {
-      // special casing for Live TV
-      if (CServiceBroker::GetPVRManager()
-              .Get<PVR::GUI::Channels>()
-              .GetChannelNumberInputHandler()
-              .HasChannelNumber())
-        return WINDOW_FULLSCREEN_LIVETV_INPUT;
-      else if (CServiceBroker::GetPVRManager()
-                   .Get<PVR::GUI::Channels>()
-                   .GetChannelNavigator()
-                   .IsPreview())
-        return WINDOW_FULLSCREEN_LIVETV_PREVIEW;
-      else
-        return WINDOW_FULLSCREEN_LIVETV;
-    }
-    else
     {
       const auto& components = CServiceBroker::GetAppComponents();
       const auto appPlayer = components.GetComponent<CApplicationPlayer>();
@@ -328,23 +309,6 @@ int CWindowTranslator::GetVirtualWindow(int windowId)
   }
   else if (windowId == WINDOW_VISUALISATION)
   {
-    if (g_application.CurrentFileItem().HasPVRChannelInfoTag())
-    {
-      // special casing for PVR radio
-      if (CServiceBroker::GetPVRManager()
-              .Get<PVR::GUI::Channels>()
-              .GetChannelNumberInputHandler()
-              .HasChannelNumber())
-        return WINDOW_FULLSCREEN_RADIO_INPUT;
-      else if (CServiceBroker::GetPVRManager()
-                   .Get<PVR::GUI::Channels>()
-                   .GetChannelNavigator()
-                   .IsPreview())
-        return WINDOW_FULLSCREEN_RADIO_PREVIEW;
-      else
-        return WINDOW_FULLSCREEN_RADIO;
-    }
-    else
     {
       const auto& components = CServiceBroker::GetAppComponents();
       const auto appPlayer = components.GetComponent<CApplicationPlayer>();

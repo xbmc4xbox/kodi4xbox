@@ -27,8 +27,6 @@
 #include "dialogs/GUIDialogKaiToast.h"
 #include "dialogs/GUIDialogProgress.h"
 #include "dialogs/GUIDialogSelect.h"
-#include "events/EventLog.h"
-#include "events/NotificationEvent.h"
 #include "filesystem/Directory.h"
 #include "filesystem/DirectoryCache.h"
 #include "filesystem/File.h"
@@ -43,8 +41,6 @@
 #include "music/MusicDbUrl.h"
 #include "music/MusicLibraryQueue.h"
 #include "music/tags/MusicInfoTag.h"
-#include "network/Network.h"
-#include "network/cddb.h"
 #include "playlists/SmartPlayList.h"
 #include "profiles/ProfileManager.h"
 #include "settings/AdvancedSettings.h"
@@ -12742,10 +12738,6 @@ bool CMusicDatabase::ImportSongHistory(const std::string& xmlFile,
     // "Importing song history {1} of {2} songs matched", total - unmatched, total)
     std::string strLine =
         StringUtils::Format(g_localizeStrings.Get(38353), total - unmatched, total);
-
-    auto eventLog = CServiceBroker::GetEventLog();
-    if (eventLog)
-      eventLog->Add(EventPtr(new CNotificationEvent(20197, strLine, EventLevel::Information)));
 
     return true;
   }

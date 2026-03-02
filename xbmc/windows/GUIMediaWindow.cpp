@@ -44,7 +44,6 @@
 #include "input/actions/ActionIDs.h"
 #include "interfaces/generic/ScriptInvocationManager.h"
 #include "messaging/helpers/DialogOKHelper.h"
-#include "network/Network.h"
 #include "playlists/PlayList.h"
 #include "profiles/ProfileManager.h"
 #include "settings/AdvancedSettings.h"
@@ -1208,12 +1207,14 @@ bool CGUIMediaWindow::HaveDiscOrConnection(const std::string& strPath, int iDriv
   }
   else if (iDriveType==CMediaSource::SOURCE_TYPE_REMOTE)
   {
+#if 0
     //! @todo Handle not connected to a remote share
     if (!CServiceBroker::GetNetwork().IsConnected())
     {
       HELPERS::ShowOKDialogText(CVariant{220}, CVariant{221});
       return false;
     }
+#endif
   }
 
   return true;
@@ -1830,6 +1831,7 @@ const CFileItemList& CGUIMediaWindow::CurrentDirectory() const
 
 bool CGUIMediaWindow::WaitForNetwork() const
 {
+#if 0
   if (CServiceBroker::GetNetwork().IsAvailable())
     return true;
 
@@ -1852,6 +1854,7 @@ bool CGUIMediaWindow::WaitForNetwork() const
     }
   }
   progress->Close();
+#endif
   return true;
 }
 

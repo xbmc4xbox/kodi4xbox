@@ -459,9 +459,6 @@ void CGraphicContext::SetVideoResolutionInternal(RESOLUTION res, bool forceUpdat
     // make sure all stereo stuff are correctly setup
     SetStereoView(RENDER_STEREO_VIEW_OFF);
 
-    // update anyone that relies on sizing information
-    CServiceBroker::GetInputManager().SetMouseResolution(info_org.iWidth, info_org.iHeight, 1, 1);
-
     CGUIComponent *gui = CServiceBroker::GetGUI();
     if (gui)
       gui->GetWindowManager().SendMessage(GUI_MSG_NOTIFY_ALL, 0, 0, GUI_MSG_WINDOW_RESIZE);
@@ -519,7 +516,6 @@ void CGraphicContext::ApplyVideoResolution(RESOLUTION res)
 
   // update anyone that relies on sizing information
   RESOLUTION_INFO info_org  = CDisplaySettings::GetInstance().GetResolutionInfo(res);
-  CServiceBroker::GetInputManager().SetMouseResolution(info_org.iWidth, info_org.iHeight, 1, 1);
   CServiceBroker::GetGUI()->GetWindowManager().SendMessage(GUI_MSG_NOTIFY_ALL, 0, 0, GUI_MSG_WINDOW_RESIZE);
 }
 
@@ -531,19 +527,6 @@ void CGraphicContext::UpdateInternalStateWithResolution(RESOLUTION res)
   m_iScreenHeight = info_mod.iHeight;
   m_Resolution = res;
   m_fFPSOverride = 0;
-}
-
-void CGraphicContext::ApplyModeChange(RESOLUTION res)
-{
-  ApplyVideoResolution(res);
-  CServiceBroker::GetWinSystem()->FinishModeChange(res);
-}
-
-void CGraphicContext::ApplyWindowResize(int newWidth, int newHeight)
-{
-  CServiceBroker::GetWinSystem()->SetWindowResolution(newWidth, newHeight);
-  ApplyVideoResolution(RES_WINDOW);
-  CServiceBroker::GetWinSystem()->FinishWindowResize(newWidth, newHeight);
 }
 
 RESOLUTION CGraphicContext::GetVideoResolution() const
@@ -932,18 +915,6 @@ float CGraphicContext::GetFPS() const
       return info.fRefreshRate;
   }
   return 60.0f;
-}
-
-float CGraphicContext::GetDisplayLatency() const
-{
-  float latency = CServiceBroker::GetWinSystem()->GetDisplayLatency();
-  if (latency < 0.0f)
-  {
-    // fallback
-    latency = (CServiceBroker::GetWinSystem()->NoOfBuffers() + 1) / GetFPS() * 1000.0f;
-  }
-
-  return latency;
 }
 
 bool CGraphicContext::IsFullScreenRoot () const

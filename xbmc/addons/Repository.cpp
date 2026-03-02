@@ -20,7 +20,6 @@
 #include "filesystem/CurlFile.h"
 #include "filesystem/File.h"
 #include "filesystem/ZipFile.h"
-#include "games/GameServices.h"
 #include "messaging/helpers/DialogHelper.h"
 #include "utils/Base64.h"
 #include "utils/Digest.h"
@@ -152,9 +151,11 @@ CRepository::CRepository(const AddonInfoPtr& addonInfo) : CAddon(addonInfo, Addo
 
 void CRepository::OnPostInstall(bool update, bool modal)
 {
+#if 0
   // The repo may contain game add-ons, which can introduce new file
   // extensions to the list of known game extensions
   CServiceBroker::GetGameServices().OnAddonRepoInstalled();
+#endif
 }
 
 bool CRepository::FetchChecksum(const std::string& url,

@@ -20,8 +20,6 @@
 #include "addons/addoninfo/AddonType.h"
 #include "dialogs/GUIDialogExtendedProgressBar.h"
 #include "dialogs/GUIDialogKaiToast.h"
-#include "events/AddonManagementEvent.h"
-#include "events/EventLog.h"
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
@@ -181,13 +179,6 @@ void CRepositoryUpdater::OnJobComplete(unsigned int jobID, bool success, CJob* j
           CGUIDialogKaiToast::QueueNotification(
               "", g_localizeStrings.Get(24001), g_localizeStrings.Get(24061),
               TOAST_DISPLAY_TIME, false, TOAST_DISPLAY_TIME);
-
-        auto eventLog = CServiceBroker::GetEventLog();
-        for (const auto &addon : updates)
-        {
-          if (eventLog)
-            eventLog->Add(EventPtr(new CAddonManagementEvent(addon, 24068)));
-        }
       }
     }
 

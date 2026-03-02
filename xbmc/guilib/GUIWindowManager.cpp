@@ -21,7 +21,6 @@
 #include "application/Application.h"
 #include "application/ApplicationComponents.h"
 #include "application/ApplicationPlayer.h"
-#include "events/windows/GUIWindowEventLog.h"
 #include "favourites/GUIWindowFavourites.h"
 #include "input/actions/Action.h"
 #include "input/actions/ActionIDs.h"
@@ -41,27 +40,19 @@
 #include "settings/SettingsComponent.h"
 #include "settings/windows/GUIWindowSettings.h"
 #include "settings/windows/GUIWindowSettingsCategory.h"
-#include "settings/windows/GUIWindowSettingsScreenCalibration.h"
 #include "threads/SingleLock.h"
 #include "utils/StringUtils.h"
 #include "utils/URIUtils.h"
 #include "utils/Variant.h"
 #include "utils/log.h"
 #include "video/dialogs/GUIDialogVideoInfo.h"
-#include "video/dialogs/GUIDialogVideoManagerExtras.h"
-#include "video/dialogs/GUIDialogVideoManagerVersions.h"
 #include "video/dialogs/GUIDialogVideoOSD.h"
-#include "video/windows/GUIWindowFullScreen.h"
 #include "video/windows/GUIWindowVideoNav.h"
 #include "video/windows/GUIWindowVideoPlaylist.h"
 #include "weather/GUIWindowWeather.h"
-#include "windows/GUIWindowDebugInfo.h"
 #include "windows/GUIWindowFileManager.h"
 #include "windows/GUIWindowHome.h"
 #include "windows/GUIWindowLoginScreen.h"
-#include "windows/GUIWindowPointer.h"
-#include "windows/GUIWindowScreensaver.h"
-#include "windows/GUIWindowScreensaverDim.h"
 #include "windows/GUIWindowSplash.h"
 #include "windows/GUIWindowStartup.h"
 #include "windows/GUIWindowSystemInfo.h"
@@ -72,11 +63,7 @@
 #include "music/dialogs/GUIDialogMusicOSD.h"
 #include "music/dialogs/GUIDialogVisualisationPresetList.h"
 #include "dialogs/GUIDialogTextViewer.h"
-#include "network/GUIDialogNetworkSetup.h"
 #include "dialogs/GUIDialogMediaSource.h"
-#if defined(HAS_GL) || defined(HAS_DX)
-#include "video/dialogs/GUIDialogCMSSettings.h"
-#endif
 #include "addons/gui/GUIDialogAddonInfo.h"
 #include "addons/gui/GUIDialogAddonSettings.h"
 #include "dialogs/GUIDialogBusy.h"
@@ -88,11 +75,8 @@
 #include "dialogs/GUIDialogGamepad.h"
 #include "dialogs/GUIDialogKaiToast.h"
 #include "dialogs/GUIDialogKeyboardGeneric.h"
-#include "dialogs/GUIDialogKeyboardTouch.h"
 #include "dialogs/GUIDialogNumeric.h"
 #include "dialogs/GUIDialogOK.h"
-#include "dialogs/GUIDialogPlayerControls.h"
-#include "dialogs/GUIDialogPlayerProcessInfo.h"
 #include "dialogs/GUIDialogProgress.h"
 #include "dialogs/GUIDialogSeekBar.h"
 #include "dialogs/GUIDialogSelect.h"
@@ -112,27 +96,6 @@
 #include "video/dialogs/GUIDialogVideoBookmarks.h"
 #include "video/dialogs/GUIDialogVideoSettings.h"
 
-/* PVR related include Files */
-#include "pvr/dialogs/GUIDialogPVRChannelGuide.h"
-#include "pvr/dialogs/GUIDialogPVRChannelManager.h"
-#include "pvr/dialogs/GUIDialogPVRChannelsOSD.h"
-#include "pvr/dialogs/GUIDialogPVRClientPriorities.h"
-#include "pvr/dialogs/GUIDialogPVRGroupManager.h"
-#include "pvr/dialogs/GUIDialogPVRGuideControls.h"
-#include "pvr/dialogs/GUIDialogPVRGuideInfo.h"
-#include "pvr/dialogs/GUIDialogPVRGuideSearch.h"
-#include "pvr/dialogs/GUIDialogPVRRadioRDSInfo.h"
-#include "pvr/dialogs/GUIDialogPVRRecordingInfo.h"
-#include "pvr/dialogs/GUIDialogPVRRecordingSettings.h"
-#include "pvr/dialogs/GUIDialogPVRTimerSettings.h"
-#include "pvr/windows/GUIWindowPVRChannels.h"
-#include "pvr/windows/GUIWindowPVRGuide.h"
-#include "pvr/windows/GUIWindowPVRRecordings.h"
-#include "pvr/windows/GUIWindowPVRSearch.h"
-#include "pvr/windows/GUIWindowPVRTimerRules.h"
-#include "pvr/windows/GUIWindowPVRTimers.h"
-
-#include "video/dialogs/GUIDialogTeletext.h"
 #include "dialogs/GUIDialogSlider.h"
 #ifdef HAS_OPTICAL_DRIVE
 #include "dialogs/GUIDialogPlayEject.h"
@@ -140,27 +103,7 @@
 #include "dialogs/GUIDialogMediaFilter.h"
 #include "video/dialogs/GUIDialogSubtitles.h"
 
-#include "peripherals/dialogs/GUIDialogPeripherals.h"
-#include "peripherals/dialogs/GUIDialogPeripheralSettings.h"
-
-/* Game related include files */
-#include "cores/RetroPlayer/guiwindows/GameWindowFullScreen.h"
-#include "games/agents/windows/GUIAgentWindow.h"
-#include "games/controllers/windows/GUIControllerWindow.h"
-#include "games/dialogs/osd/DialogGameAdvancedSettings.h"
-#include "games/dialogs/osd/DialogGameOSD.h"
-#include "games/dialogs/osd/DialogGameSaves.h"
-#include "games/dialogs/osd/DialogGameStretchMode.h"
-#include "games/dialogs/osd/DialogGameVideoFilter.h"
-#include "games/dialogs/osd/DialogGameVideoRotation.h"
-#include "games/dialogs/osd/DialogGameVolume.h"
-#include "games/dialogs/osd/DialogInGameSaves.h"
-#include "games/ports/windows/GUIPortWindow.h"
-#include "games/windows/GUIWindowGames.h"
-
 using namespace KODI;
-using namespace PVR;
-using namespace PERIPHERALS;
 
 CGUIWindowManager::CGUIWindowManager()
 {
@@ -190,7 +133,6 @@ void CGUIWindowManager::CreateWindows()
   Add(new CGUIWindowFileManager);
   Add(new CGUIWindowSettings);
   Add(new CGUIWindowSystemInfo);
-  Add(new CGUIWindowSettingsScreenCalibration);
   Add(new CGUIWindowSettingsCategory);
   Add(new CGUIWindowVideoNav);
   Add(new CGUIWindowVideoPlaylist);
@@ -198,14 +140,10 @@ void CGUIWindowManager::CreateWindows()
   Add(new CGUIWindowSettingsProfile);
   Add(new CGUIWindow(WINDOW_SKIN_SETTINGS, "SkinSettings.xml"));
   Add(new CGUIWindowAddonBrowser);
-  Add(new CGUIWindowScreensaverDim);
-  Add(new CGUIWindowDebugInfo);
-  Add(new CGUIWindowPointer);
   Add(new CGUIDialogYesNo);
   Add(new CGUIDialogProgress);
   Add(new CGUIDialogExtendedProgressBar);
   Add(new CGUIDialogKeyboardGeneric);
-  Add(new CGUIDialogKeyboardTouch);
   Add(new CGUIDialogVolumeBar);
   Add(new CGUIDialogSeekBar);
   Add(new CGUIDialogSubMenu);
@@ -214,20 +152,14 @@ void CGUIWindowManager::CreateWindows()
   Add(new CGUIDialogNumeric);
   Add(new CGUIDialogGamepad);
   Add(new CGUIDialogButtonMenu);
-  Add(new CGUIDialogPlayerControls);
-  Add(new CGUIDialogPlayerProcessInfo);
   Add(new CGUIDialogSlider);
   Add(new CGUIDialogMusicOSD);
   Add(new CGUIDialogVisualisationPresetList);
-#if defined(HAS_GL) || defined(HAS_DX)
-  Add(new CGUIDialogCMSSettings);
-#endif
   Add(new CGUIDialogVideoSettings);
   Add(new CGUIDialogAudioSettings);
   Add(new CGUIDialogSubtitleSettings);
   Add(new CGUIDialogVideoBookmarks);
   // Don't add the filebrowser dialog - it's created and added when it's needed
-  Add(new CGUIDialogNetworkSetup);
   Add(new CGUIDialogMediaSource);
   Add(new CGUIDialogProfileSettings);
   Add(new CGUIDialogSongInfo);
@@ -251,9 +183,6 @@ void CGUIWindowManager::CreateWindows()
   Add(new CGUIDialogPlayEject);
 #endif
 
-  Add(new CGUIDialogPeripherals);
-  Add(new CGUIDialogPeripheralSettings);
-
   Add(new CGUIDialogMediaFilter);
   Add(new CGUIDialogSubtitles);
 
@@ -261,71 +190,24 @@ void CGUIWindowManager::CreateWindows()
   Add(new CGUIWindowMusicNav);
   Add(new CGUIWindowMusicPlaylistEditor);
 
-  /* Load PVR related Windows and Dialogs */
-  Add(new CGUIDialogTeletext);
-  Add(new CGUIWindowPVRTVChannels);
-  Add(new CGUIWindowPVRTVRecordings);
-  Add(new CGUIWindowPVRTVGuide);
-  Add(new CGUIWindowPVRTVTimers);
-  Add(new CGUIWindowPVRTVTimerRules);
-  Add(new CGUIWindowPVRTVSearch);
-  Add(new CGUIWindowPVRRadioChannels);
-  Add(new CGUIWindowPVRRadioRecordings);
-  Add(new CGUIWindowPVRRadioGuide);
-  Add(new CGUIWindowPVRRadioTimers);
-  Add(new CGUIWindowPVRRadioTimerRules);
-  Add(new CGUIWindowPVRRadioSearch);
-  Add(new CGUIDialogPVRRadioRDSInfo);
-  Add(new CGUIDialogPVRGuideInfo);
-  Add(new CGUIDialogPVRRecordingInfo);
-  Add(new CGUIDialogPVRTimerSettings);
-  Add(new CGUIDialogPVRGroupManager);
-  Add(new CGUIDialogPVRChannelManager);
-  Add(new CGUIDialogPVRGuideSearch);
-  Add(new CGUIDialogPVRChannelsOSD);
-  Add(new CGUIDialogPVRChannelGuide);
-  Add(new CGUIDialogPVRRecordingSettings);
-  Add(new CGUIDialogPVRClientPriorities);
-  Add(new CGUIDialogPVRGuideControls);
-
   Add(new CGUIDialogSelect);
   Add(new CGUIDialogColorPicker);
   Add(new CGUIDialogMusicInfo);
   Add(new CGUIDialogOK);
   Add(new CGUIDialogVideoInfo);
-  Add(new CGUIDialogVideoManagerVersions);
-  Add(new CGUIDialogVideoManagerExtras);
   Add(new CGUIDialogSelect(WINDOW_DIALOG_SELECT_VIDEO_VERSION));
   Add(new CGUIDialogSelect(WINDOW_DIALOG_SELECT_VIDEO_EXTRA));
 
   Add(new CGUIDialogTextViewer);
-  Add(new CGUIWindowFullScreen);
   Add(new CGUIWindowVisualisation);
   Add(new CGUIWindowSlideShow);
 
   Add(new CGUIDialogVideoOSD);
-  Add(new CGUIWindowScreensaver);
   Add(new CGUIWindowWeather);
   Add(new CGUIWindowStartup);
   Add(new CGUIWindowSplash);
 
-  Add(new CGUIWindowEventLog);
-
   Add(new CGUIWindowFavourites);
-
-  Add(new GAME::CGUIControllerWindow);
-  Add(new GAME::CGUIPortWindow);
-  Add(new GAME::CGUIWindowGames);
-  Add(new GAME::CDialogGameOSD);
-  Add(new GAME::CDialogGameSaves);
-  Add(new GAME::CDialogGameVideoFilter);
-  Add(new GAME::CDialogGameStretchMode);
-  Add(new GAME::CDialogGameVolume);
-  Add(new GAME::CDialogGameAdvancedSettings);
-  Add(new GAME::CDialogGameVideoRotation);
-  Add(new GAME::CDialogInGameSaves);
-  Add(new GAME::CGUIAgentWindow);
-  Add(new RETRO::CGameWindowFullScreen);
 }
 
 bool CGUIWindowManager::DestroyWindows()
@@ -1029,10 +911,12 @@ void CGUIWindowManager::OnApplicationMessage(ThreadMessage* pMsg)
 
   case TMSG_GUI_ADDON_DIALOG:
   {
+#if 0
     if (pMsg->lpVoid)
     {
       static_cast<ADDON::CGUIAddonWindowDialog*>(pMsg->lpVoid)->Show_Internal(pMsg->param2 > 0);
     }
+#endif
   }
   break;
 

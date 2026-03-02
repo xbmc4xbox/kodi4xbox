@@ -11,7 +11,6 @@
 #include "ServiceBroker.h"
 #include "guilib/GUIFadeLabelControl.h"
 #include "guilib/GUIMessage.h"
-#include "peripherals/Peripherals.h"
 #include "utils/TimeUtils.h"
 
 #include <mutex>
@@ -140,9 +139,6 @@ bool CGUIDialogKaiToast::DoWork()
 
     //  Play the window specific init sound for each notification queued
     SetSound(toast.withSound);
-
-    // Activate haptics for this notification
-    CServiceBroker::GetPeripherals().OnUserNotification();
 
     ResetTimer();
     return true;

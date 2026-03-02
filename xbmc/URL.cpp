@@ -14,10 +14,9 @@
 #include "filesystem/File.h"
 #include "FileItem.h"
 #include "filesystem/StackDirectory.h"
-#include "network/Network.h"
 #include "ServiceBroker.h"
 #ifndef TARGET_POSIX
-#include <sys\stat.h>
+#include <sys/stat.h>
 #endif
 
 #include <charconv>
@@ -632,7 +631,11 @@ bool CURL::IsLocal() const
 
 bool CURL::IsLocalHost() const
 {
+#if 0
   return CServiceBroker::GetNetwork().IsLocalHost(m_strHostName);
+#else
+  return false;
+#endif
 }
 
 bool CURL::IsFileOnly(const std::string &url)

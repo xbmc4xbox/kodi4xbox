@@ -46,7 +46,7 @@ namespace XFILE
   std::string CStackDirectory::GetStackedTitlePath(const std::string &strPath)
   {
     // Load up our REs
-    VECCREGEXP  RegExps;
+    std::vector<CRegExp>  RegExps;
     CRegExp     tempRE(true, CRegExp::autoUtf8);
     const std::vector<std::string>& strRegExps = CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_videoStackRegExps;
     std::vector<std::string>::const_iterator itRegExp = strRegExps.begin();
@@ -63,7 +63,7 @@ namespace XFILE
     return GetStackedTitlePath(strPath, RegExps);
   }
 
-  std::string CStackDirectory::GetStackedTitlePath(const std::string &strPath, VECCREGEXP& RegExps)
+  std::string CStackDirectory::GetStackedTitlePath(const std::string &strPath, std::vector<CRegExp>& RegExps)
   {
     CStackDirectory stack;
     CFileItemList   files;

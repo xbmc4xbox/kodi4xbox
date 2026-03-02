@@ -12,7 +12,7 @@
 #include <string>
 #include <thread>
 
-#if !defined(TARGET_WINDOWS)
+#if !defined(TARGET_WINDOWS) && !defined(_XBOX)
 #include "PlatformDefs.h"
 #else
 // This is needed, a forward declaration of FILETIME
@@ -20,7 +20,7 @@
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
-#include <Windows.h>
+#include <windows.h>
 #endif
 
 namespace KODI

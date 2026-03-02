@@ -30,6 +30,7 @@
 #include "video/guilib/VideoPlayActionProcessor.h"
 #include "video/guilib/VideoSelectActionProcessor.h"
 #include "video/guilib/VideoVersionHelper.h"
+#include "utils/Variant.h"
 
 #include <utility>
 

@@ -26,7 +26,6 @@
 #include "playlists/PlayList.h"
 #include "playlists/PlayListFactory.h"
 #include "profiles/ProfileManager.h"
-#include "pvr/filesystem/PVRGUIDirectory.h"
 #include "settings/MediaSettings.h"
 #include "settings/SettingUtils.h"
 #include "settings/Settings.h"
@@ -655,11 +654,6 @@ ResumeInformation GetFolderItemResumeInformation(const CFileItem& item)
   if (!folderItem.HasProperty("inprogressepisodes") && // season/show/recordings
       !folderItem.HasProperty("inprogress")) // movie set
   {
-    if (URIUtils::IsPVRRecordingFileOrFolder(folderItem.GetPath()))
-    {
-      PVR::CPVRGUIDirectory::GetRecordingsDirectoryInfo(folderItem);
-    }
-    else
     {
       CVideoDatabase db;
       if (db.Open())

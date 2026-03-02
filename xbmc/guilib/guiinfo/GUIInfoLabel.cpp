@@ -12,7 +12,6 @@
 #include "GUIInfoManager.h"
 #include "ServiceBroker.h"
 #include "addons/Skin.h"
-#include "games/GameServices.h"
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIListItem.h"
 #include "guilib/LocalizeStrings.h"
@@ -234,12 +233,7 @@ std::string AddonReplacer(const std::string &str)
 
 std::string ControllerFeatureReplacer(const std::string& str)
 {
-  // assumes "feature name,controller ID"
-  const size_t length = str.find(',');
-  const std::string featureName = str.substr(0, length);
-  const std::string controllerId = str.substr(length + 1);
-
-  return CServiceBroker::GetGameServices().TranslateFeature(controllerId, featureName);
+  return "N/A";
 }
 
 std::string NumberReplacer(const std::string &str)

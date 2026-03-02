@@ -27,6 +27,7 @@ namespace
 #define X(VAL) std::make_pair(VAL, #VAL)
 std::map<GLenum, const char*> glErrors =
 {
+#if 0
   // please keep attributes in accordance to:
   // https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glGetError.xhtml
   X(GL_NO_ERROR),
@@ -39,6 +40,7 @@ std::map<GLenum, const char*> glErrors =
   X(GL_STACK_UNDERFLOW),
   X(GL_STACK_OVERFLOW),
 #endif
+#endif
 };
 
 std::map<GLenum, const char*> glErrorSource = {
@@ -49,14 +51,6 @@ std::map<GLenum, const char*> glErrorSource = {
     X(GL_DEBUG_SOURCE_THIRD_PARTY_KHR),
     X(GL_DEBUG_SOURCE_APPLICATION_KHR),
     X(GL_DEBUG_SOURCE_OTHER_KHR),
-#endif
-#if defined(HAS_GL) && defined(TARGET_LINUX)
-    X(GL_DEBUG_SOURCE_API),
-    X(GL_DEBUG_SOURCE_WINDOW_SYSTEM),
-    X(GL_DEBUG_SOURCE_SHADER_COMPILER),
-    X(GL_DEBUG_SOURCE_THIRD_PARTY),
-    X(GL_DEBUG_SOURCE_APPLICATION),
-    X(GL_DEBUG_SOURCE_OTHER),
 #endif
 };
 
@@ -70,15 +64,6 @@ std::map<GLenum, const char*> glErrorType = {
     X(GL_DEBUG_TYPE_OTHER_KHR),
     X(GL_DEBUG_TYPE_MARKER_KHR),
 #endif
-#if defined(HAS_GL) && defined(TARGET_LINUX)
-    X(GL_DEBUG_TYPE_ERROR),
-    X(GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR),
-    X(GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR),
-    X(GL_DEBUG_TYPE_PORTABILITY),
-    X(GL_DEBUG_TYPE_PERFORMANCE),
-    X(GL_DEBUG_TYPE_OTHER),
-    X(GL_DEBUG_TYPE_MARKER),
-#endif
 };
 
 std::map<GLenum, const char*> glErrorSeverity = {
@@ -88,12 +73,6 @@ std::map<GLenum, const char*> glErrorSeverity = {
     X(GL_DEBUG_SEVERITY_LOW_KHR),
     X(GL_DEBUG_SEVERITY_NOTIFICATION_KHR),
 #endif
-#if defined(HAS_GL) && defined(TARGET_LINUX)
-    X(GL_DEBUG_SEVERITY_HIGH),
-    X(GL_DEBUG_SEVERITY_MEDIUM),
-    X(GL_DEBUG_SEVERITY_LOW),
-    X(GL_DEBUG_SEVERITY_NOTIFICATION),
-#endif
 };
 #undef X
 // clang-format on
@@ -102,6 +81,7 @@ std::map<GLenum, const char*> glErrorSeverity = {
 
 void KODI::UTILS::GL::GlErrorCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
 {
+#if 0
   std::string sourceStr;
   std::string typeStr;
   std::string severityStr;
@@ -125,20 +105,24 @@ void KODI::UTILS::GL::GlErrorCallback(GLenum source, GLenum type, GLuint id, GLe
   }
 
   CLog::Log(LOGDEBUG, "OpenGL(ES) Debugging:\nSource: {}\nType: {}\nSeverity: {}\nID: {}\nMessage: {}", sourceStr, typeStr, severityStr, id, message);
+#endif
 }
 
 static void PrintMatrix(const GLfloat* matrix, const std::string& matrixName)
 {
+#if 0
   CLog::Log(LOGDEBUG, "{}:\n{:> 10.3f} {:> 10.3f} {:> 10.3f} {:> 10.3f}\n{:> 10.3f} {:> 10.3f} {:> 10.3f} {:> 10.3f}\n{:> 10.3f} {:> 10.3f} {:> 10.3f} {:> 10.3f}\n{:> 10.3f} {:> 10.3f} {:> 10.3f} {:> 10.3f}",
                       matrixName,
                       matrix[0], matrix[1], matrix[2], matrix[3],
                       matrix[4], matrix[5], matrix[6], matrix[7],
                       matrix[8], matrix[9], matrix[10], matrix[11],
                       matrix[12], matrix[13], matrix[14], matrix[15]);
+#endif
 }
 
 void _VerifyGLState(const char* szfile, const char* szfunction, int lineno)
 {
+#if 0
   GLenum err = glGetError();
   if (err == GL_NO_ERROR)
   {
@@ -169,10 +153,12 @@ void _VerifyGLState(const char* szfile, const char* szfunction, int lineno)
 
   PrintMatrix(glMatrixProject.Get(), "Projection Matrix");
   PrintMatrix(glMatrixModview.Get(), "Modelview Matrix");
+#endif
 }
 
 void LogGraphicsInfo()
 {
+#if 0
 #if defined(HAS_GL) || defined(HAS_GLES)
   const char* s;
 
@@ -259,8 +245,10 @@ void LogGraphicsInfo()
 #else /* !HAS_GL */
   CLog::Log(LOGINFO, "Please define LogGraphicsInfo for your chosen graphics library");
 #endif /* !HAS_GL */
+#endif /* !_XBOX */
 }
 
+#if 0
 int KODI::UTILS::GL::glFormatElementByteCount(GLenum format)
 {
   switch (format)
@@ -291,7 +279,9 @@ int KODI::UTILS::GL::glFormatElementByteCount(GLenum format)
     return 1;
   }
 }
+#endif
 
+#if 0
 uint8_t KODI::UTILS::GL::GetChannelFromARGB(const KODI::UTILS::GL::ColorChannel colorChannel,
                                             const uint32_t argb)
 {
@@ -309,3 +299,4 @@ uint8_t KODI::UTILS::GL::GetChannelFromARGB(const KODI::UTILS::GL::ColorChannel 
       throw std::runtime_error("KODI::UTILS::GL::GetChannelFromARGB: ColorChannel not handled");
   };
 }
+#endif

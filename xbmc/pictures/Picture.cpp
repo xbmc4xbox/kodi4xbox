@@ -17,15 +17,10 @@
 #include "settings/AdvancedSettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
-#include "utils/MemUtils.h"
 #include "utils/URIUtils.h"
 #include "utils/log.h"
 
 #include <algorithm>
-
-extern "C" {
-#include <libswscale/swscale.h>
-}
 
 using namespace XFILE;
 
@@ -112,99 +107,17 @@ bool CThumbnailWriter::DoWork()
   return success;
 }
 
-bool CPicture::ResizeTexture(const std::string& image,
-                             CTexture* texture,
-                             uint32_t& dest_width,
-                             uint32_t& dest_height,
-                             uint8_t*& result,
-                             size_t& result_size,
-                             CPictureScalingAlgorithm::Algorithm
-                                 scalingAlgorithm /* = CPictureScalingAlgorithm::NoAlgorithm */)
-{
-  if (image.empty() || texture == NULL)
-    return false;
-
-  return ResizeTexture(image, texture->GetPixels(), texture->GetWidth(), texture->GetHeight(), texture->GetPitch(),
-                       dest_width, dest_height, result, result_size,
-                       scalingAlgorithm);
-}
-
-bool CPicture::ResizeTexture(const std::string &image, uint8_t *pixels, uint32_t width, uint32_t height, uint32_t pitch,
-  uint32_t &dest_width, uint32_t &dest_height, uint8_t* &result, size_t& result_size,
-  CPictureScalingAlgorithm::Algorithm scalingAlgorithm /* = CPictureScalingAlgorithm::NoAlgorithm */)
-{
-  if (image.empty() || pixels == NULL)
-    return false;
-
-  dest_width = std::min(width, dest_width);
-  dest_height = std::min(height, dest_height);
-
-  // if no max width or height is specified, don't resize
-  if (dest_width == 0 && dest_height == 0)
-  {
-    dest_width = width;
-    dest_height = height;
-  }
-  else if (dest_width == 0)
-  {
-    double factor = (double)dest_height / (double)height;
-    dest_width = (uint32_t)(width * factor);
-  }
-  else if (dest_height == 0)
-  {
-    double factor = (double)dest_width / (double)width;
-    dest_height = (uint32_t)(height * factor);
-  }
-
-  // nothing special to do if the dimensions already match
-  if (dest_width >= width || dest_height >= height)
-    return GetThumbnailFromSurface(pixels, dest_width, dest_height, pitch, image, result, result_size);
-
-  // create a buffer large enough for the resulting image
-  GetScale(width, height, dest_width, dest_height);
-
-  // Let's align so that stride is always divisible by 16, and then add some 32 bytes more on top
-  // See: https://github.com/FFmpeg/FFmpeg/blob/75638fe9402f70645bdde4d95672fa640a327300/libswscale/tests/swscale.c#L157
-  uint32_t dest_width_aligned = ((dest_width + 15) & ~0x0f);
-  uint32_t stride = dest_width_aligned * sizeof(uint32_t);
-
-  uint32_t* buffer = new uint32_t[dest_width_aligned * dest_height + 4];
-  if (!ScaleImage(pixels, width, height, pitch, AV_PIX_FMT_BGRA, (uint8_t*)buffer, dest_width,
-                  dest_height, stride, AV_PIX_FMT_BGRA, scalingAlgorithm))
-  {
-    delete[] buffer;
-    result = NULL;
-    result_size = 0;
-    return false;
-  }
-
-  bool success = GetThumbnailFromSurface((unsigned char*)buffer, dest_width, dest_height, stride,
-                                         image, result, result_size);
-  delete[] buffer;
-
-  if (!success)
-  {
-    result = NULL;
-    result_size = 0;
-  }
-
-  return success;
-}
-
 bool CPicture::CacheTexture(CTexture* texture,
                             uint32_t& dest_width,
                             uint32_t& dest_height,
-                            const std::string& dest,
-                            CPictureScalingAlgorithm::Algorithm
-                                scalingAlgorithm /* = CPictureScalingAlgorithm::NoAlgorithm */)
+                            const std::string& dest)
 {
   return CacheTexture(texture->GetPixels(), texture->GetWidth(), texture->GetHeight(), texture->GetPitch(),
-                      texture->GetOrientation(), dest_width, dest_height, dest, scalingAlgorithm);
+                      texture->GetOrientation(), dest_width, dest_height, dest);
 }
 
 bool CPicture::CacheTexture(uint8_t *pixels, uint32_t width, uint32_t height, uint32_t pitch, int orientation,
-  uint32_t &dest_width, uint32_t &dest_height, const std::string &dest,
-  CPictureScalingAlgorithm::Algorithm scalingAlgorithm /* = CPictureScalingAlgorithm::NoAlgorithm */)
+  uint32_t &dest_width, uint32_t &dest_height, const std::string &dest)
 {
   const std::shared_ptr<CAdvancedSettings> advancedSettings = CServiceBroker::GetSettingsComponent()->GetAdvancedSettings();
 
@@ -213,8 +126,6 @@ bool CPicture::CacheTexture(uint8_t *pixels, uint32_t width, uint32_t height, ui
     dest_width = width;
   if (dest_height == 0)
     dest_height = height;
-  if (scalingAlgorithm == CPictureScalingAlgorithm::NoAlgorithm)
-    scalingAlgorithm = advancedSettings->m_imageScalingAlgorithm;
 
   uint32_t max_height = advancedSettings->m_imageRes;
   if (advancedSettings->m_fanartRes > advancedSettings->m_imageRes)
@@ -247,9 +158,8 @@ bool CPicture::CacheTexture(uint8_t *pixels, uint32_t width, uint32_t height, ui
     uint32_t stride = dest_width_aligned * sizeof(uint32_t);
 
     auto buffer = std::make_unique<uint32_t[]>(dest_width_aligned * dest_height + 4);
-    if (ScaleImage(pixels, width, height, pitch, AV_PIX_FMT_BGRA,
-                   reinterpret_cast<uint8_t*>(buffer.get()), dest_width, dest_height, stride,
-                   AV_PIX_FMT_BGRA, scalingAlgorithm))
+    if (ScaleImage(pixels, width, height, pitch,
+                   reinterpret_cast<uint8_t*>(buffer.get()), dest_width, dest_height, stride))
     {
       if (!orientation ||
           OrientateImage(buffer, dest_width, dest_height, orientation, dest_width_aligned))
@@ -301,8 +211,8 @@ std::unique_ptr<CTexture> CPicture::CreateTiledThumb(const std::vector<std::stri
       // scale appropriately
       std::unique_ptr<uint32_t[]> scaled = std::make_unique<uint32_t[]>(width * height);
       if (ScaleImage(texture->GetPixels(), texture->GetWidth(), texture->GetHeight(),
-                     texture->GetPitch(), AV_PIX_FMT_BGRA, reinterpret_cast<uint8_t*>(scaled.get()),
-                     width, height, width * 4, AV_PIX_FMT_BGRA))
+                     texture->GetPitch(), reinterpret_cast<uint8_t*>(scaled.get()),
+                     width, height, width * 4))
       {
         unsigned int stridePixels{width};
         if (!texture->GetOrientation() ||
@@ -346,18 +256,15 @@ bool CPicture::ScaleImage(uint8_t* in_pixels,
                           unsigned int in_width,
                           unsigned int in_height,
                           unsigned int in_pitch,
-                          AVPixelFormat in_format,
                           uint8_t* out_pixels,
                           unsigned int out_width,
                           unsigned int out_height,
-                          unsigned int out_pitch,
-                          AVPixelFormat out_format,
-                          CPictureScalingAlgorithm::Algorithm
-                              scalingAlgorithm /* = CPictureScalingAlgorithm::NoAlgorithm */)
+                          unsigned int out_pitch)
 {
+#if 0
   struct SwsContext* context =
-      sws_getContext(in_width, in_height, in_format, out_width, out_height, out_format,
-                     CPictureScalingAlgorithm::ToSwscale(scalingAlgorithm), NULL, NULL, NULL);
+      sws_getContext(in_width, in_height, PIX_FMT_BGRA, out_width, out_height, PIX_FMT_BGRA,
+                     SWS_FAST_BILINEAR | SwScaleCPUFlags(), NULL, NULL, NULL);
 
   uint8_t *src[] = { in_pixels, 0, 0, 0 };
   int     srcStride[] = { (int)in_pitch, 0, 0, 0 };
@@ -370,6 +277,9 @@ bool CPicture::ScaleImage(uint8_t* in_pixels,
     sws_freeContext(context);
     return true;
   }
+#else
+  CLog::Log(LOGWARNING, "{} - missing libswscale!", __FUNCTION__);
+#endif
   return false;
 }
 

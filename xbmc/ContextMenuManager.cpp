@@ -23,9 +23,9 @@
 #include "favourites/ContextMenus.h"
 #include "messaging/ApplicationMessenger.h"
 #include "music/ContextMenus.h"
-#include "pvr/PVRContextMenus.h"
 #include "utils/StringUtils.h"
 #include "utils/log.h"
+#include "utils/Variant.h"
 #include "video/ContextMenus.h"
 
 #include <algorithm>
@@ -33,7 +33,6 @@
 #include <mutex>
 
 using namespace ADDON;
-using namespace PVR;
 
 const CContextMenuItem CContextMenuManager::MAIN = CContextMenuItem::CreateGroup("", "", "kodi.core.main", "");
 const CContextMenuItem CContextMenuManager::MANAGE = CContextMenuItem::CreateGroup("", "", "kodi.core.manage", "");
@@ -49,7 +48,6 @@ CContextMenuManager::~CContextMenuManager()
 
 void CContextMenuManager::Deinit()
 {
-  CPVRContextMenuManager::GetInstance().Events().Unsubscribe(this);
   m_addonMgr.Events().Unsubscribe(this);
   m_items.clear();
 }
@@ -57,7 +55,6 @@ void CContextMenuManager::Deinit()
 void CContextMenuManager::Init()
 {
   m_addonMgr.Events().Subscribe(this, &CContextMenuManager::OnEvent);
-  CPVRContextMenuManager::GetInstance().Events().Subscribe(this, &CContextMenuManager::OnPVREvent);
 
   std::unique_lock<CCriticalSection> lock(m_criticalSection);
   m_items = {
@@ -110,10 +107,6 @@ void CContextMenuManager::Init()
   };
 
   ReloadAddonItems();
-
-  const std::vector<std::shared_ptr<IContextMenuItem>> pvrItems(CPVRContextMenuManager::GetInstance().GetMenuItems());
-  for (const auto &item : pvrItems)
-    m_items.emplace_back(item);
 }
 
 void CContextMenuManager::ReloadAddonItems()
@@ -169,30 +162,6 @@ void CContextMenuManager::OnEvent(const ADDON::AddonEvent& event)
     {
       ReloadAddonItems();
     }
-  }
-}
-
-void CContextMenuManager::OnPVREvent(const PVRContextMenuEvent& event)
-{
-  switch (event.action)
-  {
-    case PVRContextMenuEventAction::ADD_ITEM:
-    {
-      std::unique_lock<CCriticalSection> lock(m_criticalSection);
-      m_items.emplace_back(event.item);
-      break;
-    }
-    case PVRContextMenuEventAction::REMOVE_ITEM:
-    {
-      std::unique_lock<CCriticalSection> lock(m_criticalSection);
-      auto it = std::find(m_items.begin(), m_items.end(), event.item);
-      if (it != m_items.end())
-        m_items.erase(it);
-      break;
-    }
-
-    default:
-      break;
   }
 }
 

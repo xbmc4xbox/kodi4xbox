@@ -22,6 +22,9 @@
 #include <OpenGL/gl.h>
 #include <OpenGL/gl3.h>
 #include <OpenGL/gl3ext.h>
+#elif defined(_XBOX)
+#include <GL/gl.h>
+#include <GL/glext.h>
 #endif
 #elif HAS_GLES >= 2
 #if defined(TARGET_DARWIN)

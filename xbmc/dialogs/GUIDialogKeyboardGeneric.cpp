@@ -27,9 +27,6 @@
 #include "messaging/ApplicationMessenger.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
-#include "speech/ISpeechRecognition.h"
-#include "speech/ISpeechRecognitionListener.h"
-#include "speech/SpeechRecognitionErrors.h"
 #include "utils/CharsetConverter.h"
 #include "utils/RegExp.h"
 #include "utils/StringUtils.h"
@@ -66,58 +63,6 @@ using namespace MESSAGING;
 #define CTL_BUTTON_SPACE       32
 
 #define SEARCH_DELAY         1000
-
-class CSpeechRecognitionListener : public speech::ISpeechRecognitionListener
-{
-public:
-  CSpeechRecognitionListener(int dialogId) : m_dialogId(dialogId) {}
-
-  void OnReadyForSpeech() override
-  {
-    CGUIDialogKaiToast::QueueNotification(CGUIDialogKaiToast::Info,
-                                          g_localizeStrings.Get(39177), // Speech to text
-                                          g_localizeStrings.Get(39179)); // Listening...
-  }
-
-  void OnError(int recognitionError) override
-  {
-    uint32_t msgId = 0;
-    switch (recognitionError)
-    {
-      case speech::RecognitionError::SERVICE_NOT_AVAILABLE:
-        msgId = 39178; // Speech recognition service not available
-        break;
-      case speech::RecognitionError::NO_MATCH:
-        msgId = 39180; // No recognition result matched
-        break;
-      case speech::RecognitionError::INSUFFICIENT_PERMISSIONS:
-        msgId = 39185; // Insufficient permissions for speech recognition
-        break;
-      default:
-        msgId = 39181; // Speech recognition error
-        break;
-    }
-
-    CGUIDialogKaiToast::QueueNotification(CGUIDialogKaiToast::Error,
-                                          g_localizeStrings.Get(39177), // Speech to text
-                                          g_localizeStrings.Get(msgId));
-  }
-
-  void OnResults(const std::vector<std::string>& results) override
-  {
-    if (!results.empty())
-    {
-      CGUIMessage msg(GUI_MSG_SET_TEXT, m_dialogId, CTL_EDIT);
-      msg.SetLabel(results.front());
-
-      // dispatch to GUI thread
-      CServiceBroker::GetAppMessenger()->SendGUIMessage(msg, m_dialogId);
-    }
-  }
-
-private:
-  const int m_dialogId{0};
-};
 
 CGUIDialogKeyboardGeneric::CGUIDialogKeyboardGeneric()
 : CGUIDialog(WINDOW_DIALOG_KEYBOARD, "DialogKeyboard.xml")
@@ -648,15 +593,6 @@ void CGUIDialogKeyboardGeneric::OnIPAddress()
 
 void CGUIDialogKeyboardGeneric::OnVoiceRecognition()
 {
-  const auto speechRecognition = CServiceBroker::GetSpeechRecognition();
-  if (speechRecognition)
-  {
-    if (!m_speechRecognitionListener)
-      m_speechRecognitionListener = std::make_shared<CSpeechRecognitionListener>(GetID());
-
-    speechRecognition->StartSpeechRecognition(m_speechRecognitionListener);
-  }
-  else
   {
     CLog::LogF(LOGWARNING, "No voice recognition implementation available.");
   }

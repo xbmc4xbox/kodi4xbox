@@ -9,13 +9,11 @@
 #include "GUIControlGroupList.h"
 
 #include "GUIAction.h"
-#include "GUIControlProfiler.h"
 #include "GUIFont.h" // for XBFONT_* definitions
 #include "GUIMessage.h"
 #include "guilib/guiinfo/GUIInfoLabels.h"
 #include "input/actions/Action.h"
 #include "input/actions/ActionIDs.h"
-#include "input/mouse/MouseEvent.h"
 #include "utils/StringUtils.h"
 
 using namespace KODI;
@@ -48,9 +46,7 @@ void CGUIControlGroupList::Process(unsigned int currentTime, CDirtyRegionList &d
   for (iControls it = m_children.begin(); it != m_children.end(); ++it)
   {
     CGUIControl *control = *it;
-    GUIPROFILER_VISIBILITY_BEGIN(control);
     control->UpdateVisibility(nullptr);
-    GUIPROFILER_VISIBILITY_END(control);
   }
 
   // visibility status of some of the list items may have changed. Thus, the group list size
@@ -397,36 +393,6 @@ void CGUIControlGroupList::ScrollTo(float offset)
 EVENT_RESULT CGUIControlGroupList::SendMouseEvent(const CPoint& point,
                                                   const MOUSE::CMouseEvent& event)
 {
-  // transform our position into child coordinates
-  CPoint childPoint(point);
-  m_transform.InverseTransformPosition(childPoint.x, childPoint.y);
-  if (CGUIControl::CanFocus())
-  {
-    float pos = 0;
-    float alignOffset = GetAlignOffset();
-    for (ciControls i = m_children.begin(); i != m_children.end(); ++i)
-    {
-      CGUIControl *child = *i;
-      if (child->IsVisible())
-      {
-        if (IsControlOnScreen(pos, child))
-        { // we're on screen
-          float offsetX = m_orientation == VERTICAL ? m_posX : m_posX + alignOffset + pos - m_scroller.GetValue();
-          float offsetY = m_orientation == VERTICAL ? m_posY + alignOffset + pos - m_scroller.GetValue() : m_posY;
-          EVENT_RESULT ret = child->SendMouseEvent(childPoint - CPoint(offsetX, offsetY), event);
-          if (ret)
-          { // we've handled the action, and/or have focused an item
-            return ret;
-          }
-        }
-        pos += Size(child) + m_itemGap;
-      }
-    }
-    // none of our children want the event, but we may want it.
-    EVENT_RESULT ret;
-    if (HitTest(childPoint) && (ret = OnMouseEvent(childPoint, event)))
-      return ret;
-  }
   m_focusedControl = 0;
   return EVENT_RESULT_UNHANDLED;
 }
@@ -546,47 +512,6 @@ float CGUIControlGroupList::GetAlignOffset() const
 EVENT_RESULT CGUIControlGroupList::OnMouseEvent(const CPoint& point,
                                                 const MOUSE::CMouseEvent& event)
 {
-  if (event.m_id == ACTION_MOUSE_WHEEL_UP || event.m_id == ACTION_MOUSE_WHEEL_DOWN)
-  {
-    // find the current control and move to the next or previous
-    float offset = 0;
-    for (ciControls it = m_children.begin(); it != m_children.end(); ++it)
-    {
-      CGUIControl *control = *it;
-      if (!control->IsVisible()) continue;
-      float nextOffset = offset + Size(control) + m_itemGap;
-      if (event.m_id == ACTION_MOUSE_WHEEL_DOWN && nextOffset > m_scroller.GetValue() && m_scroller.GetValue() < m_totalSize - Size()) // past our current offset
-      {
-        ScrollTo(nextOffset);
-        return EVENT_RESULT_HANDLED;
-      }
-      else if (event.m_id == ACTION_MOUSE_WHEEL_UP && nextOffset >= m_scroller.GetValue() && m_scroller.GetValue() > 0) // at least at our current offset
-      {
-        ScrollTo(offset);
-        return EVENT_RESULT_HANDLED;
-      }
-      offset = nextOffset;
-    }
-  }
-  else if (event.m_id == ACTION_GESTURE_BEGIN)
-  { // grab exclusive access
-    CGUIMessage msg(GUI_MSG_EXCLUSIVE_MOUSE, GetID(), GetParentID());
-    SendWindowMessage(msg);
-    return EVENT_RESULT_HANDLED;
-  }
-  else if (event.m_id == ACTION_GESTURE_END || event.m_id == ACTION_GESTURE_ABORT)
-  { // release exclusive access
-    CGUIMessage msg(GUI_MSG_EXCLUSIVE_MOUSE, 0, GetParentID());
-    SendWindowMessage(msg);
-    return EVENT_RESULT_HANDLED;
-  }
-  else if (event.m_id == ACTION_GESTURE_PAN)
-  { // do the drag and validate our offset (corrects for end of scroll)
-    m_scroller.SetValue(CLAMP(m_scroller.GetValue() - ((m_orientation == HORIZONTAL) ? event.m_offsetX : event.m_offsetY), 0, m_totalSize - Size()));
-    SetInvalid();
-    return EVENT_RESULT_HANDLED;
-  }
-
   return EVENT_RESULT_UNHANDLED;
 }
 

@@ -20,6 +20,7 @@
 #include "input/actions/ActionIDs.h"
 #include "input/keyboard/KeyIDs.h"
 #include "input/keyboard/XBMC_vkeys.h"
+#include "input/keyboard/XBMC_keyboard.h"
 #include "utils/CharsetConverter.h"
 #include "utils/ColorUtils.h"
 #include "utils/Digest.h"

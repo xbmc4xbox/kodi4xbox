@@ -17,6 +17,10 @@
 #include "utils/XTimeUtils.h"
 #include "utils/log.h"
 
+#ifdef NXDK
+#include "PlatformDefs.h" // unlink
+#endif
+
 #include <iostream>
 #include <map>
 #include <sstream>

@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include "pictures/PictureScalingAlgorithm.h"
 #include "settings/lib/ISettingCallback.h"
 #include "settings/lib/ISettingsHandler.h"
 #include "utils/SortUtils.h"
@@ -226,7 +225,6 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
 
     unsigned int m_fanartRes; ///< \brief the maximal resolution to cache fanart at (assumes 16x9)
     unsigned int m_imageRes;  ///< \brief the maximal resolution to cache images at (assumes 16x9)
-    CPictureScalingAlgorithm::Algorithm m_imageScalingAlgorithm;
     unsigned int
         m_imageQualityJpeg; ///< \brief the stored jpeg quality the lower the better (default: 4)
 

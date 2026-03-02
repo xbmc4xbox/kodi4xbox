@@ -10,7 +10,6 @@
 
 #include "guilib/guiinfo/AddonsGUIInfo.h"
 #include "guilib/guiinfo/GUIControlsGUIInfo.h"
-#include "guilib/guiinfo/GamesGUIInfo.h"
 #include "guilib/guiinfo/LibraryGUIInfo.h"
 #include "guilib/guiinfo/MusicGUIInfo.h"
 #include "guilib/guiinfo/PicturesGUIInfo.h"
@@ -139,7 +138,6 @@ private:
   std::vector<IGUIInfoProvider *> m_providers;
 
   CAddonsGUIInfo m_addonsGUIInfo;
-  CGamesGUIInfo m_gamesGUIInfo;
   CGUIControlsGUIInfo m_guiControlsGUIInfo;
   CLibraryGUIInfo m_libraryGUIInfo;
   CMusicGUIInfo m_musicGUIInfo;

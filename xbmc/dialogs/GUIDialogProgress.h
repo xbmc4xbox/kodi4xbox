@@ -10,6 +10,7 @@
 
 #include "GUIDialogBoxBase.h"
 #include "IProgressCallback.h"
+#include "threads/Event.h" // FIXME: this should not be here
 
 #include <array>
 

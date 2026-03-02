@@ -55,6 +55,7 @@ DEF_TO_STR_VALUE(foo) // outputs "4"
 #define DEF_TO_STR_NAME(x) #x
 #define DEF_TO_STR_VALUE(x) DEF_TO_STR_NAME(x)
 
+#ifndef NXDK
 template<typename T, std::enable_if_t<!std::is_enum<T>::value, int> = 0>
 constexpr auto&& EnumToInt(T&& arg) noexcept
 {
@@ -65,6 +66,16 @@ constexpr auto EnumToInt(T&& arg) noexcept
 {
   return static_cast<int>(arg);
 }
+#else
+template<typename T>
+constexpr auto EnumToInt(T&& arg) noexcept
+{
+  if constexpr (std::is_enum_v<std::decay_t<T>>)
+    return static_cast<int>(arg);
+  else
+    return std::forward<T>(arg);
+}
+#endif
 
 class StringUtils
 {
@@ -89,7 +100,6 @@ public:
   }
 
   static std::string FormatV(PRINTF_FORMAT_STRING const char *fmt, va_list args);
-  static std::wstring FormatV(PRINTF_FORMAT_STRING const wchar_t *fmt, va_list args);
   static std::string ToUpper(const std::string& str);
   static std::wstring ToUpper(const std::wstring& str);
   static void ToUpper(std::string &str);

@@ -26,7 +26,6 @@
 #include "settings/MediaSettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
-#include "settings/SubtitlesSettings.h"
 #include "utils/LangCodeExpander.h"
 #include "utils/StringUtils.h"
 #include "utils/Variant.h"
@@ -337,6 +336,7 @@ bool CPlayerController::OnAction(const CAction &action)
         return true;
       }
 
+#if 0
       case ACTION_SUBTITLE_VSHIFT_UP:
       {
         const auto settings{CServiceBroker::GetSettingsComponent()->GetSubtitlesSettings()};
@@ -422,6 +422,7 @@ bool CPlayerController::OnAction(const CAction &action)
             g_localizeStrings.Get(21461 + static_cast<int>(align)), TOAST_DISPLAY_TIME, false);
         return true;
       }
+#endif
 
       case ACTION_VOLAMP_UP:
       case ACTION_VOLAMP_DOWN:
@@ -491,6 +492,7 @@ bool CPlayerController::OnAction(const CAction &action)
 
       case ACTION_PLAYER_RESOLUTION_SELECT:
       {
+#if 0
         std::vector<CVariant> indexList = CServiceBroker::GetSettingsComponent()->GetSettings()->GetList(CSettings::SETTING_VIDEOSCREEN_WHITELIST);
 
         CGUIDialogSelect *dialog = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIDialogSelect>(WINDOW_DIALOG_SELECT);
@@ -518,6 +520,7 @@ bool CPlayerController::OnAction(const CAction &action)
             CServiceBroker::GetWinSystem()->GetGfxContext().SetVideoResolution(res, false);
           }
         }
+#endif
         return true;
       }
 

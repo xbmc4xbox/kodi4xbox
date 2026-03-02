@@ -10,8 +10,8 @@
 
 #include "platform/win32/CharsetConverter.h"
 
-#include <FileAPI.h>
-#include <Windows.h>
+#include <fileapi.h>
+#include <windows.h>
 
 using KODI::PLATFORM::WINDOWS::FromW;
 
@@ -84,20 +84,12 @@ void GetLocalTime(SystemTime* systemTime)
 
 int FileTimeToLocalFileTime(const FileTime* fileTime, FileTime* localFileTime)
 {
-  FILETIME file{};
+  FILETIME file;
   file.dwLowDateTime = fileTime->lowDateTime;
   file.dwHighDateTime = fileTime->highDateTime;
 
-  SYSTEMTIME systemTime{};
-  if (FALSE == ::FileTimeToSystemTime(&file, &systemTime))
-    return FALSE;
-
-  SYSTEMTIME localSystemTime{};
-  if (FALSE == ::SystemTimeToTzSpecificLocalTime(nullptr, &systemTime, &localSystemTime))
-    return FALSE;
-
-  FILETIME localFile{};
-  int ret = ::SystemTimeToFileTime(&localSystemTime, &localFile);
+  FILETIME localFile;
+  int ret = ::FileTimeToLocalFileTime(&file, &localFile);
 
   localFileTime->lowDateTime = localFile.dwLowDateTime;
   localFileTime->highDateTime = localFile.dwHighDateTime;

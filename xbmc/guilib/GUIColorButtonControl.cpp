@@ -174,7 +174,8 @@ bool CGUIColorButtonControl::UpdateColors(const CGUIListItem* item)
 {
   bool changed = CGUIButtonControl::UpdateColors(nullptr);
   changed |= m_imgBoxColor.Update();
-  changed |= m_imgColorMask->SetDiffuseColor(m_imgBoxColor, item);
+  // https://github.com/xbmc/xbmc/pull/20169
+  changed |= m_imgColorMask->SetDiffuseColor(m_imgBoxColor/*, item*/);
   changed |= m_imgColorDisabledMask->SetDiffuseColor(m_diffuseColor);
   changed |= m_labelInfo.UpdateColors();
   return changed;

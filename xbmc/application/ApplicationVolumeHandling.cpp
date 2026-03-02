@@ -11,12 +11,10 @@
 #include "ServiceBroker.h"
 #include "application/ApplicationComponents.h"
 #include "application/ApplicationPlayer.h"
-#include "cores/AudioEngine/Interfaces/AE.h"
 #include "dialogs/GUIDialogVolumeBar.h"
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIWindowManager.h"
 #include "interfaces/AnnouncementManager.h"
-#include "peripherals/Peripherals.h"
 #include "settings/Settings.h"
 #include "settings/lib/Setting.h"
 #include "utils/Variant.h"
@@ -39,9 +37,11 @@ void CApplicationVolumeHandling::SetHardwareVolume(float hardwareVolume)
 {
   m_volumeLevel = std::clamp(hardwareVolume, VOLUME_MINIMUM, VOLUME_MAXIMUM);
 
+#if 0
   IAE* ae = CServiceBroker::GetActiveAE();
   if (ae)
     ae->SetVolume(m_volumeLevel);
+#endif
 }
 
 void CApplicationVolumeHandling::VolumeChanged()
@@ -76,11 +76,13 @@ void CApplicationVolumeHandling::ShowVolumeBar(const CAction* action)
 
 bool CApplicationVolumeHandling::IsMuted() const
 {
+#if 0
   if (CServiceBroker::GetPeripherals().IsMuted())
     return true;
   IAE* ae = CServiceBroker::GetActiveAE();
   if (ae)
     return ae->IsMuted();
+#endif
   return true;
 }
 
@@ -103,24 +105,28 @@ void CApplicationVolumeHandling::SetMute(bool mute)
 
 void CApplicationVolumeHandling::Mute()
 {
+#if 0
   if (CServiceBroker::GetPeripherals().Mute())
     return;
 
   IAE* ae = CServiceBroker::GetActiveAE();
   if (ae)
     ae->SetMute(true);
+#endif
   m_muted = true;
   VolumeChanged();
 }
 
 void CApplicationVolumeHandling::UnMute()
 {
+#if 0
   if (CServiceBroker::GetPeripherals().UnMute())
     return;
 
   IAE* ae = CServiceBroker::GetActiveAE();
   if (ae)
     ae->SetMute(false);
+#endif
   m_muted = false;
   VolumeChanged();
 }

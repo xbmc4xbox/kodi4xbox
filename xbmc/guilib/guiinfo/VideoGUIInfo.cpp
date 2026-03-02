@@ -21,7 +21,6 @@
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIWindowManager.h"
 #include "guilib/LocalizeStrings.h"
-#include "guilib/StereoscopicsManager.h"
 #include "guilib/WindowIDs.h"
 #include "guilib/guiinfo/GUIInfo.h"
 #include "guilib/guiinfo/GUIInfoHelper.h"
@@ -592,11 +591,13 @@ bool CVideoGUIInfo::GetLabel(std::string& value, const CFileItem *item, int cont
     ///////////////////////////////////////////////////////////////////////////////////////////////
     // LISTITEM_*
     ///////////////////////////////////////////////////////////////////////////////////////////////
+#ifndef _XBOX
     case LISTITEM_STEREOSCOPIC_MODE:
       value = item->GetProperty("stereomode").asString();
       if (value.empty() && tag)
         value = CStereoscopicsManager::NormalizeStereoMode(tag->m_streamDetails.GetStereoMode());
       return true;
+#endif
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     // VIDEOPLAYER_*
@@ -853,6 +854,7 @@ bool CVideoGUIInfo::GetBool(bool& value, const CGUIListItem *gitem, int contextW
     case LISTITEM_IS_RESUMABLE:
       value = item->IsResumable();
       return true;
+#ifndef _XBOX
     case LISTITEM_IS_STEREOSCOPIC:
     {
       std::string stereoMode = item->GetProperty("stereomode").asString();
@@ -862,6 +864,7 @@ bool CVideoGUIInfo::GetBool(bool& value, const CGUIListItem *gitem, int contextW
         value = true;
       return true;
     }
+#endif
   }
 
   return false;

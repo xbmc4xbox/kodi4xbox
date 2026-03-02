@@ -25,8 +25,6 @@
 #include "dialogs/GUIDialogProgress.h"
 #include "dialogs/GUIDialogSelect.h"
 #include "dialogs/GUIDialogYesNo.h"
-#include "events/EventLog.h"
-#include "events/MediaLibraryEvent.h"
 #include "filesystem/Directory.h"
 #include "filesystem/MusicDatabaseDirectory.h"
 #include "filesystem/MusicDatabaseDirectory/DirectoryNode.h"
@@ -1318,16 +1316,6 @@ CMusicInfoScanner::UpdateDatabaseAlbumInfo(CAlbum& album,
           }
         }
       }
-      else
-      {
-        auto eventLog = CServiceBroker::GetEventLog();
-        if (eventLog)
-          eventLog->Add(EventPtr(new CMediaLibraryEvent(
-              MediaTypeAlbum, album.strPath, 24146,
-              StringUtils::Format(g_localizeStrings.Get(24147), MediaTypeAlbum, album.strAlbum),
-              CScraperUrl::GetThumbUrl(album.thumbURL.GetFirstUrlByType()),
-              CURL::GetRedacted(album.strPath), EventLevel::Warning)));
-      }
     }
   }
 
@@ -1387,16 +1375,6 @@ CMusicInfoScanner::UpdateDatabaseArtistInfo(CArtist& artist,
           artistDownloadStatus = INFO_CANCELLED;
         else
           stop = false;
-      }
-      else
-      {
-        auto eventLog = CServiceBroker::GetEventLog();
-        if (eventLog)
-          eventLog->Add(EventPtr(new CMediaLibraryEvent(
-              MediaTypeArtist, artist.strPath, 24146,
-              StringUtils::Format(g_localizeStrings.Get(24147), MediaTypeArtist, artist.strArtist),
-              CScraperUrl::GetThumbUrl(artist.thumbURL.GetFirstUrlByType()),
-              CURL::GetRedacted(artist.strPath), EventLevel::Warning)));
       }
     }
   }

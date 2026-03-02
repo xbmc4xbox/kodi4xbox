@@ -18,8 +18,6 @@
 #include "network/upnp/UPnP.h"
 #endif
 #include "profiles/ProfileManager.h"
-#include "pvr/PVRManager.h"
-#include "pvr/recordings/PVRRecordings.h"
 #include "settings/SettingsComponent.h"
 #include "utils/URIUtils.h"
 #include "video/VideoDatabase.h"
@@ -62,10 +60,6 @@ bool CVideoLibraryResetResumePointJob::Work(CVideoDatabase &db)
     if (URIUtils::IsUPnP(item->GetPath()) && UPNP::CUPnP::SaveFileState(*item, CBookmark(), false /* updatePlayCount */))
       continue;
 #endif
-
-    if (item->HasPVRRecordingInfoTag() &&
-        CServiceBroker::GetPVRManager().Recordings()->ResetResumePoint(item->GetPVRRecordingInfoTag()))
-      continue;
 
     resetItems.emplace_back(item);
   }

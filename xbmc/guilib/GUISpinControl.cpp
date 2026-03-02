@@ -11,7 +11,6 @@
 #include "GUIMessage.h"
 #include "input/actions/Action.h"
 #include "input/actions/ActionIDs.h"
-#include "input/mouse/MouseEvent.h"
 #include "utils/StringUtils.h"
 
 #include <stdio.h>
@@ -1011,30 +1010,6 @@ bool CGUISpinControl::OnMouseOver(const CPoint &point)
 
 EVENT_RESULT CGUISpinControl::OnMouseEvent(const CPoint& point, const MOUSE::CMouseEvent& event)
 {
-  if (event.m_id == ACTION_MOUSE_LEFT_CLICK)
-  {
-    if (m_imgspinUpFocus->HitTest(point))
-      MoveUp();
-    else if (m_imgspinDownFocus->HitTest(point))
-      MoveDown();
-    return EVENT_RESULT_HANDLED;
-  }
-  else if (event.m_id == ACTION_MOUSE_WHEEL_UP)
-  {
-    if (m_imgspinUpFocus->HitTest(point) || m_imgspinDownFocus->HitTest(point))
-    {
-      MoveUp();
-      return EVENT_RESULT_HANDLED;
-    }
-  }
-  else if (event.m_id == ACTION_MOUSE_WHEEL_DOWN)
-  {
-    if (m_imgspinUpFocus->HitTest(point) || m_imgspinDownFocus->HitTest(point))
-    {
-      MoveDown();
-      return EVENT_RESULT_HANDLED;
-    }
-  }
   return EVENT_RESULT_UNHANDLED;
 }
 

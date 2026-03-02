@@ -19,10 +19,7 @@
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIMessage.h"
 #include "guilib/GUIWindowManager.h"
-#include "guilib/StereoscopicsManager.h"
 #include "interfaces/AnnouncementManager.h"
-#include "interfaces/json-rpc/JSONUtils.h"
-#include "interfaces/python/XBPython.h"
 #include "profiles/ProfileManager.h"
 #include "settings/AdvancedSettings.h"
 #include "settings/MediaSettings.h"
@@ -247,8 +244,6 @@ void CApplicationPlayerCallback::OnPlayBackSpeedChanged(int iSpeed)
 void CApplicationPlayerCallback::OnAVChange()
 {
   CLog::LogF(LOGDEBUG, "CApplication::OnAVChange");
-
-  CServiceBroker::GetGUI()->GetStereoscopicsManager().OnStreamChange();
 
   CGUIMessage msg(GUI_MSG_PLAYBACK_AVCHANGE, 0, 0);
   CServiceBroker::GetGUI()->GetWindowManager().SendThreadMessage(msg);

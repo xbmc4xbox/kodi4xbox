@@ -1,89 +1,84 @@
-/*
- *  Copyright (C) 2005-2018 Team Kodi
- *  This file is part of Kodi - https://kodi.tv
- *
- *  SPDX-License-Identifier: GPL-2.0-or-later
- *  See LICENSES/README.md for more information.
- */
-
 #pragma once
 
-#include "GUIComponent.h"
-#include "cores/AudioEngine/Interfaces/AESound.h"
-#include "settings/lib/ISettingCallback.h"
-#include "threads/CriticalSection.h"
+/*
+ *      Copyright (C) 2005-2013 Team XBMC
+ *      http://xbmc.org
+ *
+ *  This Program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2, or (at your option)
+ *  any later version.
+ *
+ *  This Program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with XBMC; see the file COPYING.  If not, see
+ *  <http://www.gnu.org/licenses/>.
+ *
+ */
 
 #include <map>
-#include <memory>
 #include <string>
+
+#include "GUIComponent.h"
+#include "ServiceBroker.h"
+#include "threads/CriticalSection.h"
 
 // forward definitions
 class CAction;
-class CSettings;
 class TiXmlNode;
-class IAESound;
+class CGUISound;
 
 enum WINDOW_SOUND { SOUND_INIT = 0, SOUND_DEINIT };
 
-class CGUIAudioManager : public ISettingCallback
+class CGUIAudioManager
 {
   class CWindowSounds
   {
   public:
-    std::shared_ptr<IAESound> initSound;
-    std::shared_ptr<IAESound> deInitSound;
-  };
-
-  struct IAESoundDeleter
-  {
-    void operator()(IAESound* s);
+    std::string strInitFile;
+    std::string strDeInitFile;
   };
 
 public:
   CGUIAudioManager();
-  ~CGUIAudioManager() override;
+  ~CGUIAudioManager();
 
-  void OnSettingChanged(const std::shared_ptr<const CSetting>& setting) override;
-  bool OnSettingUpdate(const std::shared_ptr<CSetting>& setting,
-                       const char* oldSettingId,
-                       const TiXmlNode* oldSettingNode) override;
-
-  void Initialize();
-  void DeInitialize();
+  void Initialize(int iDevice);
+  void DeInitialize(int iDevice);
 
   bool Load();
-  void UnLoad();
-
 
   void PlayActionSound(const CAction& action);
   void PlayWindowSound(int id, WINDOW_SOUND event);
-  void PlayPythonSound(const std::string& strFileName, bool useCached = true);
+  void PlayPythonSound(const std::string& strFileName);
+
+  void FreeUnused();
 
   void Enable(bool bEnable);
-  void SetVolume(float level);
+  void SetVolume(int iLevel);
   void Stop();
-
 private:
-  // Construction parameters
-  std::shared_ptr<CSettings> m_settings;
+  bool LoadWindowSound(TiXmlNode* pWindowNode, const std::string& strIdentifier, std::string& strFile);
 
-  typedef std::map<const std::string, std::weak_ptr<IAESound>> soundCache;
-  typedef std::map<int, std::shared_ptr<IAESound>> actionSoundMap;
+  typedef std::map<int, std::string> actionSoundMap;
   typedef std::map<int, CWindowSounds> windowSoundMap;
-  typedef std::map<const std::string, std::shared_ptr<IAESound>> pythonSoundsMap;
 
-  soundCache          m_soundCache;
+  typedef std::map<std::string, CGUISound*> pythonSoundsMap;
+  typedef std::map<int, CGUISound*> windowSoundsMap;
+
   actionSoundMap      m_actionSoundMap;
   windowSoundMap      m_windowSoundMap;
+
+  CGUISound*          m_actionSound;
+  windowSoundsMap     m_windowSounds;
   pythonSoundsMap     m_pythonSounds;
 
   std::string          m_strMediaDir;
   bool                m_bEnabled;
 
   CCriticalSection    m_cs;
-
-  std::shared_ptr<IAESound> LoadSound(const std::string& filename);
-  std::shared_ptr<IAESound> LoadWindowSound(TiXmlNode* pWindowNode,
-                                            const std::string& strIdentifier);
 };
-

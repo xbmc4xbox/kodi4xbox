@@ -15,8 +15,6 @@
 #include "guilib/guiinfo/GUIInfoLabels.h"
 #include "input/actions/Action.h"
 #include "input/actions/ActionIDs.h"
-#include "input/mouse/MouseEvent.h"
-#include "input/mouse/MouseStat.h"
 #include "utils/MathUtils.h"
 #include "utils/StringUtils.h"
 
@@ -682,68 +680,6 @@ void CGUISliderControl::SetFromPosition(const CPoint &point, bool guessSelector 
 
 EVENT_RESULT CGUISliderControl::OnMouseEvent(const CPoint& point, const MOUSE::CMouseEvent& event)
 {
-  m_dragging = false;
-  if (event.m_id == ACTION_MOUSE_DRAG || event.m_id == ACTION_MOUSE_DRAG_END)
-  {
-    m_dragging = true;
-    bool guessSelector = false;
-    if (static_cast<HoldAction>(event.m_state) == HoldAction::DRAG)
-    { // grab exclusive access
-      CGUIMessage msg(GUI_MSG_EXCLUSIVE_MOUSE, GetID(), GetParentID());
-      SendWindowMessage(msg);
-      guessSelector = true;
-    }
-    else if (static_cast<HoldAction>(event.m_state) == HoldAction::DRAG_END)
-    { // release exclusive access
-      m_dragging = false;
-      CGUIMessage msg(GUI_MSG_EXCLUSIVE_MOUSE, 0, GetParentID());
-      SendWindowMessage(msg);
-    }
-    SetFromPosition(point, guessSelector);
-    return EVENT_RESULT_HANDLED;
-  }
-  else if (event.m_id == ACTION_MOUSE_LEFT_CLICK && m_guiBackground->HitTest(point))
-  {
-    SetFromPosition(point, true);
-    return EVENT_RESULT_HANDLED;
-  }
-  else if (event.m_id == ACTION_MOUSE_WHEEL_UP)
-  {
-    if (m_guiBackground->HitTest(point))
-    {
-      Move(10);
-      return EVENT_RESULT_HANDLED;
-    }
-  }
-  else if (event.m_id == ACTION_MOUSE_WHEEL_DOWN)
-  {
-    if (m_guiBackground->HitTest(point))
-    {
-      Move(-10);
-      return EVENT_RESULT_HANDLED;
-    }
-  }
-  else if (event.m_id == ACTION_GESTURE_NOTIFY)
-  {
-    return EVENT_RESULT_PAN_HORIZONTAL_WITHOUT_INERTIA;
-  }
-  else if (event.m_id == ACTION_GESTURE_BEGIN)
-  { // grab exclusive access
-    CGUIMessage msg(GUI_MSG_EXCLUSIVE_MOUSE, GetID(), GetParentID());
-    SendWindowMessage(msg);
-    return EVENT_RESULT_HANDLED;
-  }
-  else if (event.m_id == ACTION_GESTURE_PAN)
-  { // do the drag
-    SetFromPosition(point);
-    return EVENT_RESULT_HANDLED;
-  }
-  else if (event.m_id == ACTION_GESTURE_END || event.m_id == ACTION_GESTURE_ABORT)
-  { // release exclusive access
-    CGUIMessage msg(GUI_MSG_EXCLUSIVE_MOUSE, 0, GetParentID());
-    SendWindowMessage(msg);
-    return EVENT_RESULT_HANDLED;
-  }
   return EVENT_RESULT_UNHANDLED;
 }
 

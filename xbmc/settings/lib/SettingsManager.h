@@ -18,7 +18,6 @@
 #include "SettingDefinitions.h"
 #include "SettingDependency.h"
 #include "threads/SharedSection.h"
-#include "utils/logtypes.h"
 
 #include <map>
 #include <set>
@@ -549,6 +548,4 @@ private:
 
   mutable CSharedSection m_critical;
   mutable CSharedSection m_settingsCritical;
-
-  Logger m_logger;
 };

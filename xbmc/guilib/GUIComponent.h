@@ -14,7 +14,6 @@
 class CGUIWindowManager;
 class CGUITextureManager;
 class CGUILargeTextureManager;
-class CStereoscopicsManager;
 class CGUIInfoManager;
 class CGUIColorManager;
 class CGUIAudioManager;
@@ -30,7 +29,6 @@ public:
   CGUIWindowManager& GetWindowManager();
   CGUITextureManager& GetTextureManager();
   CGUILargeTextureManager& GetLargeTextureManager();
-  CStereoscopicsManager &GetStereoscopicsManager();
   CGUIInfoManager &GetInfoManager();
   CGUIColorManager &GetColorManager();
   CGUIAudioManager &GetAudioManager();
@@ -42,7 +40,6 @@ protected:
   std::unique_ptr<CGUIWindowManager> m_pWindowManager;
   std::unique_ptr<CGUITextureManager> m_pTextureManager;
   std::unique_ptr<CGUILargeTextureManager> m_pLargeTextureManager;
-  std::unique_ptr<CStereoscopicsManager> m_stereoscopicsManager;
   std::unique_ptr<CGUIInfoManager> m_guiInfoManager;
   std::unique_ptr<CGUIColorManager> m_guiColorManager;
   std::unique_ptr<CGUIAudioManager> m_guiAudioManager;

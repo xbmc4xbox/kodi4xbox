@@ -35,8 +35,6 @@
 #include "utils/AlarmClock.h"
 #include "utils/CPUInfo.h"
 #include "utils/GpuInfo.h"
-#include "utils/HDRCapabilities.h"
-#include "utils/MemUtils.h"
 #include "utils/StringUtils.h"
 #include "utils/SystemInfo.h"
 #include "utils/TimeUtils.h"
@@ -197,6 +195,7 @@ bool CSystemGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
     case SYSTEM_USED_MEMORY_PERCENT:
     case SYSTEM_TOTAL_MEMORY:
     {
+#if 0
       KODI::MEMORY::MemoryStatus stat;
       KODI::MEMORY::GetMemoryStatus(&stat);
       int iMemPercentFree = 100 - static_cast<int>(100.0f * (stat.totalPhys - stat.availPhys) / stat.totalPhys + 0.5f);
@@ -213,6 +212,9 @@ bool CSystemGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
         value = StringUtils::Format("{}%", iMemPercentUsed);
       else if (info.m_info == SYSTEM_TOTAL_MEMORY)
         value = StringUtils::Format("{}MB", static_cast<unsigned int>(stat.totalPhys / MB));
+#else
+      value = "64MB";
+#endif
       return true;
     }
     case SYSTEM_SCREEN_MODE:
@@ -308,23 +310,7 @@ bool CSystemGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
 #endif
     case SYSTEM_SUPPORTED_HDR_TYPES:
     {
-      if (CServiceBroker::GetWinSystem()->IsHDRDisplay())
-      {
-        // Assumes HDR10 minimum requirement for HDR
-        std::string types = "HDR10";
-
-        const CHDRCapabilities caps = CServiceBroker::GetWinSystem()->GetDisplayHDRCapabilities();
-
-        if (caps.SupportsHLG())
-          types += ", HLG";
-        if (caps.SupportsHDR10Plus())
-          types += ", HDR10+";
-        if (caps.SupportsDolbyVision())
-          types += ", Dolby Vision";
-
-        value = types;
-      }
-
+      value = "Not Available";
       return true;
     }
 
@@ -359,6 +345,7 @@ bool CSystemGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
 
 bool CSystemGUIInfo::GetInt(int& value, const CGUIListItem *gitem, int contextWindow, const CGUIInfo &info) const
 {
+#if 0
   switch (info.m_info)
   {
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -389,6 +376,7 @@ bool CSystemGUIInfo::GetInt(int& value, const CGUIListItem *gitem, int contextWi
       value = CServiceBroker::GetPowerManager().BatteryLevel();
       return true;
   }
+#endif
 
   return false;
 }

@@ -105,8 +105,7 @@ bool CTextureCacheJob::CacheTexture(std::unique_ptr<CTexture>* out_texture)
   // unwrap the URL as required
   std::string additional_info;
   unsigned int width, height;
-  CPictureScalingAlgorithm::Algorithm scalingAlgorithm;
-  std::string image = DecodeImageURL(m_url, width, height, scalingAlgorithm, additional_info);
+  std::string image = DecodeImageURL(m_url, width, height, additional_info);
 
   m_details.updateable = ShouldCheckForChanges(additional_info, image);
 
@@ -136,7 +135,7 @@ bool CTextureCacheJob::CacheTexture(std::unique_ptr<CTexture>* out_texture)
               CURL::GetRedacted(image), m_details.file);
 
     if (CPicture::CacheTexture(texture.get(), width, height,
-                               CTextureCache::GetCachedPath(m_details.file), scalingAlgorithm))
+                               CTextureCache::GetCachedPath(m_details.file)))
     {
       m_details.width = width;
       m_details.height = height;
@@ -148,39 +147,12 @@ bool CTextureCacheJob::CacheTexture(std::unique_ptr<CTexture>* out_texture)
   return false;
 }
 
-bool CTextureCacheJob::ResizeTexture(const std::string &url, uint8_t* &result, size_t &result_size)
-{
-  result = NULL;
-  result_size = 0;
-
-  if (url.empty())
-    return false;
-
-  // unwrap the URL as required
-  std::string additional_info;
-  unsigned int width, height;
-  CPictureScalingAlgorithm::Algorithm scalingAlgorithm;
-  std::string image = DecodeImageURL(url, width, height, scalingAlgorithm, additional_info);
-  if (image.empty())
-    return false;
-
-  std::unique_ptr<CTexture> texture = LoadImage(image, width, height, additional_info, true);
-  if (texture == NULL)
-    return false;
-
-  bool success = CPicture::ResizeTexture(image, texture.get(), width, height, result, result_size,
-                                         scalingAlgorithm);
-
-  return success;
-}
-
-std::string CTextureCacheJob::DecodeImageURL(const std::string &url, unsigned int &width, unsigned int &height, CPictureScalingAlgorithm::Algorithm& scalingAlgorithm, std::string &additional_info)
+std::string CTextureCacheJob::DecodeImageURL(const std::string &url, unsigned int &width, unsigned int &height, std::string &additional_info)
 {
   // unwrap the URL as required
   std::string image(url);
   additional_info.clear();
   width = height = 0;
-  scalingAlgorithm = CPictureScalingAlgorithm::NoAlgorithm;
   if (StringUtils::StartsWith(url, "image://"))
   {
     // format is image://[type@]<url_encoded_path>?options
@@ -210,9 +182,6 @@ std::string CTextureCacheJob::DecodeImageURL(const std::string &url, unsigned in
       if (thumbURL.HasOption("height") && StringUtils::IsInteger(thumbURL.GetOption("height")))
         height = strtol(thumbURL.GetOption("height").c_str(), NULL, 0);
     }
-
-    if (thumbURL.HasOption("scaling_algorithm"))
-      scalingAlgorithm = CPictureScalingAlgorithm::FromString(thumbURL.GetOption("scaling_algorithm"));
   }
 
   if (StringUtils::StartsWith(url, "chapter://"))

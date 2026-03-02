@@ -23,7 +23,6 @@
 #include "addons/gui/GUIWindowAddonBrowser.h"
 #include "application/Application.h"
 #include "filesystem/PluginDirectory.h"
-#include "games/tags/GameInfoTag.h"
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIWindowManager.h"
 #include "interfaces/generic/ScriptInvocationManager.h"
@@ -175,25 +174,6 @@ static int RunAddon(const std::vector<std::string>& params)
       // (params[1] ... params[x]) separated by a comma to RunScript
       CBuiltins::GetInstance().Execute(
           StringUtils::Format("RunScript({})", StringUtils::Join(params, ",")));
-    }
-    else if (CServiceBroker::GetAddonMgr().GetAddon(addonid, addon, AddonType::GAMEDLL,
-                                                    OnlyEnabled::CHOICE_YES))
-    {
-      CFileItem item;
-
-      if (params.size() >= 2)
-      {
-        item = CFileItem(params[1], false);
-        item.GetGameInfoTag()->SetGameClient(addonid);
-      }
-      else
-        item = CFileItem(addon);
-
-      if (!g_application.PlayMedia(item, "", PLAYLIST::TYPE_NONE))
-      {
-        CLog::Log(LOGERROR, "RunAddon could not start {}", addonid);
-        return false;
-      }
     }
     else
       CLog::Log(
