@@ -541,11 +541,11 @@ bool CGUITextureBase::SetAlpha(unsigned char alpha)
   return changed;
 }
 
-bool CGUITextureBase::SetDiffuseColor(UTILS::COLOR::Color color)
+bool CGUITextureBase::SetDiffuseColor(UTILS::COLOR::Color color, const CGUIListItem* item /* = nullptr */)
 {
   bool changed = m_diffuseColor != color;
   m_diffuseColor = color;
-  changed |= m_info.diffuseColor.Update();
+  changed |= m_info.diffuseColor.Update(item);
   return changed;
 }
 
