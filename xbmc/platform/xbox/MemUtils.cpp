@@ -32,7 +32,7 @@ void GetMemoryStatus(MemoryStatus* buffer)
   MemoryStatistics.Length = sizeof(MM_STATISTICS);
   MmQueryStatistics(&MemoryStatistics);
   buffer->totalPhys = MemoryStatistics.TotalPhysicalPages * PAGE_SIZE;
-  buffer->availPhys = buffer->totalPhys - (MemoryStatistics.AvailablePages * PAGE_SIZE);
+  buffer->availPhys = MemoryStatistics.AvailablePages * PAGE_SIZE;
 }
 
 }
