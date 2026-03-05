@@ -763,6 +763,18 @@ void CApplication::Render()
 
 bool CApplication::OnAction(const CAction &action)
 {
+  // notify action listeners
+  if (GetComponent<CApplicationActionListeners>()->NotifyActionListeners(action))
+    return true;
+
+  // in normal case
+  // just pass the action to the current window and let it handle it
+  if (CServiceBroker::GetGUI()->GetWindowManager().OnAction(action))
+  {
+    GetComponent<CApplicationPowerHandling>()->ResetNavigationTimer();
+    return true;
+  }
+
   return false;
 }
 
