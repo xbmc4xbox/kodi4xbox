@@ -42,7 +42,7 @@ add_compile_options(
     -Wno-invalid-offsetof
 )
 
-add_definitions(-D_CRT_RAND_S -D_XBOX -DNXDK -DMEMP_NUM_NETBUF=6 -DMEMP_NUM_NETCONN=6 -DHAS_GL)
+add_definitions(-D_CRT_RAND_S -D_XBOX -DNXDK -DSDL_DISABLE_JOYSTICK_INIT_DELAY -DXBOX -DMEMP_NUM_NETBUF=6 -DMEMP_NUM_NETCONN=6 -DHAS_GL)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   add_definitions(-D_DEBUG)
@@ -467,6 +467,7 @@ add_executable(xbmc
   xbmc/music/windows/GUIWindowVisualisation.cpp
   xbmc/music/windows/MusicFileItemListModifier.cpp
   xbmc/network/DNSNameCache.cpp
+  xbmc/peripherals/SDLJoystick.cpp
   xbmc/pictures/ExifParse.cpp
   xbmc/pictures/GUIDialogPictureInfo.cpp
   xbmc/pictures/GUIViewStatePictures.cpp
@@ -702,6 +703,10 @@ target_link_options(xbmc PRIVATE "-include:_automount_d_drive")
 # Bring in networking support
 target_link_libraries(xbmc PUBLIC ${NXDK_DIR}/lib/libnxdk_net.lib)
 target_include_directories(xbmc PRIVATE ${NXDK_DIR}/lib/net/lwip/src/include ${NXDK_DIR}/lib/net/nforceif/include ${NXDK_DIR}/lib/net/nvnetdrv)
+
+# Bring in SDL support
+target_link_libraries(xbmc PUBLIC ${NXDK_DIR}/lib/libSDL2.lib)
+target_include_directories(xbmc PRIVATE ${NXDK_DIR}/lib/sdl/SDL2/include)
 
 # Bring in pbkit support
 target_link_libraries(xbmc PUBLIC ${NXDK_DIR}/lib/libpbkit.lib)
