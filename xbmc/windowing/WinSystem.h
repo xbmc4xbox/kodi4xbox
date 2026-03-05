@@ -114,6 +114,11 @@ public:
 
   std::string GetClipboardText(void);
 
+  void DriveRenderLoop();
+
+  // winsystem events
+  virtual bool MessagePump() { return false; }
+
   CGraphicContext& GetGfxContext();
 
 protected:

@@ -112,6 +112,11 @@ std::shared_ptr<CSettingsComponent> CServiceBroker::GetSettingsComponent()
   return g_serviceBroker.m_pSettingsComponent;
 }
 
+PERIPHERALS::CPeripherals& CServiceBroker::GetPeripherals()
+{
+  return g_application.m_ServiceManager->GetPeripherals();
+}
+
 CFavouritesService& CServiceBroker::GetFavouritesService()
 {
   return g_application.m_ServiceManager->GetFavouritesService();

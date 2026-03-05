@@ -20,12 +20,16 @@
 
 #include "WinSystemXboxGL.h"
 
+#include "ServiceBroker.h"
 #include "guilib/gui3d.h"
+#include "peripherals/Peripherals.h"
 #include "settings/DisplaySettings.h"
 #include "windowing/WindowSystemFactory.h"
 
 #include <hal/video.h>
 #include <pbgl.h>
+
+#include <SDL.h>
 
 void CWinSystemXboxGL::Register()
 {
@@ -222,4 +226,14 @@ void CWinSystemXboxGL::UpdateResolutions()
   }
 
   CDisplaySettings::GetInstance().ApplyCalibrations();
+}
+
+bool CWinSystemXboxGL::MessagePump()
+{
+  SDL_Event event;
+  while (SDL_PollEvent(&event))
+  {
+    CServiceBroker::GetPeripherals().UpdateJoystick(event);
+  }
+  return true;
 }

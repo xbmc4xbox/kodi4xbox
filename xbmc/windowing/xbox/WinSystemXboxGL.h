@@ -47,6 +47,8 @@ public:
 
   bool IsExtSupported(const char* extension) override;
 
+  bool MessagePump() override;
+
 protected:
   void PresentRenderImpl(bool rendered) override;
   void SetVSyncImpl(bool enable) override;

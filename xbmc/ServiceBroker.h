@@ -76,6 +76,11 @@ class CKeyboardLayoutManager;
 } // namespace KEYBOARD
 } // namespace KODI
 
+namespace PERIPHERALS
+{
+class CPeripherals;
+}
+
 class CServiceBroker
 {
 public:
@@ -99,6 +104,7 @@ public:
   static CPlatform& GetPlatform();
   static PLAYLIST::CPlayListPlayer& GetPlaylistPlayer();
   static CSlideShowDelegator& GetSlideShowDelegator();
+  static PERIPHERALS::CPeripherals& GetPeripherals();
   static CFavouritesService& GetFavouritesService();
   static ADDON::CServiceAddonManager& GetServiceAddons();
   static ADDON::CRepositoryUpdater& GetRepositoryUpdater();
