@@ -22,6 +22,7 @@
 #include "favourites/FavouritesService.h"
 #include "input/InputManager.h"
 #include "interfaces/generic/ScriptInvocationManager.h"
+#include "peripherals/Peripherals.h"
 #if defined(HAS_FILESYSTEM_SMB)
 #include "network/IWSDiscovery.h"
 #if defined(TARGET_WINDOWS)
@@ -133,6 +134,9 @@ bool CServiceManager::InitStageTwo(const std::string& profilesUserDataFolder)
   m_inputManager = std::make_unique<CInputManager>();
   m_inputManager->InitializeInputs();
 
+  m_peripherals =
+      std::make_unique<PERIPHERALS::CPeripherals>();
+
   m_fileExtensionProvider = std::make_unique<CFileExtensionProvider>(*m_addonMgr);
 
   m_powerManager = std::make_unique<CPowerManager>();
@@ -168,6 +172,9 @@ bool CServiceManager::InitStageThree(const std::shared_ptr<CProfileManager>& pro
   m_DetectDVDType->Create(false);
 #endif
 
+  // Peripherals depends on strings being loaded before stage 3
+  m_peripherals->Initialise();
+
   m_contextMenuManager->Init();
 
   m_playerCoreFactory = std::make_unique<CPlayerCoreFactory>(*profileManager);
@@ -188,6 +195,7 @@ void CServiceManager::DeinitStageThree()
 #endif
   m_playerCoreFactory.reset();
   m_contextMenuManager->Deinit();
+  m_peripherals->Clear();
 
   m_Platform->DeinitStageThree();
 }
@@ -203,6 +211,7 @@ void CServiceManager::DeinitStageTwo()
   m_weatherManager.reset();
   m_powerManager.reset();
   m_fileExtensionProvider.reset();
+  m_peripherals.reset();
   m_inputManager.reset();
   m_contextMenuManager.reset();
   m_serviceAddons.reset();
@@ -299,6 +308,11 @@ CPlatform& CServiceManager::GetPlatform()
 PLAYLIST::CPlayListPlayer& CServiceManager::GetPlaylistPlayer()
 {
   return *m_playlistPlayer;
+}
+
+PERIPHERALS::CPeripherals& CServiceManager::GetPeripherals()
+{
+  return *m_peripherals;
 }
 
 CFavouritesService& CServiceManager::GetFavouritesService()

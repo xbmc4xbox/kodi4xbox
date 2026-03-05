@@ -250,6 +250,11 @@ int CWinSystemBase::NoOfBuffers(void)
   return 0;
 }
 
+void CWinSystemBase::DriveRenderLoop()
+{
+  MessagePump();
+}
+
 CGraphicContext& CWinSystemBase::GetGfxContext()
 {
   return *m_gfxContext;

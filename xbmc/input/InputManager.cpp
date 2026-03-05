@@ -24,6 +24,7 @@
 #include "input/keyboard/XBMC_vkeys.h"
 #include "input/keymaps/ButtonTranslator.h"
 #include "messaging/ApplicationMessenger.h"
+#include "peripherals/Peripherals.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 #include "settings/lib/Setting.h"
@@ -71,9 +72,8 @@ void CInputManager::Deinitialize()
 bool CInputManager::ProcessPeripherals(float frameTime)
 {
   CKey key;
-  // TODO: read input from Xbox joypad and create appropriate CKey and pass it to OnKey method
-  // For more info check CApplication::ProcessGamepad(...) from XBMC4Xbox
-  // https://github.com/antonic901/xbmc4xbox-redux/blob/master/xbmc/Application.cpp#L2946
+  if (CServiceBroker::GetPeripherals().GetNextKeypress(frameTime, key))
+    return OnKey(key);
   return false;
 }
 

@@ -889,6 +889,9 @@ void CApplication::FrameMove(bool processEvents, bool processGUI)
   }
 
   appPlayer->FrameMove();
+
+  // this will go away when render systems gets its own thread
+  CServiceBroker::GetWinSystem()->DriveRenderLoop();
 }
 
 void CApplication::ResetCurrentItem()

@@ -41,6 +41,11 @@ class CExtsMimeSupportList;
 }
 } // namespace KODI
 
+namespace PERIPHERALS
+{
+class CPeripherals;
+}
+
 class CInputManager;
 class CFileExtensionProvider;
 class CPlayerCoreFactory;
@@ -73,6 +78,7 @@ public:
   /**\brief Get the platform object. This is save to be called after Init1() was called
    */
   CPlatform& GetPlatform();
+  PERIPHERALS::CPeripherals& GetPeripherals();
 
   PLAYLIST::CPlayListPlayer& GetPlaylistPlayer();
   CSlideShowDelegator& GetSlideShowDelegator();
@@ -106,6 +112,7 @@ protected:
   std::unique_ptr<CDataCacheCore> m_dataCacheCore;
   std::unique_ptr<CPlatform> m_Platform;
   std::unique_ptr<PLAYLIST::CPlayListPlayer> m_playlistPlayer;
+  std::unique_ptr<PERIPHERALS::CPeripherals> m_peripherals;
   std::unique_ptr<CFavouritesService> m_favouritesService;
   std::unique_ptr<CInputManager> m_inputManager;
   std::unique_ptr<CFileExtensionProvider> m_fileExtensionProvider;

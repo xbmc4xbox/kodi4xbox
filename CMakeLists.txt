@@ -467,6 +467,7 @@ add_executable(xbmc
   xbmc/music/windows/GUIWindowVisualisation.cpp
   xbmc/music/windows/MusicFileItemListModifier.cpp
   xbmc/network/DNSNameCache.cpp
+  xbmc/peripherals/Peripherals.cpp
   xbmc/peripherals/SDLJoystick.cpp
   xbmc/pictures/ExifParse.cpp
   xbmc/pictures/GUIDialogPictureInfo.cpp
