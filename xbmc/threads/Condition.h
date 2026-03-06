@@ -1,108 +1,233 @@
 /*
- *  Copyright (C) 2005-2018 Team Kodi
- *  This file is part of Kodi - https://kodi.tv
+ *      Copyright (C) 2005-2013 Team XBMC
+ *      http://xbmc.org
  *
- *  SPDX-License-Identifier: GPL-2.0-or-later
- *  See LICENSES/README.md for more information.
+ *  This Program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2, or (at your option)
+ *  any later version.
+ *
+ *  This Program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with XBMC; see the file COPYING.  If not, see
+ *  <http://www.gnu.org/licenses/>.
+ *
  */
 
 #pragma once
 
-#include "threads/CriticalSection.h"
+#include "threads/SingleLock.h"
+#include "threads/Helpers.h"
 
-#include <chrono>
-#include <condition_variable>
 #include <functional>
-#include <mutex>
-#include <utility>
+#include <windows.h>
 
 namespace XbmcThreads
 {
-
   /**
-   * This is a thin wrapper around std::condition_variable_any. It is subject
-   *  to "spurious returns"
+   * ConditionVariableXp is effectively a condition variable implementation
+   *  assuming we're on Windows XP or earlier. This means we don't have
+   *  access to InitializeConditionVariable and that the structure
+   *  CONDITION_VARIABLE doesnt actually exist.
+   *
+   * This code is basically copied from SDL_syscond.c but structured to use
+   * native windows threading primitives rather than other SDL primitives.
    */
-  class ConditionVariable
+  class ConditionVariable : public NonCopyable
   {
   private:
-    std::condition_variable_any cond;
-    ConditionVariable(const ConditionVariable&) = delete;
-    ConditionVariable& operator=(const ConditionVariable&) = delete;
+    CCriticalSection lock;
+    int waiting;
+    int signals;
+
+    class Semaphore
+    {
+      HANDLE sem;
+      volatile LONG count;
+
+    public:
+      inline Semaphore() : count(0L), sem(CreateSemaphore(NULL,0,32*1024,NULL)) {}
+      inline ~Semaphore() { CloseHandle(sem); }
+
+      inline bool wait(DWORD dwMilliseconds)
+      {
+        return (WAIT_OBJECT_0 == WaitForSingleObject(sem, dwMilliseconds)) ?
+          (InterlockedDecrement(&count), true) : false;
+      }
+
+      inline bool post()
+      {
+        /* Increase the counter in the first place, because
+         * after a successful release the semaphore may
+         * immediately get destroyed by another thread which
+         * is waiting for this semaphore.
+         */
+        InterlockedIncrement(&count);
+        return ReleaseSemaphore(sem, 1, NULL) ? true : (InterlockedDecrement(&count), false);
+      }
+    };
+
+    Semaphore wait_sem;
+    Semaphore wait_done;
 
   public:
-    ConditionVariable() = default;
+    inline ConditionVariable() : waiting(0), signals(0) {}
 
-    inline void wait(CCriticalSection& lock, std::function<bool()> predicate)
+    inline ~ConditionVariable() {}
+
+    inline void wait(CCriticalSection& mutex)
     {
-      int count = lock.count;
+      int  count = lock.count;
       lock.count = 0;
-      cond.wait(lock.get_underlying(), std::move(predicate));
+      wait(mutex,(unsigned long)-1L);
       lock.count = count;
     }
 
-    inline void wait(CCriticalSection& lock)
+    inline bool wait(CCriticalSection& mutex, unsigned long milliseconds)
     {
-      int count  = lock.count;
+      int  count = lock.count;
       lock.count = 0;
-      cond.wait(lock.get_underlying());
+      bool success = false;
+      DWORD ms = ((unsigned long)-1L) == milliseconds ? INFINITE : (DWORD)milliseconds;
+
+      {
+        std::unique_lock<CCriticalSection> l(lock);
+        waiting++;
+      }
+
+      {
+        CSingleExit ex(mutex);
+        success = wait_sem.wait(ms);
+
+        {
+          std::unique_lock<CCriticalSection> l(lock);
+          if (signals > 0)
+          {
+            if (!success)
+              wait_sem.wait(INFINITE);
+            wait_done.post();
+            --signals;
+          }
+          --waiting;
+        }
+      }
       lock.count = count;
+      return success;
     }
 
-    template<typename Rep, typename Period>
-    inline bool wait(CCriticalSection& lock,
-                     std::chrono::duration<Rep, Period> duration,
-                     std::function<bool()> predicate)
-    {
-      int count = lock.count;
-      lock.count = 0;
-      bool ret = cond.wait_for(lock.get_underlying(), duration, predicate);
-      lock.count = count;
-      return ret;
-    }
-
-    template<typename Rep, typename Period>
-    inline bool wait(CCriticalSection& lock, std::chrono::duration<Rep, Period> duration)
-    {
-      int count  = lock.count;
-      lock.count = 0;
-      std::cv_status res = cond.wait_for(lock.get_underlying(), duration);
-      lock.count = count;
-      return res == std::cv_status::no_timeout;
-    }
-
-    inline void wait(std::unique_lock<CCriticalSection>& lock, std::function<bool()> predicate)
-    {
-      cond.wait(*lock.mutex(), std::move(predicate));
-    }
 
     inline void wait(std::unique_lock<CCriticalSection>& lock) { wait(*lock.mutex()); }
-
-    template<typename Rep, typename Period>
-    inline bool wait(std::unique_lock<CCriticalSection>& lock,
-                     std::chrono::duration<Rep, Period> duration,
-                     std::function<bool()> predicate)
-    {
-      return wait(*lock.mutex(), duration, predicate);
-    }
-
-    template<typename Rep, typename Period>
-    inline bool wait(std::unique_lock<CCriticalSection>& lock,
-                     std::chrono::duration<Rep, Period> duration)
-    {
-      return wait(*lock.mutex(), duration);
-    }
+    inline bool wait(std::unique_lock<CCriticalSection>& lock, unsigned long milliseconds) { return wait(*lock.mutex(), milliseconds); }
 
     inline void notifyAll()
     {
-      cond.notify_all();
+      /* If there are waiting threads not already signalled, then
+         signal the condition and wait for the thread to respond.
+      */
+      std::unique_lock<CCriticalSection> l(lock);
+      if ( waiting > signals )
+      {
+        int i, num_waiting;
+
+        num_waiting = (waiting - signals);
+        signals = waiting;
+        for ( i=0; i<num_waiting; ++i )
+          wait_sem.post();
+
+        /* Now all released threads are blocked here, waiting for us.
+           Collect them all (and win fabulous prizes!) :-)
+        */
+        l.unlock();
+        for ( i=0; i<num_waiting; ++i )
+          wait_done.wait(INFINITE);
+      }
     }
 
     inline void notify()
     {
-      cond.notify_one();
+      /* If there are waiting threads not already signalled, then
+         signal the condition and wait for the thread to respond.
+      */
+      std::unique_lock<CCriticalSection> l(lock);
+      if ( waiting > signals )
+      {
+        ++signals;
+        wait_sem.post();
+        l.lock();
+        wait_done.wait(INFINITE);
+      }
     }
   };
 
-}
+  /**
+   * This is a condition variable along with its predicate. This allows the use of a
+   *  condition variable without the spurious returns since the state being monitored
+   *  is also part of the condition.
+   *
+   * L should implement the Lockable concept
+   *
+   * The requirements on P are that it can act as a predicate (that is, I can use
+   *  it in an 'while(!predicate){...}' where 'predicate' is of type 'P').
+   */
+  class TightConditionVariable
+  {
+    ConditionVariable& cond;
+    std::function<bool()> predicate;
 
+  public:
+    inline TightConditionVariable(ConditionVariable& cv, std::function<bool()> predicate_)
+      : cond(cv), predicate(predicate_)
+    {
+    }
+
+    template<typename L>
+    inline void wait(L& lock)
+    {
+      while (!predicate())
+        cond.wait(lock);
+    }
+
+    template<typename L, typename Rep, typename Period>
+    inline bool wait(L& lock, std::chrono::duration<Rep, Period> duration)
+    {
+      bool ret = true;
+      if (!predicate())
+      {
+        if (duration == std::chrono::duration<Rep, Period>::zero())
+        {
+          cond.wait(lock, std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() /* zero */);
+          return !(!predicate()); // eh? I only require the ! operation on P
+        }
+        else
+        {
+          const auto start = std::chrono::steady_clock::now();
+
+          auto end = std::chrono::steady_clock::now();
+          auto elapsed = end - start;
+
+          auto remaining = duration - elapsed;
+
+          for (bool notdone = true; notdone && ret == true;
+               ret = (notdone = (!predicate()))
+                         ? (remaining > std::chrono::duration<Rep, Period>::zero())
+                         : true)
+          {
+            cond.wait(lock, std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
+
+            end = std::chrono::steady_clock::now();
+            elapsed = end - start;
+            remaining = duration - elapsed;
+          }
+        }
+      }
+      return ret;
+    }
+
+    inline void notifyAll() { cond.notifyAll(); }
+    inline void notify() { cond.notify(); }
+  };
+}

@@ -9,10 +9,10 @@
 #pragma once
 
 #include "threads/Condition.h"
+#include "threads/SingleLock.h"
 
 #include <initializer_list>
 #include <memory>
-#include <mutex>
 #include <vector>
 
 // forward declare the CEventGroup
@@ -41,7 +41,13 @@ class CEvent
   CCriticalSection groupListMutex; // lock for the groups list
   std::unique_ptr<std::vector<XbmcThreads::CEventGroup*>> groups;
 
+  /**
+   * To satisfy the TightConditionVariable requirements and allow the
+   *  predicate being monitored to include both the signaled and interrupted
+   *  states.
+   */
   XbmcThreads::ConditionVariable actualCv;
+  XbmcThreads::TightConditionVariable condVar;
   CCriticalSection mutex;
 
   friend class XbmcThreads::CEventGroup;
@@ -63,7 +69,9 @@ class CEvent
 
 public:
   inline CEvent(bool manual = false, bool signaled_ = false)
-    : manualReset(manual), signaled(signaled_)
+    : manualReset(manual),
+      signaled(signaled_),
+      condVar(actualCv, std::bind(&CEvent::Signaled, this))
   {
   }
 
@@ -95,7 +103,7 @@ public:
   {
     std::unique_lock<CCriticalSection> lock(mutex);
     numWaits++;
-    actualCv.wait(mutex, duration, std::bind(&CEvent::Signaled, this));
+    condVar.wait(mutex, duration);
     numWaits--;
     return prepReturn();
   }
@@ -110,7 +118,7 @@ public:
   {
     std::unique_lock<CCriticalSection> lock(mutex);
     numWaits++;
-    actualCv.wait(mutex, std::bind(&CEvent::Signaled, this));
+    condVar.wait(mutex);
     numWaits--;
     return prepReturn();
   }
@@ -140,6 +148,7 @@ class CEventGroup
   std::vector<CEvent*> events;
   CEvent* signaled{};
   XbmcThreads::ConditionVariable actualCv;
+  XbmcThreads::TightConditionVariable condVar{actualCv, [this]() { return signaled != nullptr; }};
   CCriticalSection mutex;
 
   unsigned int numWaits{0};
@@ -149,7 +158,7 @@ class CEventGroup
   {
     std::unique_lock<CCriticalSection> l(mutex);
     signaled = child;
-    actualCv.notifyAll();
+    condVar.notifyAll();
   }
 
   friend class ::CEvent;
@@ -206,9 +215,9 @@ public:
     {
       // both of these release the CEventGroup::mutex
       if (duration == std::chrono::duration<Rep, Period>::max())
-        actualCv.wait(mutex, [this]() { return signaled != nullptr; });
+        condVar.wait(mutex);
       else
-        actualCv.wait(mutex, duration, [this]() { return signaled != nullptr; });
+        condVar.wait(mutex, duration);
     } // at this point the CEventGroup::mutex is reacquired
     numWaits--;
 
