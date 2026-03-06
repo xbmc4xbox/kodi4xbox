@@ -687,6 +687,7 @@ add_executable(xbmc
   xbmc/windowing/WinSystem.cpp
   xbmc/windowing/xbox/WinSystemXboxGL.cpp
   xbmc/windows/GUIMediaWindow.cpp
+  xbmc/windows/GUIWindowDebugInfo.cpp
   xbmc/windows/GUIWindowFileManager.cpp
   xbmc/windows/GUIWindowHome.cpp
   xbmc/windows/GUIWindowLoginScreen.cpp
