@@ -30,7 +30,7 @@ public:
   {
     std::unique_lock<CCriticalSection> l(sec);
     while (sharedCount)
-      actualCv.wait(l, [this]() { return sharedCount == 0; });
+      actualCv.wait(l);
     sec.lock();
   }
   inline bool try_lock() { return (sec.try_lock() ? ((sharedCount == 0) ? true : (sec.unlock(), false)) : false); }

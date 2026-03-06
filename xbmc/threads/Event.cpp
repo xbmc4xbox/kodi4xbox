@@ -12,8 +12,6 @@
 
 #include <algorithm>
 #include <limits>
-#include <memory>
-#include <mutex>
 
 using namespace std::chrono_literals;
 
@@ -53,7 +51,7 @@ void CEvent::Set()
     signaled = true;
   }
 
-  actualCv.notifyAll();
+  condVar.notifyAll();
 
   std::unique_lock<CCriticalSection> l(groupListMutex);
   if (groups)

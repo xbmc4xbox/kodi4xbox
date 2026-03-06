@@ -3597,7 +3597,7 @@
       <group id="1" label="16000">
         <setting id="general.addonupdates" type="integer" label="36605" help="36611">
           <level>0</level>
-          <default>2</default>
+          <default>0</default>
           <constraints>
             <options>
               <option label="36606">0</option> <!-- AUTO_UPDATES_ON -->
