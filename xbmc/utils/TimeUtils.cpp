@@ -13,7 +13,7 @@
 #if   defined(TARGET_DARWIN)
 #include <mach/mach_time.h>
 #include <CoreVideo/CVHostTime.h>
-#elif defined(TARGET_WINDOWS) || defined(NXDK)
+#elif defined(TARGET_WINDOWS) || defined(_XBOX)
 #include <windows.h>
 #else
 #include <time.h>
@@ -21,7 +21,9 @@
 
 namespace
 {
+#ifndef _XBOX
 auto startTime = std::chrono::steady_clock::now();
+#endif
 }
 
 int64_t CurrentHostCounter(void)
@@ -60,14 +62,11 @@ unsigned int CTimeUtils::frameTime = 0;
 
 void CTimeUtils::UpdateFrameTime(bool flip)
 {
+#ifndef _XBOX
   auto now = std::chrono::steady_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime);
 
   unsigned int currentTime = duration.count();
-#ifdef _XBOX
-  // we don't have an actual frametime on Xbox
-  frameTime = currentTime;
-#else
   unsigned int last = frameTime;
   while (frameTime < currentTime)
   {
@@ -76,6 +75,9 @@ void CTimeUtils::UpdateFrameTime(bool flip)
     if (frameTime < last)
       break;
   }
+#else
+  // we don't have an actual frametime on Xbox
+  frameTime = GetTickCount();
 #endif
 }
 
