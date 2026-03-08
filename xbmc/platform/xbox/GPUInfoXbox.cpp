@@ -8,6 +8,8 @@
 
 #include "GPUInfoXbox.h"
 
+#include <windows.h>
+
 std::unique_ptr<CGPUInfo> CGPUInfo::GetGPUInfo()
 {
   return std::make_unique<CGPUInfoXbox>();
@@ -20,12 +22,20 @@ bool CGPUInfoXbox::SupportsCustomTemperatureCommand() const
 
 bool CGPUInfoXbox::SupportsPlatformTemperature() const
 {
-  return false;
+  return true;
 }
 
 bool CGPUInfoXbox::GetGPUPlatformTemperature(CTemperature& temperature) const
 {
-  return false;
+  PULONG mb;
+  NTSTATUS smb = HalReadSMBusValue(0x98, 0x00, FALSE, mb);
+  if (smb != STATUS_SUCCESS)
+  {
+    // If it fails, its probably a 1.6. Read SMC instead
+    HalReadSMBusValue(0x20, 0x0A, FALSE, mb);
+  }
+  temperature = CTemperature::CreateFromCelsius((double)*mb);
+  return true;
 }
 
 bool CGPUInfoXbox::GetGPUTemperatureFromCommand(CTemperature& temperature,

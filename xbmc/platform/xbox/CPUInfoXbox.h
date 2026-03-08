@@ -20,4 +20,6 @@ public:
   int GetUsedPercentage() override;
   float GetCPUFrequency() override;
   bool GetTemperature(CTemperature& temperature) override;
+
+  virtual bool SupportsCPUUsage() const { return false; }
 };

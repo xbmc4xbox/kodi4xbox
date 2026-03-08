@@ -8,6 +8,9 @@
 
 #include "CPUInfoXbox.h"
 
+#include <windows.h>
+#include <xboxkrnl/xboxkrnl.h>
+
 std::shared_ptr<CCPUInfo> CCPUInfo::GetCPUInfo()
 {
   return std::make_shared<CCPUInfoXbox>();
@@ -15,7 +18,9 @@ std::shared_ptr<CCPUInfo> CCPUInfo::GetCPUInfo()
 
 CCPUInfoXbox::CCPUInfoXbox()
 {
-  // TODO: query CPU information
+
+  m_cpuModel = "Intel Pentium 3";
+  m_cpuCount = 1;
 }
 
 CCPUInfoXbox::~CCPUInfoXbox()
@@ -30,13 +35,32 @@ int CCPUInfoXbox::GetUsedPercentage()
 
 float CCPUInfoXbox::GetCPUFrequency()
 {
-  // TODO: get cpu frequency
-  return 733.0f;
+  DWORD Twin_fsb, Twin_result;
+  double Tcpu_fsb, Tcpu_result, Fcpu;
+
+  Tcpu_fsb = __rdtsc();
+  Twin_fsb = KeTickCount;
+
+  Sleep(300);
+
+  Tcpu_result = __rdtsc();
+  Twin_result = KeTickCount;
+
+  Fcpu  = (Tcpu_result-Tcpu_fsb);
+  Fcpu /= (Twin_result-Twin_fsb);
+
+  return Fcpu / 1000;
 }
 
 bool CCPUInfoXbox::GetTemperature(CTemperature& temperature)
 {
-  // TODO: get cpu temperature
-  temperature.SetValid(false);
-  return false;
+  PULONG temp;
+  NTSTATUS scpu = HalReadSMBusValue(0x98, 0x01, FALSE, temp);
+  if (scpu != STATUS_SUCCESS)
+  {
+    // If it fails, its probably a 1.6. Read SMC instead
+    HalReadSMBusValue(0x20, 0x09, FALSE, temp);
+  }
+  temperature = CTemperature::CreateFromCelsius((double)*temp);
+  return true;
 }
