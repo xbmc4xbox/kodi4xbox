@@ -16,17 +16,17 @@
 
 int CCompileInfo::GetMajor()
 {
-  return 0;
+  return @APP_VERSION_MAJOR@;
 }
 
 int CCompileInfo::GetMinor()
 {
-  return 1;
+  return @APP_VERSION_MINOR@;
 }
 
 const char* CCompileInfo::GetPackage()
 {
-  return "org.xbmc.kodi";
+  return "@APP_PACKAGE@";
 }
 
 const char* CCompileInfo::GetClass()
@@ -43,12 +43,12 @@ const char* CCompileInfo::GetClass()
 
 const char* CCompileInfo::GetAppName()
 {
-  return "Kodi";
+  return "@APP_NAME@";
 }
 
 const char* CCompileInfo::GetSuffix()
 {
-  return "";
+  return "@APP_VERSION_TAG@";
 }
 
 const char* CCompileInfo::GetSCMID()
@@ -58,29 +58,28 @@ const char* CCompileInfo::GetSCMID()
 
 std::string CCompileInfo::GetSharedLibrarySuffix()
 {
-  return ".dll";
+  return "@APP_SHARED_LIBRARY_SUFFIX@";
 }
 
 const char* CCompileInfo::GetCopyrightYears()
 {
-  return "2002-2025";
+  return "@APP_COPYRIGHT_YEARS@";
 }
 
 std::string CCompileInfo::GetBuildDate()
 {
-  // TODO: build date should be set by compiler
-  const std::string bdate = "";
+  const std::string bdate = "@APP_BUILD_DATE@";
   if (!bdate.empty())
   {
     std::string datestamp = bdate.substr(0, 4) + "-" + bdate.substr(4, 2) + "-" + bdate.substr(6, 2);
     return datestamp;
   }
-  return "2001-11-15";
+  return "1970-01-01";
 }
 
 const char*  CCompileInfo::GetVersionCode()
 {
-  return "0.1.0";
+  return "@APP_VERSION_CODE@";
 }
 
 std::vector<ADDON::RepoInfo> CCompileInfo::LoadOfficialRepoInfos()
@@ -104,13 +103,23 @@ std::vector<ADDON::RepoInfo> CCompileInfo::LoadOfficialRepoInfos()
 
 std::vector<std::string> CCompileInfo::GetAvailableWindowSystems()
 {
-  return StringUtils::Split("", ' ');
+  return StringUtils::Split("@CORE_PLATFORM_NAME_LC@", ' ');
+}
+
+std::vector<std::string> CCompileInfo::GetAvailableAudioBackends()
+{
+  return StringUtils::Split("@AUDIO_BACKENDS@", ' ');
+}
+
+std::vector<std::string> CCompileInfo::GetAvailableGlInterfaces()
+{
+  return StringUtils::Split("@GL_INTERFACES@", ' ');
 }
 
 // Return version of python built against as format MAJOR.MINOR
 std::string CCompileInfo::GetPythonVersion()
 {
-  return "2.7";
+  return "@PYTHON_VERSION@";
 }
 
 std::vector<std::string> CCompileInfo::GetWebserverExtraWhitelist()

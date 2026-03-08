@@ -42,6 +42,35 @@ add_compile_options(
     -Wno-invalid-offsetof
 )
 
+# Set pre-compile variables
+set(APP_VERSION_MAJOR 21)
+set(APP_VERSION_MINOR "3")
+set(APP_PACKAGE "org.xbmc.kodi")
+set(APP_NAME "Kodi")
+set(APP_VERSION_TAG "Omega-alpha")
+execute_process(
+    COMMAND git rev-parse --short HEAD
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE APP_SCMID
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+set(APP_SHARED_LIBRARY_SUFFIX ".dll")
+set(APP_COPYRIGHT_YEARS "2002-2026")
+string(TIMESTAMP APP_BUILD_DATE "%Y%m%d")
+set(APP_VERSION_CODE "21.3.0")
+set(APP_ADDON_REPOS "repository.xbmc.org|https://mirrors.kodi.tv")
+set(CORE_PLATFORM_NAME_LC "xbox")
+set(AUDIO_BACKENDS "XAudio")
+set(GL_INTERFACES "")
+set(PYTHON_VERSION "2.7.18")
+set(KODI_WEBSERVER_EXTRA_WHITELIST "")
+
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/xbmc/CompileInfo.cpp.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/xbmc/CompileInfo.cpp
+    @ONLY
+)
+
 add_definitions(-D_CRT_RAND_S -D_XBOX -DNXDK -DSDL_DISABLE_JOYSTICK_INIT_DELAY -DXBOX -DMEMP_NUM_NETBUF=6 -DMEMP_NUM_NETCONN=6 -DHAS_GL)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
