@@ -47,8 +47,8 @@ void CPowerManager::SetDefaults()
 
 bool CPowerManager::Powerdown()
 {
-  // TODO: shutdown Xbox
-  return false;
+  HalInitiateShutdown();
+  return true;
 }
 
 bool CPowerManager::Suspend()
@@ -63,8 +63,8 @@ bool CPowerManager::Hibernate()
 
 bool CPowerManager::Reboot()
 {
-  // TODO: reboot Xbox
-  return false;
+  HalReturnToFirmware(HalRebootRoutine);
+  return true;
 }
 
 bool CPowerManager::CanPowerdown()

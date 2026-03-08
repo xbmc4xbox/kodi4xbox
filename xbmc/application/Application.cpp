@@ -788,8 +788,23 @@ void CApplication::OnApplicationMessage(ThreadMessage* pMsg)
 
   switch (msg)
   {
+  case TMSG_POWERDOWN:
+    if (Stop(EXITCODE_POWERDOWN))
+      CServiceBroker::GetPowerManager().Powerdown();
+    break;
+
   case TMSG_QUIT:
     Stop(EXITCODE_QUIT);
+    break;
+
+  case TMSG_SHUTDOWN:
+    GetComponent<CApplicationPowerHandling>()->HandleShutdownMessage();
+    break;
+
+  case TMSG_RESTART:
+  case TMSG_RESET:
+    if (Stop(EXITCODE_REBOOT))
+      CServiceBroker::GetPowerManager().Reboot();
     break;
 
   case TMSG_SETLANGUAGE:
@@ -1307,8 +1322,7 @@ bool CApplication::ExecuteXBMCAction(std::string actionStr,
   // user has asked for something to be executed
   if (CBuiltins::GetInstance().HasCommand(actionStr))
   {
-    if (!CBuiltins::GetInstance().IsSystemPowerdownCommand(actionStr))
-      CBuiltins::GetInstance().Execute(actionStr);
+    CBuiltins::GetInstance().Execute(actionStr);
   }
   else
   {
