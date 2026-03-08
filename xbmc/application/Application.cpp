@@ -226,7 +226,6 @@ void CApplication::HandlePortEvents()
 
 extern "C" void __stdcall init_emu_environ();
 extern "C" void __stdcall update_emu_environ();
-extern "C" void __stdcall cleanup_emu_environ();
 
 bool CApplication::Create()
 {
@@ -789,6 +788,10 @@ void CApplication::OnApplicationMessage(ThreadMessage* pMsg)
 
   switch (msg)
   {
+  case TMSG_QUIT:
+    Stop(EXITCODE_QUIT);
+    break;
+
   case TMSG_SETLANGUAGE:
     SetLanguage(pMsg->strParam);
     break;
@@ -970,8 +973,117 @@ bool CApplication::Cleanup()
 
 bool CApplication::Stop(int exitCode)
 {
-  // TODO: implement this
-  return false;
+#if defined(TARGET_ANDROID)
+  // Note: On Android, the app must be stopped asynchronously, once Android has
+  // signalled that the app shall be destroyed. See android_main() implementation.
+  if (!CXBMCApp::Get().Stop(exitCode))
+    return false;
+#endif
+
+  CLog::Log(LOGINFO, "Stopping the application...");
+
+  bool success = true;
+
+  CLog::Log(LOGINFO, "Stopping player");
+  const auto appPlayer = GetComponent<CApplicationPlayer>();
+  appPlayer->ClosePlayer();
+
+  try
+  {
+    m_frameMoveGuard.unlock();
+
+    CVariant vExitCode(CVariant::VariantTypeObject);
+    vExitCode["exitcode"] = exitCode;
+    CServiceBroker::GetAnnouncementManager()->Announce(ANNOUNCEMENT::System, "OnQuit", vExitCode);
+
+    // Abort any active screensaver
+    GetComponent<CApplicationPowerHandling>()->WakeUpScreenSaverAndDPMS();
+
+    g_alarmClock.StopThread();
+
+    CLog::Log(LOGINFO, "Storing total System Uptime");
+    g_sysinfo.SetTotalUptime(g_sysinfo.GetTotalUptime() + (int)(CTimeUtils::GetFrameTime() / 60000));
+
+    // Update the settings information (volume, uptime etc. need saving)
+    if (CFile::Exists(CServiceBroker::GetSettingsComponent()->GetProfileManager()->GetSettingsFile()))
+    {
+      CLog::Log(LOGINFO, "Saving settings");
+      CServiceBroker::GetSettingsComponent()->GetSettings()->Save();
+    }
+    else
+      CLog::Log(LOGINFO, "Not saving settings (settings.xml is not present)");
+
+    // kodi may crash or deadlock during exit (shutdown / reboot) due to
+    // either a bug in core or misbehaving addons. so try saving
+    // skin settings early
+    CLog::Log(LOGINFO, "Saving skin settings");
+    if (g_SkinInfo != nullptr)
+      g_SkinInfo->SaveSettings();
+
+    m_bStop = true;
+    // Add this here to keep the same ordering behaviour for now
+    // Needs cleaning up
+    CServiceBroker::GetAppMessenger()->Stop();
+    m_AppFocused = false;
+    m_ExitCode = exitCode;
+    CLog::Log(LOGINFO, "Stopping all");
+
+    // cancel any jobs from the jobmanager
+    CServiceBroker::GetJobManager()->CancelJobs();
+
+    // stop scanning before we kill the network and so on
+    if (CMusicLibraryQueue::GetInstance().IsRunning())
+      CMusicLibraryQueue::GetInstance().CancelAllJobs();
+
+    if (CVideoLibraryQueue::GetInstance().IsRunning())
+      CVideoLibraryQueue::GetInstance().CancelAllJobs();
+
+    CServiceBroker::GetAppMessenger()->Cleanup();
+
+#ifdef HAS_ZEROCONF
+    if(CZeroconfBrowser::IsInstantiated())
+    {
+      CLog::Log(LOGINFO, "Stopping zeroconf browser");
+      CZeroconfBrowser::GetInstance()->Stop();
+      CZeroconfBrowser::ReleaseInstance();
+    }
+#endif
+
+#if defined(TARGET_POSIX) && defined(HAS_FILESYSTEM_SMB)
+    smb.Deinit();
+#endif
+
+#if defined(TARGET_DARWIN_OSX) and defined(HAS_XBMCHELPER)
+    if (XBMCHelper::GetInstance().IsAlwaysOn() == false)
+      XBMCHelper::GetInstance().Stop();
+#endif
+
+    // Stop services before unloading Python
+    CServiceBroker::GetServiceAddons().Stop();
+
+    // Stop any other python scripts that may be looping waiting for monitor.abortRequested()
+    CScriptInvocationManager::GetInstance().StopRunningScripts();
+
+    // unregister action listeners
+    const auto appListener = GetComponent<CApplicationActionListeners>();
+    appListener->UnregisterActionListener(&GetComponent<CApplicationPlayer>()->GetSeekHandler());
+    appListener->UnregisterActionListener(&CPlayerController::GetInstance());
+
+    CGUIComponent *gui = CServiceBroker::GetGUI();
+    if (gui)
+      gui->GetAudioManager().DeInitialize(1);
+
+    CLog::Log(LOGINFO, "Application stopped");
+  }
+  catch (...)
+  {
+    CLog::Log(LOGERROR, "Exception in CApplication::Stop()");
+    success = false;
+  }
+
+  KODI::TIME::Sleep(200ms);
+
+  return success;
 }
 
 bool CApplication::PlayMedia(CFileItem& item, const std::string& player, PLAYLIST::Id playlistId)
