@@ -35,11 +35,11 @@ set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O2")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
 
 add_compile_options(
-    $<$<AND:$<CONFIG:Debug>,$<COMPILE_LANGUAGE:C>>:-gdwarf-4>
-    $<$<AND:$<CONFIG:Debug>,$<COMPILE_LANGUAGE:CXX>>:-gdwarf-4>
-    -Wno-deprecated-declarations
-    -Wno-inconsistent-missing-override
-    -Wno-invalid-offsetof
+  $<$<AND:$<CONFIG:Debug>,$<COMPILE_LANGUAGE:C>>:-gdwarf-4>
+  $<$<AND:$<CONFIG:Debug>,$<COMPILE_LANGUAGE:CXX>>:-gdwarf-4>
+  -Wno-deprecated-declarations
+  -Wno-inconsistent-missing-override
+  -Wno-invalid-offsetof
 )
 
 # Set pre-compile variables
@@ -49,10 +49,10 @@ set(APP_PACKAGE "org.xbmc.kodi")
 set(APP_NAME "Kodi")
 set(APP_VERSION_TAG "Omega-alpha")
 execute_process(
-    COMMAND git rev-parse --short HEAD
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    OUTPUT_VARIABLE APP_SCMID
-    OUTPUT_STRIP_TRAILING_WHITESPACE
+  COMMAND git rev-parse --short HEAD
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  OUTPUT_VARIABLE APP_SCMID
+  OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 set(APP_SHARED_LIBRARY_SUFFIX ".dll")
 set(APP_COPYRIGHT_YEARS "2002-2026")
@@ -64,14 +64,18 @@ set(AUDIO_BACKENDS "XAudio")
 set(GL_INTERFACES "")
 set(PYTHON_VERSION "2.7.18")
 set(KODI_WEBSERVER_EXTRA_WHITELIST "")
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/xbmc/CompileInfo.cpp.in ${CMAKE_CURRENT_SOURCE_DIR}/xbmc/CompileInfo.cpp @ONLY)
 
-configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/xbmc/CompileInfo.cpp.in
-    ${CMAKE_CURRENT_SOURCE_DIR}/xbmc/CompileInfo.cpp
-    @ONLY
+add_definitions(
+  -D_CRT_RAND_S
+  -D_XBOX
+  -DNXDK
+  -DSDL_DISABLE_JOYSTICK_INIT_DELAY # SDL
+  -DXBOX # SDL
+  -DMEMP_NUM_NETBUF=6 # lwip
+  -DMEMP_NUM_NETCONN=6 # lwip
+  -DHAS_GL
 )
-
-add_definitions(-D_CRT_RAND_S -D_XBOX -DNXDK -DSDL_DISABLE_JOYSTICK_INIT_DELAY -DXBOX -DMEMP_NUM_NETBUF=6 -DMEMP_NUM_NETCONN=6 -DHAS_GL)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   add_definitions(-D_DEBUG)
