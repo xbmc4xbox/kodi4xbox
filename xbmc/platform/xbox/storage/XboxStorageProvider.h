@@ -21,11 +21,6 @@ enum Drive_Types
   DVD_DRIVES
 };
 
-
-// TODO: implement storage provider - here are some starting points:
-// https://github.com/rkalz/xbmc4xbox/blob/master/xbmc/storage/MediaManager.h
-// https://github.com/rkalz/xbmc4xbox/blob/master/xbmc/xbox/IoSupport.h
-// for proper DVD DRIVE support we need https://github.com/rkalz/xbmc4xbox/tree/master/xbmc/lib/libcdio
 class CXboxStorageProvider : public IStorageProvider
 {
 public:
@@ -46,9 +41,6 @@ public:
 
   static void SetEvent() { xbevent = true; }
   static bool xbevent;
-
-private:
-  static void GetDrivesByType(VECSOURCES &localDrives, Drive_Types eDriveType=ALL_DRIVES, bool bonlywithmedia=false);
 };
 
 class CDetectDisc : public CJob

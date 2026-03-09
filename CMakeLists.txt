@@ -731,10 +731,6 @@ add_executable(xbmc
 
 target_include_directories(xbmc PRIVATE xbmc xbmc/cores/VideoPlayer xbmc/platform/xbox)
 
-# Bring in the DVD drive automount support
-target_link_libraries(xbmc PUBLIC ${NXDK_DIR}/lib/libnxdk_automount_d.lib)
-target_link_options(xbmc PRIVATE "-include:_automount_d_drive")
-
 # Bring in networking support
 target_link_libraries(xbmc PUBLIC ${NXDK_DIR}/lib/libnxdk_net.lib)
 target_include_directories(xbmc PRIVATE ${NXDK_DIR}/lib/net/lwip/src/include ${NXDK_DIR}/lib/net/nforceif/include ${NXDK_DIR}/lib/net/nvnetdrv)
