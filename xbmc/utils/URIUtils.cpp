@@ -6,6 +6,7 @@
  *  See LICENSES/README.md for more information.
  */
 
+#include "network/Network.h"
 #include "URIUtils.h"
 #include "FileItem.h"
 #include "filesystem/MultiPathDirectory.h"
@@ -721,13 +722,11 @@ bool URIUtils::IsHostOnLAN(const std::string& host, LanCheckMode lanCheckMode)
         return true;
     }
     // check if we are on the local subnet
-#if 0
     if (!CServiceBroker::GetNetwork().GetFirstConnectedInterface())
       return false;
 
     if (CServiceBroker::GetNetwork().HasInterfaceForIP(address))
       return true;
-#endif
   }
 
   return false;

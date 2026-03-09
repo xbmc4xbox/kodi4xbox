@@ -28,6 +28,7 @@
 #include "input/actions/Action.h"
 #include "input/actions/ActionIDs.h"
 #include "messaging/helpers/DialogOKHelper.h"
+#include "network/Network.h"
 #include "profiles/ProfileManager.h"
 #include "settings/MediaSourceSettings.h"
 #include "settings/SettingsComponent.h"
@@ -568,14 +569,12 @@ bool CGUIDialogFileBrowser::HaveDiscOrConnection( int iDriveType )
   }
   else if ( iDriveType == CMediaSource::SOURCE_TYPE_REMOTE )
   {
-#if 0
     //! @todo Handle not connected to a remote share
     if ( !CServiceBroker::GetNetwork().IsConnected() )
     {
       HELPERS::ShowOKDialogText(CVariant{220}, CVariant{221});
       return false;
     }
-#endif
   }
 
   return true;

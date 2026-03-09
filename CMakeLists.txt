@@ -500,6 +500,8 @@ add_executable(xbmc
   xbmc/music/windows/GUIWindowVisualisation.cpp
   xbmc/music/windows/MusicFileItemListModifier.cpp
   xbmc/network/DNSNameCache.cpp
+  xbmc/network/Network.cpp
+  xbmc/network/NetworkServices.cpp
   xbmc/peripherals/Peripherals.cpp
   xbmc/peripherals/SDLJoystick.cpp
   xbmc/pictures/ExifParse.cpp
@@ -531,6 +533,7 @@ add_executable(xbmc
   xbmc/platform/xbox/XBOXUtil.cpp
   xbmc/platform/xbox/filesystem/XboxDirectory.cpp
   xbmc/platform/xbox/filesystem/XboxFile.cpp
+  xbmc/platform/xbox/network/XboxNetwork.cpp
   xbmc/platform/xbox/storage/XboxStorageProvider.cpp
   xbmc/platform/xbox/PlatformXbox.cpp
   xbmc/platform/xbox/strptime.cpp

@@ -39,6 +39,7 @@
 #include "interfaces/generic/ScriptInvocationManager.h"
 #include "messaging/ApplicationMessenger.h"
 #include "messaging/helpers/DialogOKHelper.h"
+#include "network/Network.h"
 #include "pictures/SlideShowDelegator.h"
 #include "platform/Filesystem.h"
 #include "playlists/PlayList.h"
@@ -708,7 +709,12 @@ bool CGUIWindowFileManager::HaveDiscOrConnection( std::string& strPath, int iDri
   }
   else if ( iDriveType == CMediaSource::SOURCE_TYPE_REMOTE )
   {
-    return false;
+    //! @todo Handle not connected to a remote share
+    if (!CServiceBroker::GetNetwork().IsConnected())
+    {
+      HELPERS::ShowOKDialogText(CVariant{220}, CVariant{221});
+      return false;
+    }
   }
   else
     return true;

@@ -41,6 +41,7 @@
 #include "interfaces/generic/ScriptInvocationManager.h"
 #include "music/MusicLibraryQueue.h"
 #include "music/tags/MusicInfoTag.h"
+#include "network/Network.h"
 #include "playlists/PlayListFactory.h"
 #include "threads/SystemClock.h"
 #include "utils/ContentUtils.h"
@@ -481,6 +482,8 @@ bool CApplication::Initialize()
 
   const std::shared_ptr<CProfileManager> profileManager = CServiceBroker::GetSettingsComponent()->GetProfileManager();
 
+  m_ServiceManager->GetNetwork().WaitForNet();
+
   // initialize (and update as needed) our databases
   CDatabaseManager &databaseManager = m_ServiceManager->GetDatabaseManager();
 
@@ -807,6 +810,11 @@ void CApplication::OnApplicationMessage(ThreadMessage* pMsg)
       CServiceBroker::GetPowerManager().Reboot();
     break;
 
+  case TMSG_NETWORKMESSAGE:
+    m_ServiceManager->GetNetwork().NetworkMessage(static_cast<CNetworkBase::EMESSAGE>(pMsg->param1),
+                                                  pMsg->param2);
+    break;
+
   case TMSG_SETLANGUAGE:
     SetLanguage(pMsg->strParam);
     break;
@@ -1054,6 +1062,8 @@ bool CApplication::Stop(int exitCode)
       CVideoLibraryQueue::GetInstance().CancelAllJobs();
 
     CServiceBroker::GetAppMessenger()->Cleanup();
+
+    m_ServiceManager->GetNetwork().NetworkMessage(CNetworkBase::SERVICES_DOWN, 0);
 
 #ifdef HAS_ZEROCONF
     if(CZeroconfBrowser::IsInstantiated())

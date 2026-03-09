@@ -22,6 +22,7 @@
 #include "favourites/FavouritesService.h"
 #include "input/InputManager.h"
 #include "interfaces/generic/ScriptInvocationManager.h"
+#include "network/Network.h"
 #include "peripherals/Peripherals.h"
 #if defined(HAS_FILESYSTEM_SMB)
 #include "network/IWSDiscovery.h"
@@ -58,33 +59,6 @@ CServiceManager::~CServiceManager()
     DeinitStageOne();
 }
 
-bool CServiceManager::InitForTesting()
-{
-  m_databaseManager = std::make_unique<CDatabaseManager>();
-
-  m_addonMgr = std::make_unique<ADDON::CAddonMgr>();
-  if (!m_addonMgr->Init())
-  {
-    CLog::Log(LOGFATAL, "CServiceManager::{}: Unable to start CAddonMgr", __FUNCTION__);
-    return false;
-  }
-
-  m_extsMimeSupportList = std::make_unique<ADDONS::CExtsMimeSupportList>(*m_addonMgr);
-  m_fileExtensionProvider = std::make_unique<CFileExtensionProvider>(*m_addonMgr);
-
-  init_level = 1;
-  return true;
-}
-
-void CServiceManager::DeinitTesting()
-{
-  init_level = 0;
-  m_fileExtensionProvider.reset();
-  m_extsMimeSupportList.reset();
-  m_addonMgr.reset();
-  m_databaseManager.reset();
-}
-
 bool CServiceManager::InitStageOne()
 {
   m_Platform.reset(CPlatform::CreateInstance());
@@ -99,6 +73,8 @@ bool CServiceManager::InitStageOne()
 
   m_playlistPlayer = std::make_unique<PLAYLIST::CPlayListPlayer>();
   m_slideShowDelegator = std::make_unique<CSlideShowDelegator>();
+
+  m_network = CNetworkBase::GetNetwork();
 
   init_level = 1;
   return true;
@@ -233,6 +209,7 @@ void CServiceManager::DeinitStageOne()
 {
   init_level = 0;
 
+  m_network.reset();
   m_playlistPlayer.reset();
   m_slideShowDelegator.reset();
 #ifdef HAS_PYTHON
@@ -333,6 +310,11 @@ CFileExtensionProvider& CServiceManager::GetFileExtensionProvider()
 CPowerManager& CServiceManager::GetPowerManager()
 {
   return *m_powerManager;
+}
+
+CNetworkBase& CServiceManager::GetNetwork()
+{
+  return *m_network;
 }
 
 CWeatherManager& CServiceManager::GetWeatherManager()

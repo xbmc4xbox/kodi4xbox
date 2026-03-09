@@ -35,6 +35,8 @@
 #include "guilib/LocalizeStrings.h"
 #include "input/InputManager.h"
 #include "music/MusicLibraryQueue.h"
+#include "network/Network.h" //! @todo Remove me
+#include "network/NetworkServices.h" //! @todo Remove me
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 #include "settings/lib/SettingsManager.h"
@@ -255,10 +257,14 @@ void CProfileManager::PrepareLoadProfile(unsigned int profileIndex)
 {
   CContextMenuManager &contextMenuManager = CServiceBroker::GetContextMenuManager();
   ADDON::CServiceAddonManager &serviceAddons = CServiceBroker::GetServiceAddons();
+  CNetworkBase &networkManager = CServiceBroker::GetNetwork();
 
   contextMenuManager.Deinit();
 
   serviceAddons.Stop();
+
+  if (profileIndex != 0 || !IsMasterProfile())
+    networkManager.NetworkMessage(CNetworkBase::SERVICES_DOWN, 1);
 }
 
 bool CProfileManager::LoadProfile(unsigned int index)
@@ -363,6 +369,7 @@ void CProfileManager::FinalizeLoadProfile()
 {
   CContextMenuManager &contextMenuManager = CServiceBroker::GetContextMenuManager();
   ADDON::CServiceAddonManager &serviceAddons = CServiceBroker::GetServiceAddons();
+  CNetworkBase &networkManager = CServiceBroker::GetNetwork();
   ADDON::CAddonMgr &addonManager = CServiceBroker::GetAddonMgr();
   CWeatherManager &weatherManager = CServiceBroker::GetWeatherManager();
   CFavouritesService &favouritesManager = CServiceBroker::GetFavouritesService();
@@ -374,6 +381,8 @@ void CProfileManager::FinalizeLoadProfile()
     playlistManager.ClearPlaylist(PLAYLIST::TYPE_MUSIC);
     playlistManager.SetCurrentPlaylist(PLAYLIST::TYPE_NONE);
   }
+
+  networkManager.NetworkMessage(CNetworkBase::SERVICES_UP, 1);
 
   // reload the add-ons, or we will first load all add-ons from the master account without checking disabled status
   addonManager.ReInit();
@@ -414,6 +423,8 @@ void CProfileManager::FinalizeLoadProfile()
 
 void CProfileManager::LogOff()
 {
+  CNetworkBase &networkManager = CServiceBroker::GetNetwork();
+
   g_application.StopPlaying();
 
   if (CMusicLibraryQueue::GetInstance().IsScanningLibrary())
@@ -421,6 +432,8 @@ void CProfileManager::LogOff()
 
   if (CVideoLibraryQueue::GetInstance().IsRunning())
     CVideoLibraryQueue::GetInstance().CancelAllJobs();
+
+  networkManager.NetworkMessage(CNetworkBase::SERVICES_DOWN, 1);
 
   LoadMasterProfileForLogin();
 

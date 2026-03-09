@@ -28,6 +28,7 @@ class CPlayListPlayer;
 class CContextMenuManager;
 class CDataCacheCore;
 class CFavouritesService;
+class CNetworkBase;
 class CWinSystemBase;
 class CPowerManager;
 class CWeatherManager;
@@ -59,11 +60,9 @@ public:
   CServiceManager();
   ~CServiceManager();
 
-  bool InitForTesting();
   bool InitStageOne();
   bool InitStageTwo(const std::string& profilesUserDataFolder);
   bool InitStageThree(const std::shared_ptr<CProfileManager>& profileManager);
-  void DeinitTesting();
   void DeinitStageThree();
   void DeinitStageTwo();
   void DeinitStageOne();
@@ -73,6 +72,7 @@ public:
   KODI::ADDONS::CExtsMimeSupportList& GetExtsMimeSupportList();
   ADDON::CServiceAddonManager& GetServiceAddons();
   ADDON::CRepositoryUpdater& GetRepositoryUpdater();
+  CNetworkBase& GetNetwork();
   CContextMenuManager& GetContextMenuManager();
   CDataCacheCore& GetDataCacheCore();
   /**\brief Get the platform object. This is save to be called after Init1() was called
@@ -116,6 +116,7 @@ protected:
   std::unique_ptr<CFavouritesService> m_favouritesService;
   std::unique_ptr<CInputManager> m_inputManager;
   std::unique_ptr<CFileExtensionProvider> m_fileExtensionProvider;
+  std::unique_ptr<CNetworkBase> m_network;
   std::unique_ptr<CPowerManager> m_powerManager;
   std::unique_ptr<CWeatherManager> m_weatherManager;
   std::unique_ptr<CPlayerCoreFactory> m_playerCoreFactory;

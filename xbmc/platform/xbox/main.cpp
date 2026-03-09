@@ -12,6 +12,7 @@
 
 #include <nxdk/mount.h>
 #include <nxdk/path.h>
+#include <nxdk/net.h>
 
 int main()
 {
@@ -29,6 +30,8 @@ int main()
     *(strrchr(targetPath, '\\') + 1) = '\0';
     nxMountDrive('Q', targetPath);
   }
+
+  nxNetInit(NULL);
 
   char* argv[] = {"", "--fullscreen", "--standalone"};
   CAppParamParser appParamParser;

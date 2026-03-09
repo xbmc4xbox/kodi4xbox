@@ -14,3 +14,7 @@
 
 #define strcmpi stricmp
 #define unlink remove
+
+#define SOCKET int
+#define INVALID_SOCKET -1
+#define SOCKET_ERROR -1

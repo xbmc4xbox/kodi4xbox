@@ -22,8 +22,8 @@
 #include "filesystem/File.h"
 #include "guilib/LocalizeStrings.h"
 #include "guilib/guiinfo/GUIInfoLabels.h"
-#ifndef _XBOX
 #include "network/Network.h"
+#ifndef _XBOX
 #include "platform/Filesystem.h"
 #endif
 #include "rendering/RenderSystem.h"
@@ -316,27 +316,40 @@ CSysData::INTERNET_STATE CSysInfoJob::GetInternetState()
 
 std::string CSysInfoJob::GetMACAddress()
 {
-#if 0
   CNetworkInterface* iface = CServiceBroker::GetNetwork().GetFirstConnectedInterface();
   if (iface)
     return iface->GetMacAddress();
-#endif
 
   return "";
 }
 
 std::string CSysInfoJob::GetIPAddress()
 {
+  CNetworkInterface* iface = CServiceBroker::GetNetwork().GetFirstConnectedInterface();
+  if (iface)
+  {
+    return iface->GetCurrentIPAddress();
+  }
   return {};
 }
 
 std::string CSysInfoJob::GetNetMask()
 {
+  CNetworkInterface* iface = CServiceBroker::GetNetwork().GetFirstConnectedInterface();
+  if (iface)
+  {
+    return iface->GetCurrentNetmask();
+  }
   return {};
 }
 
 std::string CSysInfoJob::GetGatewayAddress()
 {
+  CNetworkInterface* iface = CServiceBroker::GetNetwork().GetFirstConnectedInterface();
+  if (iface)
+  {
+    return iface->GetCurrentDefaultGateway();
+  }
   return {};
 }
 
@@ -344,6 +357,12 @@ std::string CSysInfoJob::GetNetworkLinkState()
 {
   std::string linkStatus = g_localizeStrings.Get(151);
   linkStatus += " ";
+  CNetworkInterface* iface = CServiceBroker::GetNetwork().GetFirstConnectedInterface();
+  if (iface && iface->IsConnected())
+  {
+    linkStatus += g_localizeStrings.Get(15207);
+  }
+  else
   {
     linkStatus += g_localizeStrings.Get(15208);
   }
@@ -352,7 +371,7 @@ std::string CSysInfoJob::GetNetworkLinkState()
 
 std::vector<std::string> CSysInfoJob::GetDNSServers()
 {
-  return std::vector<std::string>({"0.0.0.0"});
+  return CServiceBroker::GetNetwork().GetNameServers();
 }
 
 std::string CSysInfoJob::GetVideoEncoder()
@@ -577,6 +596,8 @@ std::string CSysInfo::GetKernelName(bool emptyIfUnknown /*= false*/)
     struct utsname un;
     if (uname(&un) == 0)
       kernelName.assign(un.sysname);
+#elif defined(_XBOX)
+    kernelName = StringUtils::Format("{}.{}", XboxKrnlVersion.Build, XboxKrnlVersion.Qfe);
 #endif // defined(TARGET_POSIX)
 
     if (kernelName.empty())
@@ -627,6 +648,8 @@ std::string CSysInfo::GetKernelVersionFull(void)
   struct utsname un;
   if (uname(&un) == 0)
     kernelVersionFull.assign(un.release);
+#elif defined(_XBOX)
+    kernelVersionFull = StringUtils::Format("{}.{}.{}.{}", XboxKrnlVersion.Major, XboxKrnlVersion.Minor, XboxKrnlVersion.Build, XboxKrnlVersion.Qfe);
 #endif // defined(TARGET_POSIX)
 
   if (kernelVersionFull.empty())
@@ -1320,14 +1343,12 @@ std::string CSysInfo::GetUserAgent()
 std::string CSysInfo::GetDeviceName()
 {
   std::string friendlyName = CServiceBroker::GetSettingsComponent()->GetSettings()->GetString(CSettings::SETTING_SERVICES_DEVICENAME);
-#if 0
   if (StringUtils::EqualsNoCase(friendlyName, CCompileInfo::GetAppName()))
   {
     std::string hostname("[unknown]");
     CServiceBroker::GetNetwork().GetHostName(hostname);
     return StringUtils::Format("{} ({})", friendlyName, hostname);
   }
-#endif
 
   return friendlyName;
 }
