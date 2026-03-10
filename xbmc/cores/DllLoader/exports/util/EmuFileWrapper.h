@@ -22,7 +22,6 @@
 
 #include <stdio.h>
 
-#include "system.h"
 #include "threads/CriticalSection.h"
 
 #define MAX_EMULATED_FILES    50

@@ -18,7 +18,6 @@
  *
  */
 
-#include "system.h"
 #include "GUIFont.h"
 #include "GUIFontTTFXbox.h"
 #include "GUIFontManager.h"
