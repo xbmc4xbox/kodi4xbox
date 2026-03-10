@@ -18,7 +18,6 @@
  *
  */
 
-#include "system.h"
 #include "GUIFont.h"
 #include "GUIFontTTFGL.h"
 #include "GUIFontManager.h"
@@ -28,7 +27,6 @@
 #include "windowing/GraphicContext.h"
 #include "utils/log.h"
 #include "utils/GLUtils.h"
-#include "windowing/WindowingFactory.h"
 #include "rendering/MatrixGL.h"
 
 // stuff for freetype

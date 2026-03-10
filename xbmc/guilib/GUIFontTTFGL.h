@@ -32,7 +32,6 @@
 #include <vector>
 
 #include "GUIFontTTF.h"
-#include "system.h"
 #include "system_gl.h"
 
 

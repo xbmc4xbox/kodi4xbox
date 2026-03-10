@@ -18,7 +18,6 @@
  *
  */
 
-#include "system.h" // <xtl.h>
 #include "DllLoaderContainer.h"
 #include "DllLoader.h"
 #include "dll_tracker.h" // for python unload hack
@@ -27,6 +26,8 @@
 #include "utils/StringUtils.h"
 #include "utils/log.h"
 #include "URL.h"
+
+#include <windows.h>
 
 #define ENV_PATH "special://xbmc/system/;special://xbmc/system/players/mplayer/;special://xbmc/system/players/dvdplayer/;special://xbmc/system/players/paplayer/;special://xbmc/system/python/"
 

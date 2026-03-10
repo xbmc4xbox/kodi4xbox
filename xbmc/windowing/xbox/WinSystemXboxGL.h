@@ -1,57 +1,38 @@
 /*
- *      Copyright (C) 2005-2014 Team XBMC
- *      http://xbmc.org
+ *  Copyright (C) 2005-2018 Team Kodi
+ *  This file is part of Kodi - https://kodi.tv
  *
- *  This Program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
- *
- *  This Program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with XBMC; see the file COPYING.  If not, see
- *  <http://www.gnu.org/licenses/>.
- *
+ *  SPDX-License-Identifier: GPL-2.0-or-later
+ *  See LICENSES/README.md for more information.
  */
 
 #pragma once
 
 #if defined(_XBOX) && defined(HAS_GL)
 
-#include "WinSystemXboxGL.h"
-#include "windowing/WinSystem.h"
 #include "rendering/gl/RenderSystemGL.h"
-#include "utils/GlobalsHandling.h"
+#include "windowing/WinSystem.h"
 
 class CWinSystemXboxGL : public CWinSystemBase, public CRenderSystemGL
 {
 public:
-  CWinSystemXboxGL();
-  virtual ~CWinSystemXboxGL();
+  CWinSystemXboxGL() = default;
+  virtual ~CWinSystemXboxGL() = default;
 
   static void Register();
   static std::unique_ptr<CWinSystemBase> CreateWinSystem();
 
-  // CWinSystemBase
+  // Implementation of CWinSystemBase
   CRenderSystemBase *GetRenderSystem() override { return this; }
-  bool InitWindowSystem() override;
-  bool DestroyWindowSystem() override;
   bool CreateNewWindow(const std::string& name, bool fullScreen, RESOLUTION_INFO& res) override;
-  bool ResizeWindow(int newWidth, int newHeight, int newLeft, int newTop) override;
   bool SetFullScreen(bool fullScreen, RESOLUTION_INFO& res, bool blankOtherDisplays) override;
   void UpdateResolutions() override;
-
-  bool IsExtSupported(const char* extension) override;
 
   bool MessagePump() override;
 
 protected:
+  // Implementation of CRenderSystemGL
   void PresentRenderImpl(bool rendered) override;
-  void SetVSyncImpl(bool enable) override;
 
 private:
   RESOLUTION_INFO GetResolutionInfo(RESOLUTION res);

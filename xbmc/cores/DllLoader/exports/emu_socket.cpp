@@ -19,7 +19,6 @@
  */
 
 #include "xbox/Network.h"
-#include "system.h"
 #include "utils/log.h"
 #include "../DllLoaderContainer.h"
 
@@ -33,6 +32,8 @@
 #define SO_ERROR    0x1007
 
 #define MSG_PEEK 0x2
+
+#define SAFE_DELETE(p)       do { delete (p);     (p)=NULL; } while (0)
 
 static bool m_bSocketsInit = false;
 typedef struct

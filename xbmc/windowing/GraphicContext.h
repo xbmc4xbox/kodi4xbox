@@ -24,8 +24,6 @@
 #include "ServiceBroker.h"
 #include "WinSystem.h"
 
-#include "guilib/gui3d.h"
-
 #define D3DPRESENTFLAG_INTERLACED   1
 #define D3DPRESENTFLAG_WIDESCREEN   2
 #define D3DPRESENTFLAG_PROGRESSIVE  4
@@ -69,7 +67,6 @@ public:
   float GetFPS() const;
   void SetFPS(float fps);
   bool IsFullScreenRoot() const;
-  void ToggleFullScreen();
   void SetFullScreenVideo(bool bOnOff);
   bool IsFullScreenVideo() const;
   bool IsValidResolution(RESOLUTION res);
@@ -117,7 +114,6 @@ public:
   float ScaleFinalYCoord(float x, float y) const;
   float ScaleFinalZCoord(float x, float y) const;
   void ScaleFinalCoords(float &x, float &y, float &z) const;
-  bool RectIsAngled(float x1, float y1, float x2, float y2) const;
   const TransformMatrix &GetGUIMatrix() const;
   float GetGUIScaleX() const;
   float GetGUIScaleY() const;
@@ -126,13 +122,7 @@ public:
   void SetOrigin(float x, float y);
   void RestoreOrigin();
   void SetCameraPosition(const CPoint &camera);
-  void SetStereoView(RENDER_STEREO_VIEW view);
-  RENDER_STEREO_VIEW GetStereoView()  { return m_stereoView; }
-  void SetStereoMode(RENDER_STEREO_MODE mode) { m_nextStereoMode = mode; }
-  RENDER_STEREO_MODE GetStereoMode()  { return m_stereoMode; }
   void RestoreCameraPosition();
-  void SetStereoFactor(float factor);
-  void RestoreStereoFactor();
   /*! \brief Set a region in which to clip all rendering
    Anything that is rendered after setting a clip region will be clipped so that no part renders
    outside of the clip region.  Successive calls to SetClipRegion intersect the clip region, which
@@ -168,10 +158,6 @@ public:
   void SetTransform(const TransformMatrix &matrix, float scaleX, float scaleY);
   void RemoveTransform();
 
-  /* modifies final coordinates according to stereo mode if needed */
-  CRect StereoCorrection(const CRect &rect) const;
-  CPoint StereoCorrection(const CPoint &point) const;
-
   CRect GenerateAABB(const CRect &rect) const;
 
   //@todo move those somewhere else
@@ -180,9 +166,8 @@ public:
 
 protected:
 
-  void UpdateCameraPosition(const CPoint &camera, const float &factor);
+  void UpdateCameraPosition(const CPoint &camera);
   void SetVideoResolutionInternal(RESOLUTION res, bool forceUpdate);
-  void ApplyVideoResolution(RESOLUTION res);
   void UpdateInternalStateWithResolution(RESOLUTION res);
 
   int m_iScreenHeight = 576;
@@ -199,7 +184,6 @@ protected:
   std::stack<CPoint> m_cameras;
   std::stack<CPoint> m_origins;
   std::stack<CRect> m_clipRegions;
-  std::stack<float> m_stereoFactors;
   std::stack<CRect> m_viewStack;
   CRect m_scissors;
 
@@ -225,7 +209,4 @@ protected:
   UITransform m_guiTransform;
   UITransform m_finalTransform;
   std::stack<UITransform> m_transforms;
-  RENDER_STEREO_VIEW m_stereoView = RENDER_STEREO_VIEW_OFF;
-  RENDER_STEREO_MODE m_stereoMode = RENDER_STEREO_MODE_OFF;
-  RENDER_STEREO_MODE m_nextStereoMode = RENDER_STEREO_MODE_OFF;
 };

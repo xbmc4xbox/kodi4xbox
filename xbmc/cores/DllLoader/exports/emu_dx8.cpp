@@ -18,7 +18,6 @@
  *
  */
 
-#include "system.h"
 #include "emu_dx8.h"
 #include "windowing/GraphicContext.h"
 #include "filesystem/SpecialProtocol.h"
