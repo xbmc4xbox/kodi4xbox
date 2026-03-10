@@ -27,14 +27,14 @@ bool CGPUInfoXbox::SupportsPlatformTemperature() const
 
 bool CGPUInfoXbox::GetGPUPlatformTemperature(CTemperature& temperature) const
 {
-  PULONG mb;
-  NTSTATUS smb = HalReadSMBusValue(0x98, 0x00, FALSE, mb);
+  unsigned long temp;
+  NTSTATUS smb = HalReadSMBusValue(0x98, 0x00, FALSE, &temp);
   if (smb != STATUS_SUCCESS)
   {
     // If it fails, its probably a 1.6. Read SMC instead
-    HalReadSMBusValue(0x20, 0x0A, FALSE, mb);
+    HalReadSMBusValue(0x20, 0x0A, FALSE, &temp);
   }
-  temperature = CTemperature::CreateFromCelsius((double)*mb);
+  temperature = CTemperature::CreateFromCelsius(static_cast<double>(temp));
   return true;
 }
 

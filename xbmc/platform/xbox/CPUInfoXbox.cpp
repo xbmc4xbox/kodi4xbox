@@ -54,13 +54,13 @@ float CCPUInfoXbox::GetCPUFrequency()
 
 bool CCPUInfoXbox::GetTemperature(CTemperature& temperature)
 {
-  PULONG temp;
-  NTSTATUS scpu = HalReadSMBusValue(0x98, 0x01, FALSE, temp);
+  unsigned long temp;
+  NTSTATUS scpu = HalReadSMBusValue(0x98, 0x01, FALSE, &temp);
   if (scpu != STATUS_SUCCESS)
   {
     // If it fails, its probably a 1.6. Read SMC instead
-    HalReadSMBusValue(0x20, 0x09, FALSE, temp);
+    HalReadSMBusValue(0x20, 0x09, FALSE, &temp);
   }
-  temperature = CTemperature::CreateFromCelsius((double)*temp);
+  temperature = CTemperature::CreateFromCelsius(static_cast<double>(temp));
   return true;
 }
