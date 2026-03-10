@@ -990,8 +990,109 @@ int CApplication::Run()
 
 bool CApplication::Cleanup()
 {
-  // TODO: implement this
-  return false;
+  try
+  {
+    ResetCurrentItem();
+    StopPlaying();
+
+    if (m_ServiceManager)
+      m_ServiceManager->DeinitStageThree();
+
+    CLog::Log(LOGINFO, "unload skin");
+    GetComponent<CApplicationSkinHandling>()->UnloadSkin();
+
+    CServiceBroker::UnregisterTextureCache();
+
+    // stop all remaining scripts; must be done after skin has been unloaded,
+    // not before some windows still need it when deinitializing during skin
+    // unloading
+    CScriptInvocationManager::GetInstance().Uninitialize();
+
+    CRenderSystemBase *renderSystem = CServiceBroker::GetRenderSystem();
+    if (renderSystem)
+      renderSystem->DestroyRenderSystem();
+
+    CWinSystemBase *winSystem = CServiceBroker::GetWinSystem();
+    if (winSystem)
+      winSystem->DestroyWindow();
+
+    if (m_pGUI)
+      m_pGUI->GetWindowManager().DestroyWindows();
+
+    CLog::Log(LOGINFO, "unload sections");
+
+    //  Shutdown as much as possible of the
+    //  application, to reduce the leaks dumped
+    //  to the vc output window before calling
+    //  _CrtDumpMemoryLeaks(). Most of the leaks
+    //  shown are no real leaks, as parts of the app
+    //  are still allocated.
+
+    g_localizeStrings.Clear();
+    g_LangCodeExpander.Clear();
+    g_charsetConverter.clear();
+    g_directoryCache.Clear();
+    //CServiceBroker::GetInputManager().ClearKeymaps(); //! @todo
+    CServiceBroker::GetPlaylistPlayer().Clear();
+
+    if (m_ServiceManager)
+      m_ServiceManager->DeinitStageTwo();
+
+#ifdef TARGET_POSIX
+    CXHandle::DumpObjectTracker();
+
+#ifdef HAS_OPTICAL_DRIVE
+    CLibcdio::ReleaseInstance();
+#endif
+#endif
+#ifdef _CRTDBG_MAP_ALLOC
+    _CrtDumpMemoryLeaks();
+    while(1); // execution ends
+#endif
+
+    if (m_pGUI)
+    {
+      m_pGUI->Deinit();
+      m_pGUI.reset();
+    }
+
+    if (winSystem)
+    {
+      winSystem->DestroyWindowSystem();
+      CServiceBroker::UnregisterWinSystem();
+      winSystem = nullptr;
+      m_pWinSystem.reset();
+    }
+
+    // Cleanup was called more than once on exit during my tests
+    if (m_ServiceManager)
+    {
+      m_ServiceManager->DeinitStageOne();
+      m_ServiceManager.reset();
+    }
+
+    CServiceBroker::UnregisterKeyboardLayoutManager();
+
+    CServiceBroker::UnregisterAppMessenger();
+
+    CServiceBroker::UnregisterAnnouncementManager();
+    m_pAnnouncementManager->Deinitialize();
+    m_pAnnouncementManager.reset();
+
+    CServiceBroker::UnregisterJobManager();
+    CServiceBroker::UnregisterCPUInfo();
+
+    UnregisterSettings();
+
+    m_bInitializing = true;
+
+    return true;
+  }
+  catch (...)
+  {
+    CLog::Log(LOGERROR, "Exception in CApplication::Cleanup()");
+    return false;
+  }
 }
 
 bool CApplication::Stop(int exitCode)
