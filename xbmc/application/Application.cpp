@@ -392,16 +392,7 @@ bool CApplication::CreateGUI()
     sav_res = true;
   }
 
-  // update the window resolution
   const std::shared_ptr<CSettings> settings = CServiceBroker::GetSettingsComponent()->GetSettings();
-  CServiceBroker::GetWinSystem()->SetWindowResolution(settings->GetInt(CSettings::SETTING_WINDOW_WIDTH), settings->GetInt(CSettings::SETTING_WINDOW_HEIGHT));
-
-  if (CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_startFullScreen && CDisplaySettings::GetInstance().GetCurrentResolution() == RES_WINDOW)
-  {
-    // defer saving resolution after window was created
-    CDisplaySettings::GetInstance().SetCurrentResolution(RES_DESKTOP);
-    sav_res = true;
-  }
 
   if (!CServiceBroker::GetWinSystem()->GetGfxContext().IsValidResolution(CDisplaySettings::GetInstance().GetCurrentResolution()))
   {

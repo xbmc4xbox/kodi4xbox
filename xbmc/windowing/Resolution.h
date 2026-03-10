@@ -120,9 +120,6 @@ struct RESOLUTION_INFO
   //!< Resolution ID
   std::string strId;
 
-  //!< Not used!
-  int iScreen;
-
 public:
   RESOLUTION_INFO(int width = 720, int height = 480, float aspect = 0, const std::string &mode = "");
   float DisplayRatio() const;

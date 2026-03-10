@@ -26,7 +26,6 @@
 #include "filesystem/SpecialProtocol.h"
 #include "utils/MathUtils.h"
 #include "utils/log.h"
-#include "windowing/WindowingFactory.h"
 #include "URL.h"
 #include "filesystem/File.h"
 

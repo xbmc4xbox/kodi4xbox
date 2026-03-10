@@ -28,7 +28,6 @@
 #include "windowing/GraphicContext.h"
 #include "utils/log.h"
 #include "utils/GLUtils.h"
-#include "windowing/WindowingFactory.h"
 #include "rendering/MatrixGL.h"
 
 // stuff for freetype

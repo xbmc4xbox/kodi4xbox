@@ -374,7 +374,7 @@ void CGraphicContext::SetCalibrating(bool bOnOff)
 
 bool CGraphicContext::IsValidResolution(RESOLUTION res)
 {
-  if (res >= RES_WINDOW && (size_t) res < CDisplaySettings::GetInstance().ResolutionInfoSize())
+  if (res >= RES_DESKTOP && (size_t) res < CDisplaySettings::GetInstance().ResolutionInfoSize())
   {
     return true;
   }
@@ -447,10 +447,9 @@ void CGraphicContext::SetVideoResolutionInternal(RESOLUTION res, bool forceUpdat
     switched = CServiceBroker::GetWinSystem()->SetFullScreen(true,  info_org, false);
 #endif
   }
-  else if (lastRes >= RES_DESKTOP )
-    switched = CServiceBroker::GetWinSystem()->SetFullScreen(false, info_org, false);
   else
-    switched = CServiceBroker::GetWinSystem()->ResizeWindow(info_org.iWidth, info_org.iHeight, -1, -1);
+    // On Xbox it's always fullscreen and RES_DESKTOP
+    switched = CServiceBroker::GetWinSystem()->SetFullScreen(false, info_org, false);
 
   if (switched)
   {
@@ -922,25 +921,6 @@ bool CGraphicContext::IsFullScreenRoot () const
   return m_bFullScreenRoot;
 }
 
-void CGraphicContext::ToggleFullScreen()
-{
-  RESOLUTION uiRes;
-
-  if (m_bFullScreenRoot)
-  {
-    uiRes = RES_WINDOW;
-  }
-  else
-  {
-    if (CDisplaySettings::GetInstance().GetCurrentResolution() > RES_DESKTOP)
-      uiRes = CDisplaySettings::GetInstance().GetCurrentResolution();
-    else
-      uiRes = RES_DESKTOP;
-  }
-
-  CDisplaySettings::GetInstance().SetCurrentResolution(uiRes, true);
-}
-
 void CGraphicContext::SetMediaDir(const std::string &strMediaDir)
 {
   CServiceBroker::GetGUI()->GetTextureManager().SetTexturePath(strMediaDir);
@@ -969,7 +949,6 @@ void CGraphicContext::GetAllowedResolutions(std::vector<RESOLUTION> &res)
 {
   res.clear();
 
-  res.push_back(RES_WINDOW);
   res.push_back(RES_DESKTOP);
   for (size_t r = (size_t) RES_CUSTOM; r < CDisplaySettings::GetInstance().ResolutionInfoSize(); r++)
   {

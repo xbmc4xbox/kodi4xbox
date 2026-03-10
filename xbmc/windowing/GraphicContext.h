@@ -69,7 +69,6 @@ public:
   float GetFPS() const;
   void SetFPS(float fps);
   bool IsFullScreenRoot() const;
-  void ToggleFullScreen();
   void SetFullScreenVideo(bool bOnOff);
   bool IsFullScreenVideo() const;
   bool IsValidResolution(RESOLUTION res);
