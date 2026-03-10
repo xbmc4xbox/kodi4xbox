@@ -39,6 +39,7 @@
 #endif
 
 #ifdef NXDK
+#include <pbgl.h>
 #define GL_MAX_TEXTURE_IMAGE_UNITS_ARB GL_MAX_TEXTURE_IMAGE_UNITS
 #define glActiveTextureARB glActiveTexture
 #endif
@@ -109,6 +110,10 @@ void CRenderSystemGL::CheckOpenGLQuirks()
 
 bool CRenderSystemGL::InitRenderSystem()
 {
+#ifdef _XBOX
+  pbgl_init(GL_TRUE);
+#endif
+
   m_bVSync = false;
   m_bVsyncInit = false;
   m_maxTextureSize = 2048;
@@ -248,6 +253,9 @@ bool CRenderSystemGL::DestroyRenderSystem()
 {
   m_bRenderCreated = false;
 
+#ifdef _XBOX
+  pbgl_shutdown();
+#endif
   return true;
 }
 

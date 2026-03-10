@@ -90,19 +90,7 @@ void CWinSystemBase::UpdateDesktopResolution(RESOLUTION_INFO& newRes, int screen
 
 void CWinSystemBase::UpdateResolutions()
 {
-  // add the window res - defaults are fine.
-  RESOLUTION_INFO& window = CDisplaySettings::GetInstance().GetResolutionInfo(RES_WINDOW);
-  window.bFullScreen = false;
-  if (window.iWidth == 0)
-    window.iWidth = 720;
-  if (window.iHeight == 0)
-    window.iHeight = 480;
-  window.iScreenWidth  = window.iWidth;
-  window.iScreenHeight = window.iHeight;
-  if (window.iSubtitles == 0)
-    window.iSubtitles = (int)(0.965 * window.iHeight);
-  window.fPixelRatio = 1.0f;
-  window.strMode = "Windowed";
+  // Nothing to do here on Xbox - there is no window resolution
 }
 
 void CWinSystemBase::SetWindowResolution(int width, int height)
