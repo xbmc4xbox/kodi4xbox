@@ -52,9 +52,6 @@
 #define SETTING_VIDEO_INTERLACEMETHOD     "video.interlacemethod"
 #define SETTING_VIDEO_SCALINGMETHOD       "video.scalingmethod"
 
-#define SETTING_VIDEO_STEREOSCOPICMODE    "video.stereoscopicmode"
-#define SETTING_VIDEO_STEREOSCOPICINVERT  "video.stereoscopicinvert"
-
 #define SETTING_VIDEO_MAKE_DEFAULT        "video.save"
 #define SETTING_VIDEO_CALIBRATION         "video.calibration"
 #define SETTING_VIDEO_STREAM              "video.stream"
@@ -192,18 +189,6 @@ void CGUIDialogVideoSettings::OnSettingChanged(const std::shared_ptr<const CSett
     vs.m_Orientation = std::static_pointer_cast<const CSettingInt>(setting)->GetValue();
     appPlayer->SetVideoSettings(vs);
   }
-  else if (settingId == SETTING_VIDEO_STEREOSCOPICMODE)
-  {
-    CVideoSettings vs = appPlayer->GetVideoSettings();
-    vs.m_StereoMode = std::static_pointer_cast<const CSettingInt>(setting)->GetValue();
-    appPlayer->SetVideoSettings(vs);
-  }
-  else if (settingId == SETTING_VIDEO_STEREOSCOPICINVERT)
-  {
-    CVideoSettings vs = appPlayer->GetVideoSettings();
-    vs.m_StereoInvert = std::static_pointer_cast<const CSettingBool>(setting)->GetValue();
-    appPlayer->SetVideoSettings(vs);
-  }
 }
 
 void CGUIDialogVideoSettings::OnSettingAction(const std::shared_ptr<const CSetting>& setting)
@@ -305,12 +290,6 @@ void CGUIDialogVideoSettings::InitializeSettings()
   }
   const std::shared_ptr<CSettingGroup> groupVideo = AddGroup(category);
   if (groupVideo == NULL)
-  {
-    CLog::Log(LOGERROR, "CGUIDialogVideoSettings: unable to setup settings");
-    return;
-  }
-  const std::shared_ptr<CSettingGroup> groupStereoscopic = AddGroup(category);
-  if (groupStereoscopic == NULL)
   {
     CLog::Log(LOGERROR, "CGUIDialogVideoSettings: unable to setup settings");
     return;
@@ -451,14 +430,6 @@ void CGUIDialogVideoSettings::InitializeSettings()
               videoSettings.m_ToneMapParam, "{:2.2f}", 0.1f, 0.1f, 5.0f, 36556, usePopup, false,
               visible);
   }
-
-  // stereoscopic settings
-  entries.clear();
-  entries.emplace_back(16316, RENDER_STEREO_MODE_OFF);
-  entries.emplace_back(36503, RENDER_STEREO_MODE_SPLIT_HORIZONTAL);
-  entries.emplace_back(36504, RENDER_STEREO_MODE_SPLIT_VERTICAL);
-  AddSpinner(groupStereoscopic, SETTING_VIDEO_STEREOSCOPICMODE, 36535, SettingLevel::Basic, videoSettings.m_StereoMode, entries);
-  AddToggle(groupStereoscopic, SETTING_VIDEO_STEREOSCOPICINVERT, 36536, SettingLevel::Basic, videoSettings.m_StereoInvert);
 
   // general settings
   AddButton(groupSaveAsDefault, SETTING_VIDEO_MAKE_DEFAULT, 12376, SettingLevel::Basic);

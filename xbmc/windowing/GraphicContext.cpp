@@ -15,7 +15,6 @@
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIWindowManager.h"
 #include "guilib/TextureManager.h"
-#include "guilib/gui3d.h"
 #include "input/InputManager.h"
 #include "messaging/ApplicationMessenger.h"
 #include "rendering/RenderSystem.h"
@@ -228,11 +227,10 @@ bool CGraphicContext::SetViewPort(float fx, float fy, float fwidth, float fheigh
 
   m_viewStack.push(newviewport);
 
-  newviewport = StereoCorrection(newviewport);
   CServiceBroker::GetRenderSystem()->SetViewPort(newviewport);
 
 
-  UpdateCameraPosition(m_cameras.top(), m_stereoFactors.top());
+  UpdateCameraPosition(m_cameras.top());
   return true;
 }
 
@@ -241,45 +239,17 @@ void CGraphicContext::RestoreViewPort()
   if (m_viewStack.size() <= 1) return;
 
   m_viewStack.pop();
-  CRect viewport = StereoCorrection(m_viewStack.top());
+  CRect viewport = m_viewStack.top();
   CServiceBroker::GetRenderSystem()->SetViewPort(viewport);
 
-  UpdateCameraPosition(m_cameras.top(), m_stereoFactors.top());
-}
-
-CPoint CGraphicContext::StereoCorrection(const CPoint &point) const
-{
-  CPoint res(point);
-
-  if(m_stereoMode == RENDER_STEREO_MODE_SPLIT_HORIZONTAL)
-  {
-    const RESOLUTION_INFO info = GetResInfo();
-
-    if(m_stereoView == RENDER_STEREO_VIEW_RIGHT)
-      res.y += info.iHeight + info.iBlanking;
-  }
-  if(m_stereoMode == RENDER_STEREO_MODE_SPLIT_VERTICAL)
-  {
-    const RESOLUTION_INFO info = GetResInfo();
-
-    if(m_stereoView == RENDER_STEREO_VIEW_RIGHT)
-      res.x += info.iWidth  + info.iBlanking;
-  }
-  return res;
-}
-
-CRect CGraphicContext::StereoCorrection(const CRect &rect) const
-{
-  CRect res(StereoCorrection(rect.P1())
-          , StereoCorrection(rect.P2()));
-  return res;
+  UpdateCameraPosition(m_cameras.top());
 }
 
 void CGraphicContext::SetScissors(const CRect &rect)
 {
   m_scissors = rect;
   m_scissors.Intersect(CRect(0,0,(float)m_iScreenWidth, (float)m_iScreenHeight));
-  CServiceBroker::GetRenderSystem()->SetScissors(StereoCorrection(m_scissors));
+  CServiceBroker::GetRenderSystem()->SetScissors(m_scissors);
 }
 
 const CRect &CGraphicContext::GetScissors() const
@@ -290,7 +260,7 @@ const CRect &CGraphicContext::GetScissors() const
 void CGraphicContext::ResetScissors()
 {
   m_scissors.SetRect(0, 0, (float)m_iScreenWidth, (float)m_iScreenHeight);
-  CServiceBroker::GetRenderSystem()->SetScissors(StereoCorrection(m_scissors));
+  CServiceBroker::GetRenderSystem()->SetScissors(m_scissors);
 }
 
 const CRect CGraphicContext::GetViewWindow() const
@@ -455,9 +425,6 @@ void CGraphicContext::SetVideoResolutionInternal(RESOLUTION res, bool forceUpdat
   {
     m_scissors.SetRect(0, 0, (float)m_iScreenWidth, (float)m_iScreenHeight);
 
-    // make sure all stereo stuff are correctly setup
-    SetStereoView(RENDER_STEREO_VIEW_OFF);
-
     CGUIComponent *gui = CServiceBroker::GetGUI();
     if (gui)
       gui->GetWindowManager().SendMessage(GUI_MSG_NOTIFY_ALL, 0, 0, GUI_MSG_WINDOW_RESIZE);
@@ -482,40 +449,6 @@ void CGraphicContext::SetVideoResolutionInternal(RESOLUTION res, bool forceUpdat
       m_Resolution = RES_DESKTOP;
     }
   }
-}
-
-void CGraphicContext::ApplyVideoResolution(RESOLUTION res)
-{
-  if (!IsValidResolution(res))
-  {
-    CLog::LogF(LOGWARNING, "Asked to apply invalid resolution {}, falling back to RES_DESKTOP",
-               res);
-    res = RES_DESKTOP;
-  }
-
-  if (res >= RES_DESKTOP)
-  {
-    CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_fullScreen = true;
-    m_bFullScreenRoot = true;
-  }
-  else
-  {
-    CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_fullScreen = false;
-    m_bFullScreenRoot = false;
-  }
-
-  std::unique_lock<CCriticalSection> lock(*this);
-
-  UpdateInternalStateWithResolution(res);
-
-  m_scissors.SetRect(0, 0, (float)m_iScreenWidth, (float)m_iScreenHeight);
-
-  // make sure all stereo stuff are correctly setup
-  SetStereoView(RENDER_STEREO_VIEW_OFF);
-
-  // update anyone that relies on sizing information
-  RESOLUTION_INFO info_org  = CDisplaySettings::GetInstance().GetResolutionInfo(res);
-  CServiceBroker::GetGUI()->GetWindowManager().SendMessage(GUI_MSG_NOTIFY_ALL, 0, 0, GUI_MSG_WINDOW_RESIZE);
 }
 
 void CGraphicContext::UpdateInternalStateWithResolution(RESOLUTION res)
@@ -580,33 +513,6 @@ void CGraphicContext::ApplyStateBlock()
 const RESOLUTION_INFO CGraphicContext::GetResInfo(RESOLUTION res) const
 {
   RESOLUTION_INFO info = CDisplaySettings::GetInstance().GetResolutionInfo(res);
-
-  if(m_stereoMode == RENDER_STEREO_MODE_SPLIT_HORIZONTAL)
-  {
-    if((info.dwFlags & D3DPRESENTFLAG_MODE3DTB) == 0)
-    {
-      info.fPixelRatio     /= 2;
-      info.iBlanking        = 0;
-      info.dwFlags         |= D3DPRESENTFLAG_MODE3DTB;
-    }
-    info.iHeight          = (info.iHeight         - info.iBlanking) / 2;
-    info.Overscan.top    /= 2;
-    info.Overscan.bottom  = (info.Overscan.bottom - info.iBlanking) / 2;
-    info.iSubtitles       = (info.iSubtitles      - info.iBlanking) / 2;
-  }
-
-  if(m_stereoMode == RENDER_STEREO_MODE_SPLIT_VERTICAL)
-  {
-    if((info.dwFlags & D3DPRESENTFLAG_MODE3DSBS) == 0)
-    {
-      info.fPixelRatio     *= 2;
-      info.iBlanking        = 0;
-      info.dwFlags         |= D3DPRESENTFLAG_MODE3DSBS;
-    }
-    info.iWidth           = (info.iWidth         - info.iBlanking) / 2;
-    info.Overscan.left   /= 2;
-    info.Overscan.right   = (info.Overscan.right - info.iBlanking) / 2;
-  }
 
   if (res == m_Resolution && m_fFPSOverride != 0)
   {
@@ -704,9 +610,6 @@ void CGraphicContext::SetScalingResolution(const RESOLUTION_INFO &res, bool need
   while (!m_cameras.empty())
     m_cameras.pop();
   m_cameras.emplace(0.5f * m_iScreenWidth, 0.5f * m_iScreenHeight);
-  while (!m_stereoFactors.empty())
-    m_stereoFactors.pop();
-  m_stereoFactors.push(0.0f);
 
   // and reset the final transform
   m_finalTransform = m_guiTransform;
@@ -717,24 +620,7 @@ void CGraphicContext::SetRenderingResolution(const RESOLUTION_INFO &res, bool ne
   std::unique_lock<CCriticalSection> lock(*this);
 
   SetScalingResolution(res, needsScaling);
-  UpdateCameraPosition(m_cameras.top(), m_stereoFactors.top());
-}
-
-void CGraphicContext::SetStereoView(RENDER_STEREO_VIEW view)
-{
-  m_stereoView = view;
-
-  while(!m_viewStack.empty())
-    m_viewStack.pop();
-
-  CRect viewport(0.0f, 0.0f, (float)m_iScreenWidth, (float)m_iScreenHeight);
-
-  m_viewStack.push(viewport);
-
-  viewport = StereoCorrection(viewport);
-  CServiceBroker::GetRenderSystem()->SetStereoMode(m_stereoMode, m_stereoView);
-  CServiceBroker::GetRenderSystem()->SetViewPort(viewport);
-  CServiceBroker::GetRenderSystem()->SetScissors(viewport);
+  UpdateCameraPosition(m_cameras.top());
 }
 
 void CGraphicContext::InvertFinalCoords(float &x, float &y) const
@@ -781,27 +667,14 @@ void CGraphicContext::SetCameraPosition(const CPoint &camera)
   cam.y *= (float)m_iScreenHeight / m_windowResolution.iHeight;
 
   m_cameras.push(cam);
-  UpdateCameraPosition(m_cameras.top(), m_stereoFactors.top());
+  UpdateCameraPosition(m_cameras.top());
 }
 
 void CGraphicContext::RestoreCameraPosition()
 { // remove the top camera from the stack
   assert(m_cameras.size());
   m_cameras.pop();
-  UpdateCameraPosition(m_cameras.top(), m_stereoFactors.top());
-}
-
-void CGraphicContext::SetStereoFactor(float factor)
-{
-  m_stereoFactors.push(factor);
-  UpdateCameraPosition(m_cameras.top(), m_stereoFactors.top());
-}
-
-void CGraphicContext::RestoreStereoFactor()
-{ // remove the top factor from the stack
-  assert(m_stereoFactors.size());
-  m_stereoFactors.pop();
-  UpdateCameraPosition(m_cameras.top(), m_stereoFactors.top());
+  UpdateCameraPosition(m_cameras.top());
 }
 
 CRect CGraphicContext::GenerateAABB(const CRect &rect) const
@@ -844,28 +717,9 @@ CRect CGraphicContext::GenerateAABB(const CRect &rect) const
 //       the camera has changed, and if so, changes it.  Similarly, it could set
 //       the world transform at that point as well (or even combine world + view
 //       to cut down on one setting)
-void CGraphicContext::UpdateCameraPosition(const CPoint &camera, const float &factor)
+void CGraphicContext::UpdateCameraPosition(const CPoint &camera)
 {
-  float stereoFactor = 0.f;
-  if ( m_stereoMode != RENDER_STEREO_MODE_OFF
-    && m_stereoMode != RENDER_STEREO_MODE_MONO
-    && m_stereoView != RENDER_STEREO_VIEW_OFF)
-  {
-    RESOLUTION_INFO res = GetResInfo();
-    RESOLUTION_INFO desktop = GetResInfo(RES_DESKTOP);
-    float scaleRes = (static_cast<float>(res.iWidth) / static_cast<float>(desktop.iWidth));
-    float scaleX = static_cast<float>(CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_LOOKANDFEEL_STEREOSTRENGTH)) * scaleRes;
-    stereoFactor = factor * (m_stereoView == RENDER_STEREO_VIEW_LEFT ? scaleX : -scaleX);
-  }
-  CServiceBroker::GetRenderSystem()->SetCameraPosition(camera, m_iScreenWidth, m_iScreenHeight, stereoFactor);
-}
-
-bool CGraphicContext::RectIsAngled(float x1, float y1, float x2, float y2) const
-{ // need only test 3 points, as they must be co-planer
-  if (m_finalTransform.matrix.TransformZCoord(x1, y1, 0)) return true;
-  if (m_finalTransform.matrix.TransformZCoord(x2, y2, 0)) return true;
-  if (m_finalTransform.matrix.TransformZCoord(x1, y2, 0)) return true;
-  return false;
+  CServiceBroker::GetRenderSystem()->SetCameraPosition(camera, m_iScreenWidth, m_iScreenHeight, 0.f);
 }
 
 const TransformMatrix &CGraphicContext::GetGUIMatrix() const
@@ -936,13 +790,6 @@ const std::string& CGraphicContext::GetMediaDir() const
 void CGraphicContext::Flip(bool rendered, bool videoLayer)
 {
   CServiceBroker::GetRenderSystem()->PresentRender(rendered, videoLayer);
-
-  if(m_stereoMode != m_nextStereoMode)
-  {
-    m_stereoMode = m_nextStereoMode;
-    SetVideoResolution(GetVideoResolution(), true);
-    CServiceBroker::GetGUI()->GetWindowManager().SendMessage(GUI_MSG_NOTIFY_ALL, 0, 0, GUI_MSG_RENDERER_RESET);
-  }
 }
 
 void CGraphicContext::GetAllowedResolutions(std::vector<RESOLUTION> &res)

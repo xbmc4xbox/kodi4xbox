@@ -28,13 +28,11 @@ public:
   bool SetFullScreen(bool fullScreen, RESOLUTION_INFO& res, bool blankOtherDisplays) override;
   void UpdateResolutions() override;
 
-  bool IsExtSupported(const char* extension) override;
-
   bool MessagePump() override;
 
 protected:
+  // Implementation of CRenderSystemGL
   void PresentRenderImpl(bool rendered) override;
-  void SetVSyncImpl(bool enable) override;
 
 private:
   RESOLUTION_INFO GetResolutionInfo(RESOLUTION res);

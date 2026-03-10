@@ -9,9 +9,9 @@
 #include "WinSystemXboxGL.h"
 
 #include "ServiceBroker.h"
-#include "guilib/gui3d.h"
 #include "peripherals/Peripherals.h"
 #include "settings/DisplaySettings.h"
+#include "windowing/GraphicContext.h"
 #include "windowing/WindowSystemFactory.h"
 
 #include <hal/video.h>
@@ -35,21 +35,6 @@ void CWinSystemXboxGL::PresentRenderImpl(bool rendered)
     pbgl_swap_buffers();
 }
 
-void CWinSystemXboxGL::SetVSyncImpl(bool enable)
-{
-  // There is not VSync on Xbox
-}
-
-bool CWinSystemXboxGL::IsExtSupported(const char* extension)
-{
-  std::string name;
-  name  = " ";
-  name += extension;
-  name += " ";
-
-  return m_RenderExtensions.find(name) != std::string::npos;
-}
-
 bool CWinSystemXboxGL::CreateNewWindow(const std::string& name, bool fullScreen, RESOLUTION_INFO& res)
 {
   if (!SetFullScreen(fullScreen, res, false))
@@ -65,7 +50,7 @@ bool CWinSystemXboxGL::SetFullScreen(bool fullScreen, RESOLUTION_INFO& res, bool
   m_nHeight     = res.iHeight;
 
   XVideoSetMode(m_nWidth, m_nHeight, 32, REFRESH_DEFAULT);
-  CRenderSystemGL::ResetRenderSystem(m_nWidth, m_nHeight, fullScreen, res.fRefreshRate);
+  CRenderSystemGL::ResetRenderSystem(m_nWidth, m_nHeight);
 
   return true;
 }
@@ -76,45 +61,45 @@ RESOLUTION_INFO CWinSystemXboxGL::GetResolutionInfo(RESOLUTION res)
   switch (res)
   {
   case RES_HDTV_1080i:
-    UpdateDesktopResolution(info, 0, 1920, 1080, REFRESH_60HZ, D3DPRESENTFLAG_INTERLACED | D3DPRESENTFLAG_WIDESCREEN);
+    UpdateDesktopResolution(info, "", 1920, 1080, REFRESH_60HZ, D3DPRESENTFLAG_INTERLACED | D3DPRESENTFLAG_WIDESCREEN);
     break;
   case RES_HDTV_720p:
-    UpdateDesktopResolution(info, 0, 1280, 720, REFRESH_60HZ, D3DPRESENTFLAG_PROGRESSIVE | D3DPRESENTFLAG_WIDESCREEN);
+    UpdateDesktopResolution(info, "", 1280, 720, REFRESH_60HZ, D3DPRESENTFLAG_PROGRESSIVE | D3DPRESENTFLAG_WIDESCREEN);
     break;
   case RES_HDTV_480p_4x3:
-    UpdateDesktopResolution(info, 0, 720, 480, REFRESH_60HZ, D3DPRESENTFLAG_PROGRESSIVE);
+    UpdateDesktopResolution(info, "", 720, 480, REFRESH_60HZ, D3DPRESENTFLAG_PROGRESSIVE);
     info.iSubtitles = (int)(0.9 * 480);
     info.fPixelRatio = 4320.0f / 4739.0f;
     break;
   case RES_HDTV_480p_16x9:
-    UpdateDesktopResolution(info, 0, 720, 480, REFRESH_60HZ, D3DPRESENTFLAG_PROGRESSIVE | D3DPRESENTFLAG_WIDESCREEN);
+    UpdateDesktopResolution(info, "", 720, 480, REFRESH_60HZ, D3DPRESENTFLAG_PROGRESSIVE | D3DPRESENTFLAG_WIDESCREEN);
     info.fPixelRatio = 4320.0f / 4739.0f*4.0f / 3.0f;
     break;
   case RES_NTSC_4x3:
-    UpdateDesktopResolution(info, 0, 720, 480, REFRESH_60HZ, D3DPRESENTFLAG_INTERLACED);
+    UpdateDesktopResolution(info, "", 720, 480, REFRESH_60HZ, D3DPRESENTFLAG_INTERLACED);
     info.iSubtitles = (int)(0.9 * 480);
     info.fPixelRatio = 4320.0f / 4739.0f;
     break;
   case RES_NTSC_16x9:
-    UpdateDesktopResolution(info, 0, 720, 480, REFRESH_60HZ, D3DPRESENTFLAG_INTERLACED | D3DPRESENTFLAG_WIDESCREEN);
+    UpdateDesktopResolution(info, "", 720, 480, REFRESH_60HZ, D3DPRESENTFLAG_INTERLACED | D3DPRESENTFLAG_WIDESCREEN);
     info.fPixelRatio = 4320.0f / 4739.0f*4.0f / 3.0f;
     break;
   case RES_PAL_4x3:
-    UpdateDesktopResolution(info, 0, 720, 576, REFRESH_50HZ, D3DPRESENTFLAG_INTERLACED);
+    UpdateDesktopResolution(info, "", 720, 576, REFRESH_50HZ, D3DPRESENTFLAG_INTERLACED);
     info.iSubtitles = (int)(0.9 * 576);
     info.fPixelRatio = 128.0f / 117.0f;
     break;
   case RES_PAL_16x9:
-    UpdateDesktopResolution(info, 0, 720, 576, REFRESH_50HZ, D3DPRESENTFLAG_INTERLACED | D3DPRESENTFLAG_WIDESCREEN);
+    UpdateDesktopResolution(info, "", 720, 576, REFRESH_50HZ, D3DPRESENTFLAG_INTERLACED | D3DPRESENTFLAG_WIDESCREEN);
     info.fPixelRatio = 128.0f / 117.0f*4.0f / 3.0f;
     break;
   case RES_PAL60_4x3:
-    UpdateDesktopResolution(info, 0, 720, 480, REFRESH_60HZ, D3DPRESENTFLAG_INTERLACED);
+    UpdateDesktopResolution(info, "", 720, 480, REFRESH_60HZ, D3DPRESENTFLAG_INTERLACED);
     info.iSubtitles = (int)(0.9 * 480);
     info.fPixelRatio = 4320.0f / 4739.0f;
     break;
   case RES_PAL60_16x9:
-    UpdateDesktopResolution(info, 0, 720, 480, REFRESH_60HZ, D3DPRESENTFLAG_INTERLACED | D3DPRESENTFLAG_WIDESCREEN);
+    UpdateDesktopResolution(info, "", 720, 480, REFRESH_60HZ, D3DPRESENTFLAG_INTERLACED | D3DPRESENTFLAG_WIDESCREEN);
     info.fPixelRatio = 4320.0f / 4739.0f*4.0f / 3.0f;
     break;
   default:

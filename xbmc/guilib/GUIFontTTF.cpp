@@ -35,6 +35,9 @@
 
 // stuff for freetype
 #include <ft2build.h>
+#if defined(HAS_GL) || defined(HAS_GLES)
+#include "utils/GLUtils.h"
+#endif
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
 #include FT_OUTLINE_H
@@ -873,10 +876,10 @@ void CGUIFontTTFBase::RenderCharacter(float posX, float posY, const Character *c
   m_color = color;
 
 #ifndef HAS_DX
-  unsigned char r = GET_R(color)
-              , g = GET_G(color)
-              , b = GET_B(color)
-              , a = GET_A(color);
+  uint8_t r = KODI::UTILS::GL::GetChannelFromARGB(KODI::UTILS::GL::ColorChannel::R, color);
+  uint8_t g = KODI::UTILS::GL::GetChannelFromARGB(KODI::UTILS::GL::ColorChannel::G, color);
+  uint8_t b = KODI::UTILS::GL::GetChannelFromARGB(KODI::UTILS::GL::ColorChannel::B, color);
+  uint8_t a = KODI::UTILS::GL::GetChannelFromARGB(KODI::UTILS::GL::ColorChannel::A, color);
 
   if(CServiceBroker::GetWinSystem()->UseLimitedColor())
   {
