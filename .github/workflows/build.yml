@@ -1,0 +1,62 @@
+name: Build
+on:
+  push:
+    branches:
+      - master
+jobs:
+  Xbox:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+        fetch-tags: true
+
+    - name: Install prerequisites
+      run: |
+        sudo apt update
+        sudo apt install -y build-essential cmake flex bison clang lld git llvm
+
+    - name: Pull NXDK
+      run: |
+        git clone https://github.com/antonic901/nxdk.git ~/nxdk
+        cd ~/nxdk
+        git checkout dynamic-link-loader
+        git submodule update --init --recursive
+        echo "NXDK_DIR=$HOME/nxdk" >> $GITHUB_ENV
+
+    - name: Compile NXDK
+      run: |
+        cd ~/nxdk/samples/hello++
+        sed -i '/NXDK_CXX = y/a NXDK_SDL = y' Makefile
+        eval "$(../../bin/activate -s)"
+        make -j$(nproc)
+
+    - name: Compile program
+      run: |
+        mkdir build && cd build
+        cmake .. -DCMAKE_TOOLCHAIN_FILE=${NXDK_DIR}/share/toolchain-nxdk.cmake -DCMAKE_BUILD_TYPE=Release
+        cmake --build . --parallel $(nproc)
+
+    - name: Prepare release
+      run: |
+        cd build
+        mkdir Kodi
+        cp -r xiso/* Kodi/
+        zip -r Kodi.zip Kodi
+
+    - name: Create Nightly Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: nightly
+        name: Nightly build
+        files: |
+          build/Kodi.iso
+          build/Kodi.zip
+        body: "Automated nightly build."
+        draft: false
+        prerelease: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
