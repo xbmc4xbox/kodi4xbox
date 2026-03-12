@@ -766,6 +766,10 @@ target_link_libraries(xbmc PUBLIC fstrcmp)
 add_subdirectory(lib/libiconv)
 target_link_libraries(xbmc PUBLIC libiconv)
 
+# Bring in nxio library
+add_subdirectory(lib/nxio)
+target_link_libraries(xbmc PUBLIC nxio)
+
 # Bring in SQLite library
 add_subdirectory(lib/sqlite)
 target_link_libraries(xbmc PUBLIC sqlite)

@@ -1,0 +1,12 @@
+LIBRARY nxoldnames
+EXPORTS
+    open = nxio_open
+    sopen = nxio_sopen
+    close = nxio_close
+    dup = nxio_dup
+    dup2 = nxio_dup2
+    unlink = nxio_unlink
+    access = nxio_access
+    lseek = nxio_lseek32
+    read = nxio_read32
+    write = nxio_write32
