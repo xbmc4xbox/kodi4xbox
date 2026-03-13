@@ -22,19 +22,19 @@ extern "C" {
     int nxio_unlink(const char *path);
     int nxio_access(const char *path, int amode);
 
-    #define _open      nxio_open
-    #define _sopen     nxio_sopen
-    #define _close     nxio_close
-    #define _dup       nxio_dup
-    #define _dup2      nxio_dup2
-    #define _unlink    nxio_unlink
-    #define _access    nxio_access
+    #define open      nxio_open
+    #define sopen     nxio_sopen
+    #define close     nxio_close
+    #define dup       nxio_dup
+    #define dup2      nxio_dup2
+    #define unlink    nxio_unlink
+    #define access    nxio_access
 
-    #define _lseek     nxio_lseek32
-    #define _lseeki64  nxio_lseeki64
+    #define lseek     nxio_lseek32
+    #define lseeki64  nxio_lseeki64
 
-    #define _read      nxio_read32
-    #define _write     nxio_write32
+    #define read      nxio_read32
+    #define write     nxio_write32
 
 #else /* !NXIO_POSIX */
 

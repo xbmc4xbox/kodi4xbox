@@ -76,6 +76,9 @@ add_definitions(
   -DMEMP_NUM_NETBUF=6 # lwip
   -DMEMP_NUM_NETCONN=6 # lwip
   -DHAS_GL
+  -DUSE_LWIPSOCK=1
+  -DHAVE_RECV=1
+  -DHAVE_SEND=1
 )
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -83,6 +86,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 add_executable(xbmc
+  lib/mbedtls/glue.c
   xbmc/AutoSwitch.cpp
   xbmc/BackgroundInfoLoader.cpp
   xbmc/CompileInfo.cpp
@@ -257,6 +261,7 @@ add_executable(xbmc
   xbmc/filesystem/DirectoryCache.cpp
   xbmc/filesystem/DirectoryFactory.cpp
   xbmc/filesystem/DirectoryHistory.cpp
+  xbmc/filesystem/DllLibCurl.cpp
   xbmc/filesystem/FavouritesDirectory.cpp
   xbmc/filesystem/File.cpp
   xbmc/filesystem/FileCache.cpp
@@ -733,7 +738,7 @@ add_executable(xbmc
   xbmc/windows/GUIWindowSystemInfo.cpp
 )
 
-target_include_directories(xbmc PRIVATE xbmc xbmc/cores/VideoPlayer xbmc/platform/xbox)
+target_include_directories(xbmc PRIVATE xbmc xbmc/cores/VideoPlayer xbmc/platform/xbox lib/nxio/include ${CMAKE_CURRENT_SOURCE_DIR}/lib/mbedtls)
 
 # Bring in networking support
 target_link_libraries(xbmc PUBLIC ${NXDK_DIR}/lib/libnxdk_net.lib)
@@ -952,14 +957,17 @@ set(MBEDCRYPTO_LIBRARY ${mbedtls_BINARY_DIR}/library/libmbedcrypto.lib CACHE STR
 
 add_definitions(
   -DUSE_LWIPSOCK=1
+  -DHAVE_RECV=1
+  -DHAVE_SEND=1
 )
+list(APPEND CMAKE_REQUIRED_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/lib/nxio/include)
 FetchContent_MakeAvailable(curl)
 target_include_directories(libcurl_static PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/lib/mbedtls
   ${NXDK_DIR}/lib/net/lwip/src/include
   ${NXDK_DIR}/lib/net/nforceif/include
   ${NXDK_DIR}/lib/net/nvnetdrv
-  ${CMAKE_CURRENT_SOURCE_DIR}/xbmc/platform/xbox # <sys/*>
+  ${CMAKE_CURRENT_SOURCE_DIR}/lib/nxio/include
 )
 target_link_libraries(xbmc PRIVATE libcurl)
 

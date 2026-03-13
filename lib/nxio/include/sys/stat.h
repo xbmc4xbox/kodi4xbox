@@ -9,15 +9,15 @@
 extern "C" {
 #endif
 
-#define _S_IFMT   0xF000
-#define _S_IFDIR  0x4000
-#define _S_IFCHR  0x2000
-#define _S_IFIFO  0x1000
-#define _S_IFREG  0x8000
+#define S_IFMT   0xF000
+#define S_IFDIR  0x4000
+#define S_IFCHR  0x2000
+#define S_IFIFO  0x1000
+#define S_IFREG  0x8000
 
-#define _S_IREAD   0x0100
-#define _S_IWRITE  0x0080
-#define _S_IEXEC   0x0040
+#define S_IREAD   0x0100
+#define S_IWRITE  0x0080
+#define S_IEXEC   0x0040
 
 #ifdef NXIO_POSIX
 
@@ -94,6 +94,8 @@ extern "C" {
         int64_t  st_mtime;
         int64_t  st_ctime;
     };
+
+    #define __stat64 _stat64
 
     int _fstat32(int fd, struct _stat *buf);
     int _fstati64(int fd, struct _stati64 *buf);

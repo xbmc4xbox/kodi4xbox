@@ -95,7 +95,7 @@ int CXboxFile::Stat(const CURL& url, struct __stat64* buffer)
   buffer->st_gid = 0;
   buffer->st_rdev = 0;
 
-  buffer->st_size = static_cast<_off_t>(
+  buffer->st_size = static_cast<off_t>(
       (static_cast<__int64>(findData.nFileSizeHigh) << 32) | findData.nFileSizeLow);
 
   buffer->st_atime = static_cast<__time64_t>(findData.ftLastAccessTime.dwLowDateTime);

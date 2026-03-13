@@ -50,6 +50,7 @@
 #include "utils/Variant.h"
 #include "video/Bookmark.h"
 #include "video/VideoLibraryQueue.h"
+#include "filesystem/CurlFile.h"
 
 #ifdef HAS_PYTHON
 #include "interfaces/python/XBPython.h"
@@ -933,6 +934,16 @@ void CApplication::ResetCurrentItem()
 int CApplication::Run()
 {
   CLog::Log(LOGINFO, "Running the application...");
+
+  std::string strURL = "http://httpbin.org/get?foo=bar";
+
+  XFILE::CCurlFile httpUtil;
+  std::string bodyResponse;
+  if (!httpUtil.Get(strURL, bodyResponse))
+  {
+    CLog::Log(LOGWARNING, "Internal weather fetching failed");
+    return false;
+  }
 
   std::chrono::time_point<std::chrono::steady_clock> lastFrameTime;
   std::chrono::milliseconds frameTime;

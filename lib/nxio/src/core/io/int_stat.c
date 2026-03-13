@@ -60,14 +60,14 @@ int nxio_fstat_lk(nxcrt_file_t *file, struct nx_stat64_internal *buf)
 
     // Mode
     if (bhfi.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-        buf->st_mode = _S_IFDIR;
+        buf->st_mode = S_IFDIR;
     else
-        buf->st_mode = _S_IFREG;
+        buf->st_mode = S_IFREG;
 
     if (bhfi.dwFileAttributes & FILE_ATTRIBUTE_READONLY)
-        buf->st_mode |= _S_IREAD;
+        buf->st_mode |= S_IREAD;
     else
-        buf->st_mode |= (_S_IREAD | _S_IWRITE);
+        buf->st_mode |= (S_IREAD | S_IWRITE);
 
     // Time conversion
     buf->st_mtime = nxcrt_filetime_to_unix(&bhfi.ftLastWriteTime);

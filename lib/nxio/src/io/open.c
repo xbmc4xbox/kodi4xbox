@@ -102,7 +102,7 @@ int nxio_sopen_impl(const char *path,
     }
 
     if (oflag & NX_O_CREAT) {
-        if (!(pmode & _S_IWRITE))
+        if (!(pmode & S_IWRITE))
             attributes |= FILE_ATTRIBUTE_READONLY;
     }
 

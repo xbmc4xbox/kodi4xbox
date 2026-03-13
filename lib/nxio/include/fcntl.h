@@ -93,30 +93,30 @@ extern "C" {
 
 #else /* NXIO_POSIX */
 
-    #define _O_RDONLY      NX_O_RDONLY
-    #define _O_WRONLY      NX_O_WRONLY
-    #define _O_RDWR        NX_O_RDWR
-    #define _O_ACCMODE     NX_O_ACCMODE
+    #define O_RDONLY      NX_O_RDONLY
+    #define O_WRONLY      NX_O_WRONLY
+    #define O_RDWR        NX_O_RDWR
+    #define O_ACCMODE     NX_O_ACCMODE
 
-    #define _O_CREAT       NX_O_CREAT
-    #define _O_EXCL        NX_O_EXCL
-    #define _O_TRUNC       NX_O_TRUNC
-    #define _O_APPEND      NX_O_APPEND
+    #define O_CREAT       NX_O_CREAT
+    #define O_EXCL        NX_O_EXCL
+    #define O_TRUNC       NX_O_TRUNC
+    #define O_APPEND      NX_O_APPEND
 
-    #define _O_RANDOM      NX_O_RANDOM
-    #define _O_SEQUENTIAL  NX_O_SEQUENTIAL
-    #define _O_TEMPORARY   NX_O_TEMPORARY
+    #define O_RANDOM      NX_O_RANDOM
+    #define O_SEQUENTIAL  NX_O_SEQUENTIAL
+    #define O_TEMPORARY   NX_O_TEMPORARY
 
     /* Text/binary mode */
-    #define _O_TEXT     NX_O_TEXT
-    #define _O_BINARY   0
-    #define _O_RAW      0
+    #define O_TEXT     NX_O_TEXT
+    #define O_BINARY   0
+    #define O_RAW      0
 
-    #define _SH_COMPAT     NX_SH_COMPAT
-    #define _SH_DENYRW     NX_SH_DENYRW
-    #define _SH_DENYWR     NX_SH_DENYWR
-    #define _SH_DENYRD     NX_SH_DENYRD
-    #define _SH_DENYNO     NX_SH_DENYNO
+    #define SH_COMPAT     NX_SH_COMPAT
+    #define SH_DENYRW     NX_SH_DENYRW
+    #define SH_DENYWR     NX_SH_DENYWR
+    #define SH_DENYRD     NX_SH_DENYRD
+    #define SH_DENYNO     NX_SH_DENYNO
 
     /*
     * _open and _sopen are declared in <io.h>

@@ -46,6 +46,8 @@
     typedef int32_t  uid_t;
     typedef int32_t  gid_t;
 
+    typedef __int64 __time64_t;
+
     #define OFF_T_MAX INT32_MAX
     #define OFF_T_MIN INT32_MIN
 

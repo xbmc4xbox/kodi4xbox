@@ -1456,7 +1456,7 @@ extern "C"
     }
     if (!stricmp(path, "\\Device\\Cdrom0") || !stricmp(path, "\\Device\\Cdrom0\\"))
     {
-      buffer->st_mode = _S_IFDIR;
+      buffer->st_mode = S_IFDIR;
       return 0;
     }
 
@@ -1471,7 +1471,7 @@ extern "C"
       buffer->st_gid = tStat.st_gid;
       buffer->st_rdev = tStat.st_rdev;
       if (tStat.st_size <= LONG_MAX)
-        buffer->st_size = (_off_t)tStat.st_size;
+        buffer->st_size = (off_t)tStat.st_size;
       else
       {
         buffer->st_size = 0;
@@ -1541,12 +1541,12 @@ extern "C"
     if (!_stricmp(path, "D:") || !_stricmp(path, "D:\\"))
 #endif
     {
-      buffer->st_mode = _S_IFDIR;
+      buffer->st_mode = S_IFDIR;
       return 0;
     }
     if (!stricmp(path, "\\Device\\Cdrom0") || !stricmp(path, "\\Device\\Cdrom0\\"))
     {
-      buffer->st_mode = _S_IFDIR;
+      buffer->st_mode = S_IFDIR;
       return 0;
     }
 
@@ -1564,7 +1564,7 @@ extern "C"
 
       __int64 size = pFile->GetLength();
       if (size <= LONG_MAX)
-        buffer->st_size = (_off_t)size;
+        buffer->st_size = (off_t)size;
       else
       {
         buffer->st_size = 0;
