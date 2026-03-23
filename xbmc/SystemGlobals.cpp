@@ -5,7 +5,6 @@
  *  SPDX-License-Identifier: GPL-2.0-or-later
  *  See LICENSES/README.md for more information.
  */
-#include "SectionLoader.h"
 #include "utils/AlarmClock.h"
 #include "GUIInfoManager.h"
 #include "filesystem/DirectoryCache.h"
@@ -34,6 +33,5 @@ std::map<std::string, std::string> CSpecialProtocol::m_pathMap;
   CPartyModeManager     g_partyModeManager;
 
   CAlarmClock        g_alarmClock;
-  CSectionLoader     g_sectionLoader;
 
   CZipManager g_ZipManager;
