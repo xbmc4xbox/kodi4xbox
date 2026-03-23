@@ -2,18 +2,6 @@ function(add_xbox_build_steps TARGET_NAME XBE_TITLE XBOX_ISO_DIR)
     # Ensure ISO output directory exists
     file(MAKE_DIRECTORY ${XBOX_ISO_DIR})
 
-    # Backup original EXE and strip debug symbols
-    add_custom_target(${TARGET_NAME}_strip_exe ALL
-        COMMENT "Preparing EXE: [backup + llvm-strip]"
-        COMMAND ${CMAKE_COMMAND} -E copy
-                ${CMAKE_CURRENT_BINARY_DIR}/xbmc.exe
-                ${CMAKE_CURRENT_BINARY_DIR}/xbmc-stripped.exe
-        COMMAND llvm-strip
-                ${CMAKE_CURRENT_BINARY_DIR}/xbmc-stripped.exe
-        VERBATIM
-    )
-    add_dependencies(${TARGET_NAME}_strip_exe ${TARGET_NAME})
-
     # Convert EXE to XBE
     add_custom_target(${TARGET_NAME}_cxbe_convert ALL
         COMMENT "CXBE Conversion: [EXE -> XBE]"
@@ -22,9 +10,9 @@ function(add_xbox_build_steps TARGET_NAME XBE_TITLE XBOX_ISO_DIR)
                 ${NXDK_DIR}/tools/cxbe/cxbe
                 -OUT:${CMAKE_CURRENT_BINARY_DIR}/default.xbe
                 -TITLE:${XBE_TITLE}
-                ${CMAKE_CURRENT_BINARY_DIR}/xbmc-stripped.exe > NUL 2>&1
+                ${CMAKE_CURRENT_BINARY_DIR}/xbmc.exe > NUL 2>&1
     )
-    add_dependencies(${TARGET_NAME}_cxbe_convert ${TARGET_NAME}_strip_exe)
+    add_dependencies(${TARGET_NAME}_cxbe_convert ${TARGET_NAME})
 
     # Convert XBE to XISO
     add_custom_target(${TARGET_NAME}_xbe_iso ALL
@@ -53,7 +41,6 @@ function(add_xbox_build_steps TARGET_NAME XBE_TITLE XBOX_ISO_DIR)
     add_dependencies(${TARGET_NAME}_xbe_iso ${TARGET_NAME}_cxbe_convert)
 
     # Silence output
-    set_target_properties(${TARGET_NAME}_strip_exe PROPERTIES OUTPUT_QUIET ON)
     set_target_properties(${TARGET_NAME}_cxbe_convert PROPERTIES OUTPUT_QUIET ON)
     set_target_properties(${TARGET_NAME}_xbe_iso PROPERTIES OUTPUT_QUIET ON)
 endfunction()

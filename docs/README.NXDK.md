@@ -1,6 +1,6 @@
 # Original Xbox Build Guide
 
-To build XBMC, we will need an open-source toolchain known as **NXDK**. The official NXDK is missing support for C++ exceptions so we are going to use NXDK fork which contains WIP exceptions from [thrimbor](https://github.com/thrimbor/nxdk/tree/cpp_exceptions_final).
+To build XBMC, we will need an open-source SDK known as **NXDK**. The official NXDK is missing support for C++ exceptions so we are going to use NXDK fork which contains WIP exceptions from [thrimbor](https://github.com/xbmc4xbox/nxdk.git).
 
 ## Table of Contents
 1. [Document Conventions](#1-document-conventions)
@@ -22,13 +22,17 @@ clang --version
 
 Now we are ready do setup NXDL toolchain. The first thing you need to do is to clone NXDK:
 ```bash
-git clone --recurse-submodules https://github.com/antonic901/nxdk.git
+git clone https://github.com/xbmc4xbox/nxdk.git
 ```
 After cloning, switch to branch which contains support for C++ exceptions:
 ```bash
-git checkout thrimbor_exceptions
+git checkout rtti_exceptions
 ```
-Now we will build C++ sample program to confirm if building is working. Execute following commands one by one:
+Now pull all required submodules:
+```bash
+git submodule update --init --recursive
+```
+Now we will build C++ sample program to confirm if SDK is properly configured. Execute following commands one by one:
 ```bash
 cd samples/hello++/
 eval "$(../../bin/activate -s)"
@@ -54,23 +58,6 @@ to `.bash_profile`. Make sure to replace `<path-to-nxdk>` with your local path. 
 And now we can finally build XBMC!
 
 ## 3. Build XBMC
-You can build XBMC with automated script which will create `dist` folder ready to be FTPed on your Xbox or you can build it manually.
-
-## 3.1 Automatic build
-Clone the XBMC repository:
-```bash
-git clone https://github.com/antonic901/xbmc4xbox-nxdk
-```
-Navigate into the XBMC directory:
-```bash
-cd xbmc4xbox-nxdk
-```
-Run build script:
-```bash
-./build.sh
-```
-
-## 3.2 Manual build
 Clone the XBMC repository:
 ```bash
 git clone https://github.com/antonic901/xbmc4xbox-nxdk
@@ -89,11 +76,12 @@ cmake .. -DCMAKE_TOOLCHAIN_FILE=${NXDK_DIR}/share/toolchain-nxdk.cmake -DCMAKE_B
 ```
 Finally, compile XBMC with:
 ```bash
-cmake --build .
+cmake --build . --parallel $(nproc)
 ```
 If everything went well you should have Xbox executable inside `build` folder called `default.xbe`
 
 ## How to Debug
-- First download [this](debug-test.patch) patch and apply it yours local repo
-- Build Kodi in same way as described above, but make sure to build Debug version, not Release!
+- First we need to build NXDK libs as Debug. To do that build hello++ example with `DEBUG = y` added to `samples/hello++/Makefile`
+- Debug executable will be quite big because of symbols. Before building apply [this](https://github.com/xbmc4xbox/kodi4xbox/blob/master/docs/resources/debug_kodi.patch) small patch to your local repo with `git apply`
+- Build Kodi in same way as described above, but make sure to build Debug version. You do that by setting `-DCMAKE_BUILD_TYPE` to `Debug`
 - After succesfull build, open Xemu, load ISO from build folder and then close Xemu. After that, start debugging from within Visual Studio Code by pressing `CTRL+SHIFT+D` and then `F5`
