@@ -21,9 +21,7 @@
 
 namespace
 {
-#ifndef _XBOX
 auto startTime = std::chrono::steady_clock::now();
-#endif
 }
 
 int64_t CurrentHostCounter(void)
@@ -62,10 +60,12 @@ unsigned int CTimeUtils::frameTime = 0;
 
 void CTimeUtils::UpdateFrameTime(bool flip)
 {
-#ifndef _XBOX
   auto now = std::chrono::steady_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime);
 
+#ifdef _XBOX
+  frameTime = duration.count();
+#else
   unsigned int currentTime = duration.count();
   unsigned int last = frameTime;
   while (frameTime < currentTime)
@@ -75,9 +75,6 @@ void CTimeUtils::UpdateFrameTime(bool flip)
     if (frameTime < last)
       break;
   }
-#else
-  // we don't have an actual frametime on Xbox
-  frameTime = GetTickCount();
 #endif
 }
 
