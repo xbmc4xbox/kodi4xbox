@@ -91,7 +91,6 @@ add_executable(xbmc
   xbmc/CueDocument.cpp
   xbmc/DatabaseManager.cpp
   xbmc/DbUrl.cpp
-  xbmc/DynamicDll.cpp
   xbmc/FileItem.cpp
   xbmc/FileItemListModification.cpp
   xbmc/GUIInfoManager.cpp
@@ -104,7 +103,6 @@ add_executable(xbmc
   xbmc/PartyModeManager.cpp
   xbmc/PasswordManager.cpp
   xbmc/PlayListPlayer.cpp
-  xbmc/SectionLoader.cpp
   xbmc/SeekHandler.cpp
   xbmc/ServiceBroker.cpp
   xbmc/ServiceManager.cpp
@@ -171,41 +169,6 @@ add_executable(xbmc
   xbmc/application/AppParamParser.cpp
   xbmc/commons/Exception.cpp
   xbmc/commons/ilog.cpp
-  xbmc/cores/DllLoader/coff.cpp
-  xbmc/cores/DllLoader/dll.cpp
-  xbmc/cores/DllLoader/dll_tracker.cpp
-  xbmc/cores/DllLoader/dll_tracker_critical_section.cpp
-  xbmc/cores/DllLoader/dll_tracker_file.cpp
-  xbmc/cores/DllLoader/dll_tracker_library.cpp
-  xbmc/cores/DllLoader/dll_tracker_memory.cpp
-  # xbmc/cores/DllLoader/dll_tracker_socket.cpp
-  xbmc/cores/DllLoader/dll_util.cpp
-  xbmc/cores/DllLoader/DllLoader.cpp
-  xbmc/cores/DllLoader/DllLoaderContainer.cpp
-  xbmc/cores/DllLoader/LibraryLoader.cpp
-  xbmc/cores/DllLoader/exports/emu_dummy.cpp
-  # xbmc/cores/DllLoader/exports/emu_dx8.cpp
-  xbmc/cores/DllLoader/exports/emu_kernel32.cpp
-  xbmc/cores/DllLoader/exports/emu_misc.cpp
-  xbmc/cores/DllLoader/exports/emu_msvcrt.cpp
-  xbmc/cores/DllLoader/exports/emu_ole32.cpp
-  xbmc/cores/DllLoader/exports/emu_registry.cpp
-  # xbmc/cores/DllLoader/exports/emu_socket.cpp
-  xbmc/cores/DllLoader/exports/exports_kernel32.cpp
-  xbmc/cores/DllLoader/exports/exports_misc.cpp
-  xbmc/cores/DllLoader/exports/exports_msvcrt.cpp
-  xbmc/cores/DllLoader/exports/exports_ole32.cpp
-  xbmc/cores/DllLoader/exports/exports_python.cpp
-  xbmc/cores/DllLoader/exports/exports_reg.cpp
-  xbmc/cores/DllLoader/exports/exports_socket.cpp
-  xbmc/cores/DllLoader/exports/exports_xbox_dx8.cpp
-  xbmc/cores/DllLoader/exports/nxdk_stubs.cpp
-  # xbmc/cores/DllLoader/exports/emu_socket/getaddrinfo.c
-  # xbmc/cores/DllLoader/exports/emu_socket/getnameinfo.c
-  # xbmc/cores/DllLoader/exports/emu_socket/inet_aton.c
-  # xbmc/cores/DllLoader/exports/emu_socket/inet_ntop.c
-  # xbmc/cores/DllLoader/exports/emu_socket/inet_pton.c
-  xbmc/cores/DllLoader/exports/util/EmuFileWrapper.cpp
   xbmc/cores/DataCacheCore.cpp
   xbmc/cores/VideoSettings.cpp
   xbmc/cores/playercorefactory/PlayerCoreConfig.cpp
@@ -327,7 +290,6 @@ add_executable(xbmc
   xbmc/filesystem/ZipFile.cpp
   xbmc/filesystem/ZipManager.cpp
   xbmc/imagefiles/SpecialImageLoaderFactory.cpp
-  xbmc/guilib/cximage.cpp
   xbmc/guilib/DirtyRegionSolvers.cpp
   xbmc/guilib/DirtyRegionTracker.cpp
   xbmc/guilib/GUIAction.cpp

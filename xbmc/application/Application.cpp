@@ -57,11 +57,9 @@
 #include "GUILargeTextureManager.h"
 #include "GUIPassword.h"
 #include "GUIUserMessages.h"
-#include "SectionLoader.h"
 #include "SeekHandler.h"
 #include "ServiceBroker.h"
 #include "TextureCache.h"
-#include "cores/DllLoader/DllLoaderContainer.h"
 #include "filesystem/Directory.h"
 #include "filesystem/DirectoryCache.h"
 #include "filesystem/PluginDirectory.h"
@@ -225,9 +223,6 @@ void CApplication::HandlePortEvents()
 
 }
 
-extern "C" void __stdcall init_emu_environ();
-extern "C" void __stdcall update_emu_environ();
-
 bool CApplication::Create()
 {
   m_bStop = false;
@@ -280,9 +275,6 @@ bool CApplication::Create()
     CDirectory::Create("special://xbmc/addons");
   }
 
-  // Init our DllLoaders emu env
-  init_emu_environ();
-
   PrintStartupLog();
 
   CLog::Log(LOGINFO, "loading settings");
@@ -302,8 +294,6 @@ bool CApplication::Create()
   CDirectory::Create(profileManager->GetUserDataFolder());
   CDirectory::Create(profileManager->GetProfileUserDataFolder());
   profileManager->CreateProfileFolders();
-
-  update_emu_environ();//apply the GUI settings
 
   if (!m_ServiceManager->InitStageTwo(
           settingsComponent->GetProfileManager()->GetProfileUserDataFolder()))
@@ -1542,10 +1532,7 @@ void CApplication::ProcessSlow()
   // check if we should restart the player
   CheckDelayedPlayerRestart();
 
-  //  check if we can unload any unreferenced dlls or sections
-  const auto appPlayer = GetComponent<CApplicationPlayer>();
-  if (!appPlayer->IsPlayingVideo())
-    CSectionLoader::UnloadDelayed();
+  // TODO: unload unreferenced DLLs
 
 #ifdef TARGET_ANDROID
   // Pass the slow loop to droid
