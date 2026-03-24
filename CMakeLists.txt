@@ -738,7 +738,9 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/fmtlib/fmt
   GIT_TAG        12.1.0
   GIT_PROGRESS TRUE
-  PATCH_COMMAND ${GIT_EXECUTABLE} apply ${CMAKE_SOURCE_DIR}/lib/fmt_nxdk.patch
+  PATCH_COMMAND ${GIT_EXECUTABLE} apply --check ${CMAKE_SOURCE_DIR}/lib/fmt_nxdk.patch
+                && ${GIT_EXECUTABLE} apply ${CMAKE_SOURCE_DIR}/lib/fmt_nxdk.patch
+                || echo "Patch already applied"
 )
 set(FMT_OS OFF CACHE BOOL "Disale OS module")
 add_definitions(
@@ -765,7 +767,9 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/xbmc4xbox/tinyxml.git
   GIT_TAG        b3c39f382075b73cbec7e88687b5762ba11ef65c
   GIT_PROGRESS TRUE
-  PATCH_COMMAND ${GIT_EXECUTABLE} apply ${CMAKE_SOURCE_DIR}/lib/tinyxml_nxdk.patch
+  PATCH_COMMAND ${GIT_EXECUTABLE} apply --check ${CMAKE_SOURCE_DIR}/lib/tinyxml_nxdk.patch
+                && ${GIT_EXECUTABLE} apply ${CMAKE_SOURCE_DIR}/lib/tinyxml_nxdk.patch
+                || echo "Patch already applied"
 )
 FetchContent_MakeAvailable(tinyxml)
 target_link_libraries(xbmc PRIVATE tinyxml)
@@ -777,7 +781,9 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/leethomason/tinyxml2.git
   GIT_TAG        11.0.0
   GIT_PROGRESS TRUE
-  PATCH_COMMAND ${GIT_EXECUTABLE} apply ${CMAKE_SOURCE_DIR}/lib/tinyxml2_nxdk.patch
+  PATCH_COMMAND ${GIT_EXECUTABLE} apply --check ${CMAKE_SOURCE_DIR}/lib/tinyxml2_nxdk.patch
+                && ${GIT_EXECUTABLE} apply ${CMAKE_SOURCE_DIR}/lib/tinyxml2_nxdk.patch
+                || echo "Patch already applied"
 )
 set(tinyxml2_BUILD_TESTING OFF CACHE BOOL "Disable tinyxml2 tests")
 FetchContent_MakeAvailable(tinyxml2)
@@ -806,7 +812,9 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/graeme-hill/crossguid.git
   GIT_TAG        ca1bf4b810e2d188d04cb6286f957008ee1b7681
   GIT_PROGRESS TRUE
-  PATCH_COMMAND ${GIT_EXECUTABLE} apply ${CMAKE_SOURCE_DIR}/lib/crossguid_nxdk.patch
+  PATCH_COMMAND ${GIT_EXECUTABLE} apply --check ${CMAKE_SOURCE_DIR}/lib/crossguid_nxdk.patch
+                && ${GIT_EXECUTABLE} apply ${CMAKE_SOURCE_DIR}/lib/crossguid_nxdk.patch
+                || echo "Patch already applied"
 )
 set(CROSSGUID_TESTS OFF CACHE BOOL "Disablee crossguid tests")
 FetchContent_MakeAvailable(crossguid)
