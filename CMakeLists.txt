@@ -334,6 +334,7 @@ add_executable(xbmc
 	xbmc/guilib/GUIRangesControl.cpp
   xbmc/guilib/GUIRenderingControl.cpp
   xbmc/guilib/GUIResizeControl.cpp
+  xbmc/guilib/GUIRSSControl.cpp
   xbmc/guilib/GUIScrollBarControl.cpp
   xbmc/guilib/GUISettingsSliderControl.cpp
   xbmc/guilib/GUISliderControl.cpp
@@ -606,6 +607,8 @@ add_executable(xbmc
   xbmc/utils/RecentlyAddedJob.cpp
   xbmc/utils/RegExp.cpp
   xbmc/utils/RingBuffer.cpp
+  xbmc/utils/RssManager.cpp
+  xbmc/utils/RssReader.cpp
   xbmc/utils/SaveFileStateJob.cpp
   xbmc/utils/ScraperParser.cpp
   xbmc/utils/ScraperUrl.cpp

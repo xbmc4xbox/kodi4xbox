@@ -29,6 +29,10 @@ function(add_xbox_build_steps TARGET_NAME XBE_TITLE XBOX_ISO_DIR)
                 "${XBOX_ISO_DIR}/system"
 
         COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${CMAKE_SOURCE_DIR}/userdata"
+                "${XBOX_ISO_DIR}/userdata"
+
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
                 "${CMAKE_SOURCE_DIR}/addons"
                 "${XBOX_ISO_DIR}/addons"
         COMMAND "${CMAKE_COMMAND}" -E env
