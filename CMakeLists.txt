@@ -354,6 +354,7 @@ add_executable(xbmc
   xbmc/guilib/IWindowManagerCallback.cpp
   xbmc/guilib/JpegIO.cpp
   xbmc/guilib/LocalizeStrings.cpp
+  xbmc/guilib/PngIO.cpp
   xbmc/guilib/Texture.cpp
   xbmc/guilib/TextureGL.cpp
   xbmc/guilib/TextureManager.cpp
@@ -733,6 +734,23 @@ target_link_libraries(xbmc PUBLIC libiconv)
 # Bring in SQLite library
 add_subdirectory(lib/sqlite)
 target_link_libraries(xbmc PUBLIC sqlite)
+
+# Bring in libspng library
+message(STATUS "Downloading libspng")
+FetchContent_Declare(
+  spng_static
+  GIT_REPOSITORY https://github.com/randy408/libspng.git
+  GIT_TAG        v0.7.4
+  GIT_PROGRESS TRUE
+)
+set(ENABLE_OPT OFF CACHE BOOL "Build as static library")
+set(SPNG_SHARED OFF CACHE BOOL "Build as static library")
+set(BUILD_EXAMPLES OFF CACHE BOOL "Do not build tests")
+set(ZLIB_LIBRARY ${NXDK_DIR}/lib/libzlib.lib CACHE PATH "" FORCE)
+set(ZLIB_INCLUDE_DIR ${NXDK_DIR}/lib/zlib/zlib CACHE STRING "" FORCE)
+FetchContent_MakeAvailable(spng_static)
+target_include_directories(spng_static PRIVATE ${CMAKE_SOURCE_DIR}/xbmc/platform/xbox)
+target_link_libraries(xbmc PRIVATE spng_static)
 
 # Bring in FMT library
 message(STATUS "Downloading fmtlib")

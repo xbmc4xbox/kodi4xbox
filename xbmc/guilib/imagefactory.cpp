@@ -12,6 +12,7 @@
 #include "addons/ExtsMimeSupportList.h"
 #include "addons/addoninfo/AddonType.h"
 #include "guilib/JpegIO.h"
+#include "guilib/PngIO.h"
 #include "utils/Mime.h"
 
 using namespace KODI::ADDONS;
@@ -38,7 +39,7 @@ IImage* ImageFactory::CreateLoaderFromMimeType(const std::string& strMimeType)
   }
   else if (strMimeType == "image/png")
   {
-    return nullptr;
+    return new CPngIO();
   }
 
   return nullptr;
